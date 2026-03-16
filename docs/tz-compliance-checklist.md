@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 31).
+Останнє оновлення: 2026-03-16 (ітерація 32).
 
 ## Підсумок
 
@@ -20,6 +20,23 @@
 
 
 
+
+## Оновлення ітерації 32
+
+### Внесені зміни в цій ітерації
+
+- ✅ У `src/Comments.Web` для txt-вкладень додано явний loading-state під час lazy preview: кнопка `Показати txt preview` тепер блокується на час запиту, а в UI показується повідомлення `Завантаження txt preview...` (root-list + thread/replies).
+- ✅ Це закриває один із UX-gap пунктів Angular migration із backlog (індикатор завантаження для txt-preview).
+
+### Що ще треба зробити у проєкті (актуально після ітерації 32)
+
+1. 🟨 Завершити **Angular LTS migration** у `src/Comments.Web`: додати e2e smoke для root+thread сценаріїв (create/reply/realtime/attachments), синхронізувати UX-обробку API validation помилок.
+2. 🟨 Дозавершити **CQRS + MediatR + FluentValidation**: розширити success-path та edge-case integration покриття (REST + GraphQL), включно з shape `validationErrors` у GraphQL `extensions`.
+3. 🟨 Дозавершити **RabbitMQ production-hardening**: delayed retry/DLQ replay tooling, метрики consumer-обробки та алерти.
+4. 🟨 Виконати **фінальний Middle+ load-test** у середовищі RabbitMQ+Elasticsearch з оновленням `docs/load-test-middle-results.md` і `docs/artifacts/k6-middle-summary.json`.
+5. 🔲 Додати **Demo**-секцію в `README.md` з посиланням на 3–5 хв відео сценаріїв.
+
+---
 
 ## Оновлення ітерації 31
 
