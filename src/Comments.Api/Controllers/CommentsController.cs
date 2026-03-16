@@ -3,7 +3,7 @@ using Comments.Application.Features.Comments.Commands.CreateComment;
 using Comments.Application.Features.Comments.Queries.GetCommentsPage;
 using Comments.Application.Features.Comments.Queries.GetCommentThread;
 using Comments.Application.Features.Comments.Queries.PreviewComment;
-using Comments.Api.Infrastructure;
+using Comments.Application.Features.Comments.Queries.SearchComments;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,12 +16,10 @@ public sealed class CommentsController : ControllerBase
     public sealed record PreviewRequest(string Text);
 
     private readonly IMediator _mediator;
-    private readonly ICommentSearchService _commentSearchService;
 
-    public CommentsController(IMediator mediator, ICommentSearchService commentSearchService)
+    public CommentsController(IMediator mediator)
     {
         _mediator = mediator;
-        _commentSearchService = commentSearchService;
     }
 
     [HttpPost]
@@ -78,7 +76,7 @@ public sealed class CommentsController : ControllerBase
             return BadRequest("Query 'q' is required.");
         }
 
-        var comments = await _commentSearchService.SearchAsync(q, page, pageSize, cancellationToken);
+        var comments = await _mediator.Send(new SearchCommentsQuery(q, page, pageSize), cancellationToken);
         return Ok(comments);
     }
 }

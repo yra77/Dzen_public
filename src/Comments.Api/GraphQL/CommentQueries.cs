@@ -2,7 +2,7 @@ using Comments.Application.DTOs;
 using Comments.Application.Features.Comments.Queries.GetCommentsPage;
 using Comments.Application.Features.Comments.Queries.GetCommentThread;
 using Comments.Application.Features.Comments.Queries.PreviewComment;
-using Comments.Api.Infrastructure;
+using Comments.Application.Features.Comments.Queries.SearchComments;
 using MediatR;
 
 namespace Comments.Api.GraphQL;
@@ -42,13 +42,13 @@ public sealed class CommentQueries
     }
 
     public Task<PagedResult<CommentDto>> SearchComments(
-        [Service] ICommentSearchService searchService,
+        [Service] IMediator mediator,
         string query,
         int page = 1,
         int pageSize = 25,
         CancellationToken cancellationToken = default)
     {
-        return searchService.SearchAsync(query, page, pageSize, cancellationToken);
+        return mediator.Send(new SearchCommentsQuery(query, page, pageSize), cancellationToken);
     }
 
     public async Task<string> PreviewComment(
