@@ -100,7 +100,8 @@ builder.Services.AddSignalR();
 builder.Services
     .AddGraphQLServer()
     .AddQueryType<CommentQueries>()
-    .AddMutationType<CommentMutations>();
+    .AddMutationType<CommentMutations>()
+    .AddErrorFilter<ValidationExceptionErrorFilter>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -111,6 +112,8 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<CommentsDbContext>();
     await dbContext.Database.EnsureCreatedAsync();
 }
+
+app.UseMiddleware<ValidationExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -135,3 +138,6 @@ app.MapHub<CommentsHub>("/hubs/comments");
 
 app.MapFallbackToFile("index.html");
 app.Run();
+
+
+public partial class Program { }
