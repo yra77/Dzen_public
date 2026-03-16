@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 24).
+Останнє оновлення: 2026-03-16 (ітерація 25).
 
 ## Підсумок
 
@@ -12,6 +12,26 @@
 
 ---
 
+
+
+
+## Оновлення ітерації 25
+
+### Внесені зміни в цій ітерації
+
+- ✅ Додано global middleware `ValidationExceptionHandlingMiddleware`, який перетворює FluentValidation-помилки MediatR pipeline у стандартний HTTP `400 ValidationProblemDetails` для REST endpoint-ів.
+- ✅ Додано GraphQL error filter `ValidationExceptionErrorFilter`: валідаційні помилки повертаються як GraphQL `errors` з кодом `BAD_USER_INPUT` і деталями `validationErrors` у extensions.
+- ✅ Додано новий інтеграційний test-проєкт `Comments.Api.Tests` з перевірками двох критичних сценаріїв: REST 400 на невалідну пагінацію та GraphQL validation error на невалідний `searchComments` запит.
+
+### Що ще треба зробити у проєкті (актуально після ітерації 25)
+
+1. 🔲 Завершити **Angular LTS migration** у `src/Comments.Web` (routes `/`, `/thread/:id`, list/tree, create/reply, preview, captcha, attachments, realtime).
+2. 🟨 Дозавершити **CQRS + MediatR + FluentValidation**: розширити API/integration test-покриття на інші endpoint-и й mutation-и (create/preview/thread), додати edge-case сценарії форматів вкладень і CAPTCHA-guards.
+3. 🟨 Дозавершити **RabbitMQ production-hardening**: delayed retry/DLQ replay tooling, метрики consumer-обробки та алерти.
+4. 🟨 Виконати **фінальний Middle+ load-test** у середовищі RabbitMQ+Elasticsearch і оновити артефакти в `docs/`.
+5. 🔲 Додати **Demo**-секцію у `README.md` з посиланням на 3–5 хвилинне відео.
+
+---
 
 
 ## Оновлення ітерації 24
