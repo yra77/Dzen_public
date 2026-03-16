@@ -251,3 +251,60 @@ button:disabled {
   border-radius: 8px;
   background: #fff;
 }
+
+.attachment-image-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  width: auto;
+}
+
+.attachment-image-button img {
+  cursor: zoom-in;
+}
+
+.link-like {
+  width: auto;
+  border: 0;
+  background: transparent;
+  color: #175cd3;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.lightbox {
+  border: 0;
+  border-radius: 12px;
+  padding: 0;
+  max-width: min(92vw, 960px);
+  max-height: 92vh;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+.lightbox::backdrop {
+  background: rgba(2, 6, 23, 0.75);
+}
+
+.lightbox-image {
+  display: block;
+  max-width: min(92vw, 960px);
+  max-height: 88vh;
+  width: auto;
+  height: auto;
+}
+
+.lightbox-close {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid #cbd5e1;
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  padding: 0;
+}
