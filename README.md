@@ -88,6 +88,13 @@ k6 run --summary-export=docs/artifacts/k6-middle-summary.json load-test/comments
 
 > Детальний стан відповідності ТЗ і покроковий backlog див. у `docs/tz-compliance-checklist.md`.
 
+## Продовження робіт (ітерація 16)
+
+- Оновлено комплаєнс-чекліст у `docs/tz-compliance-checklist.md`: зафіксовано поточний стан після останніх доробок backend/UI та пріоритетний план подальших кроків.
+- Фокус наступної ітерації: **Angular LTS migration (P0)** та **MediatR + FluentValidation (P0)** як два блокери до повної відповідності ТЗ.
+- Для P1 зафіксовано технічний борг: production-hardening RabbitMQ (персистентна ідемпотентність, delayed retry/backoff, метрики/алерти).
+- Для P2 залишено delivery-артефакт: додати demo-відео та секцію `Demo` в README.
+
 ## Наступні кроки (по ТЗ)
 
 - ✅ Підключено EF Core + підтримку SQL Server (через `Persistence:Provider=SqlServer`).

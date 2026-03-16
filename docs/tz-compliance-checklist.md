@@ -365,3 +365,32 @@
 5. 🔲 **Відео-демо в README**
    - Мінімальний DoD: 3–5 хв демонстрація ключових сценаріїв (create/reply, sort/page, attachments preview, realtime).
    - Артефакти: посилання на відео + секція `Demo` в README.
+
+## Оновлення ітерації 16
+
+- ✅ Оновлено документацію продовження робіт: синхронізовано `README.md` і checklist щодо актуальних пріоритетів виконання ТЗ.
+- ✅ Уточнено, що всі нові зміни в поточній фазі документуються в `docs/tz-compliance-checklist.md` як джерелі істини по прогресу та open items.
+- 🟨 Зафіксовано статус «готовність до наступної реалізації»: функціональні доробки цієї ітерації не вносилися в код бізнес-логіки, натомість підготовлено оновлений план виконання.
+
+### Що ще треба зробити після ітерації 16
+
+#### P0 — критично для відповідності ТЗ
+1. 🔲 **Angular SPA (LTS) замість vanilla JS**
+   - Мінімальний DoD: екран списку/таблиці, nested thread view, create/reply, preview, captcha, attachments preview, SignalR live-updates.
+   - Артефакти: код у `src/Comments.Web`, інструкція запуску в README, smoke e2e-сценарій.
+2. 🔲 **CQRS + MediatR + FluentValidation**
+   - Мінімальний DoD: `AddComment`, `AddReply`, `GetCommentsPage`, `GetCommentTree`, `PreviewComment` як command/query handlers + валідатори + pipeline behavior для валідації/логування.
+   - Артефакти: оновлений Application-шар, unit-тести для handlers/validators.
+
+#### P1 — стабільність і експлуатація
+3. 🔲 **Production-hardening RabbitMQ**
+   - Мінімальний DoD: персистентна ідемпотентність (не in-memory), delayed retry/backoff policy, runtime-метрики та алерти.
+   - Артефакти: конфіг політик/черг, технічний опис у `docs/`, базові інтеграційні тести consumer-потоку.
+4. 🟨 **Load-test Middle+ (фіналізація)**
+   - Мінімальний DoD: прогін `load-test/comments-middle.js` у середовищі з RabbitMQ + Elasticsearch; збережений результат `summary.json` + короткий висновок (p95/p99/error-rate).
+   - Артефакти: `docs/load-test-middle-results.md` + файл(и) метрик у `docs/artifacts/` + посилання у README.
+
+#### P2 — фіналізація поставки
+5. 🔲 **Відео-демо в README**
+   - Мінімальний DoD: 3–5 хв демонстрація ключових сценаріїв (create/reply, sort/page, attachments preview, realtime).
+   - Артефакти: посилання на відео + секція `Demo` в README.
