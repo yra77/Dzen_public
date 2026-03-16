@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 20).
+Останнє оновлення: 2026-03-16 (ітерація 21).
 
 ## Підсумок
 
@@ -9,6 +9,25 @@
 - **Не виконано:** 3 пункти.
 
 > Висновок: поточний стан ще не покриває **всі** вимоги ТЗ на 100%. Документаційний контур синхронізовано з README, а незакриті пункти сфокусовано в практичному roadmap (Angular, CQRS, production-hardening RabbitMQ, фінальний прогін Middle+ load-test, demo).
+
+---
+
+
+## Оновлення ітерації 21
+
+### Внесені зміни в цій ітерації
+
+- ✅ Реалізовано персистентну ідемпотентність для RabbitMQ consumer через нову сутність `ProcessedMessage` та таблицю `ProcessedMessages` у `CommentsDbContext`.
+- ✅ Додано `IProcessedMessageRepository` + `EfProcessedMessageRepository` для атомарного маркування оброблених `messageId` та пропуску дублікатів після рестартів сервісу.
+- ✅ Оновлено `RabbitMqTaskQueuesConsumerHostedService`: замість in-memory `ConcurrentDictionary` використовується БД-захист від повторної обробки повідомлень.
+
+### Що ще треба зробити у проєкті (актуально після ітерації 21)
+
+1. 🔲 Завершити **Angular LTS migration** у `src/Comments.Web` (routes `/`, `/thread/:id`, list/tree, create/reply, preview, captcha, attachments, realtime).
+2. 🔲 Завершити **CQRS + MediatR + FluentValidation** у backend use-cases без змін зовнішніх REST/GraphQL контрактів.
+3. 🟨 Дозавершити **RabbitMQ production-hardening**: delayed retry/DLQ replay tooling, метрики consumer-обробки та алерти.
+4. 🟨 Виконати **фінальний Middle+ load-test** у середовищі RabbitMQ+Elasticsearch і оновити артефакти в `docs/`.
+5. 🔲 Додати **Demo**-секцію у `README.md` з посиланням на 3–5 хвилинне відео.
 
 ---
 

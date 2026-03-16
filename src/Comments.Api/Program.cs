@@ -32,6 +32,7 @@ builder.Services.AddDbContext<CommentsDbContext>(options =>
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<BasicCaptchaChallengeStore>();
 builder.Services.AddScoped<ICommentRepository, EfCommentRepository>();
+builder.Services.AddScoped<IProcessedMessageRepository, EfProcessedMessageRepository>();
 builder.Services.AddSingleton<ITextSanitizer, BasicTextSanitizer>();
 builder.Services.AddSingleton(captchaOptions);
 if (captchaOptions.Provider.Equals("Recaptcha", StringComparison.OrdinalIgnoreCase))

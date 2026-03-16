@@ -1,7 +1,8 @@
-using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
+using Comments.Application.Abstractions;
 using Comments.Application.DTOs;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -12,17 +13,19 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
 {
     private readonly RabbitMqOptions _options;
     private readonly ILogger<RabbitMqTaskQueuesConsumerHostedService> _logger;
-    private readonly ConcurrentDictionary<string, byte> _processedMessageIds = new();
+    private readonly IServiceScopeFactory _scopeFactory;
 
     private IConnection? _connection;
     private IModel? _channel;
 
     public RabbitMqTaskQueuesConsumerHostedService(
         RabbitMqOptions options,
-        ILogger<RabbitMqTaskQueuesConsumerHostedService> logger)
+        ILogger<RabbitMqTaskQueuesConsumerHostedService> logger,
+        IServiceScopeFactory scopeFactory)
     {
         _options = options;
         _logger = logger;
+        _scopeFactory = scopeFactory;
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -115,8 +118,8 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
             throw new InvalidOperationException("RabbitMQ channel is not initialized.");
         }
 
-        var consumer = new EventingBasicConsumer(_channel);
-        consumer.Received += (_, eventArgs) =>
+        var consumer = new AsyncEventingBasicConsumer(_channel);
+        consumer.Received += async (_, eventArgs) =>
         {
             try
             {
@@ -131,11 +134,17 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
                 }
 
                 var messageId = eventArgs.BasicProperties?.MessageId;
-                if (!string.IsNullOrWhiteSpace(messageId) && !_processedMessageIds.TryAdd(messageId, 0))
+                if (!string.IsNullOrWhiteSpace(messageId))
                 {
-                    _logger.LogInformation("[{Worker}] Skipping duplicate message {MessageId}", workerName, messageId);
-                    _channel.BasicAck(eventArgs.DeliveryTag, multiple: false);
-                    return;
+                    await using var scope = _scopeFactory.CreateAsyncScope();
+                    var processedRepo = scope.ServiceProvider.GetRequiredService<IProcessedMessageRepository>();
+                    var marked = await processedRepo.TryMarkProcessedAsync(messageId, CancellationToken.None);
+                    if (!marked)
+                    {
+                        _logger.LogInformation("[{Worker}] Skipping duplicate message {MessageId}", workerName, messageId);
+                        _channel.BasicAck(eventArgs.DeliveryTag, multiple: false);
+                        return;
+                    }
                 }
 
                 var hasAttachment = processComment(comment);
