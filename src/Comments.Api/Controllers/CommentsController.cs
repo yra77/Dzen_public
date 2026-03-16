@@ -9,6 +9,8 @@ namespace Comments.Api.Controllers;
 [Route("api/comments")]
 public sealed class CommentsController : ControllerBase
 {
+    public sealed record PreviewRequest(string Text);
+
     private readonly CommentService _commentService;
     private readonly ICommentSearchService _commentSearchService;
 
@@ -37,6 +39,16 @@ public sealed class CommentsController : ControllerBase
     {
         var comments = await _commentService.GetPageAsync(page, pageSize, sortBy, sortDirection, cancellationToken);
         return Ok(comments);
+    }
+
+
+
+    [HttpPost("preview")]
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    public IActionResult Preview([FromBody] PreviewRequest request)
+    {
+        var preview = _commentService.Preview(request.Text);
+        return Ok(preview);
     }
 
     [HttpGet("search")]

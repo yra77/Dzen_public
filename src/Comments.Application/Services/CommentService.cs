@@ -108,6 +108,21 @@ public sealed class CommentService
             comments.Select(x => Map(x, sortField, sortDirection)).ToArray());
     }
 
+    public string Preview(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return string.Empty;
+        }
+
+        if (text.Trim().Length > MaxTextLength)
+        {
+            throw new ArgumentException($"Text must be at most {MaxTextLength} characters.");
+        }
+
+        return _textSanitizer.Sanitize(text);
+    }
+
     private async Task ValidateAsync(CreateCommentRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.UserName)) throw new ArgumentException("User name is required.");
