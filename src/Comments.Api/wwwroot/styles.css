@@ -77,6 +77,40 @@ button:disabled {
   margin-top: 10px;
   background: #fcfcfd;
 }
+
+.comments-table-wrapper {
+  overflow-x: auto;
+  margin-top: 12px;
+}
+
+.comments-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 860px;
+}
+
+.comments-table th,
+.comments-table td {
+  border: 1px solid #e5e7eb;
+  padding: 10px;
+  vertical-align: top;
+  text-align: left;
+}
+
+.comments-table th {
+  background: #f9fafb;
+  color: #344054;
+  font-size: 14px;
+}
+
+.root-comment-thread-row td {
+  background: #fcfcfd;
+}
+
+.replies-empty {
+  color: #667085;
+  font-size: 14px;
+}
 .comment .meta {
   font-size: 12px;
   color: #6b7280;
