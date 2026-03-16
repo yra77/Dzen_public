@@ -4,6 +4,7 @@ using Comments.Api.Realtime;
 using Comments.Application.Abstractions;
 using Comments.Application.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -94,7 +95,20 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+var attachmentsRootPath = Path.GetFullPath(attachmentStorageOptions.RootPath);
+Directory.CreateDirectory(attachmentsRootPath);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(attachmentsRootPath),
+    RequestPath = "/uploads"
+});
+
 app.MapControllers();
 app.MapGraphQL("/graphql");
 app.MapHub<CommentsHub>("/hubs/comments");
+
+app.MapFallbackToFile("index.html");
 app.Run();
