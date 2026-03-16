@@ -19,7 +19,11 @@
         <label>Email <input required type="email" name="email" maxlength="200" /></label>
         <label>Домашня сторінка <input type="url" name="homePage" placeholder="https://example.com" /></label>
         <label>Captcha token <input name="captchaToken" placeholder="1234" /></label>
-        <label>Parent comment ID <input name="parentId" placeholder="опціонально" /></label>
+        <label class="wide">Parent comment ID <input id="parent-id" name="parentId" placeholder="опціонально" /></label>
+        <div id="reply-context" class="reply-context hidden" aria-live="polite">
+          <span id="reply-context-text"></span>
+          <button id="clear-reply-context" type="button" class="secondary-button">Скасувати відповідь</button>
+        </div>
         <label class="wide">Текст
           <textarea required name="text" rows="4" maxlength="5000"></textarea>
         </label>

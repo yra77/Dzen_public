@@ -148,3 +148,27 @@ button:disabled {
   max-height: 180px;
   overflow: auto;
 }
+
+
+.secondary-button {
+  width: auto;
+  margin-top: 0;
+  background: #f2f4f7;
+  color: #344054;
+  border: 1px solid #d0d5dd;
+}
+.reply-context {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: #eff8ff;
+  border: 1px solid #b2ddff;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 14px;
+  color: #175cd3;
+}
+.hidden {
+  display: none;
+}
