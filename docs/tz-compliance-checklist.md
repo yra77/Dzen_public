@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 12).
+Останнє оновлення: 2026-03-16 (ітерація 13).
 
 ## Підсумок
 
@@ -8,7 +8,42 @@
 - **Частково виконано:** 2 пункти.
 - **Не виконано:** 3 пункти.
 
-> Висновок: поточний стан ще не покриває **всі** вимоги ТЗ на 100%, але закрито документаційний крок для Middle+ load-test (інструкції + шаблон звіту), залишились переважно архітектурні пункти (Angular, CQRS, production-hardening).
+> Висновок: поточний стан ще не покриває **всі** вимоги ТЗ на 100%. Документаційний контур синхронізовано з README, а незакриті пункти сфокусовано в практичному roadmap (Angular, CQRS, production-hardening RabbitMQ, фінальний прогін Middle+ load-test, demo).
+
+---
+
+## Оновлення ітерації 13
+
+- ✅ Оновлено статусний меседж у checklist: зафіксовано, що головні незакриті блоки — **Angular LTS frontend**, **CQRS/MediatR/FluentValidation**, **production-hardening RabbitMQ**.
+- ✅ Синхронізовано формулювання «що зроблено / що лишилось» з `README.md`, щоб уникнути розбіжностей між двома джерелами правди.
+- ✅ Додано чіткий список **наступних робіт у проєкті** з пріоритетами `P0/P1/P2` для продовження без повторного аудиту.
+
+### Що ще треба зробити у проєкті (актуально після ітерації 13)
+
+#### P0 — критично для відповідності ТЗ
+1. 🔲 **Angular SPA (LTS) у `src/Comments.Web`**
+   - Реалізувати список/таблицю root-коментарів, nested thread view, create/reply форми.
+   - Перенести preview, captcha image challenge, attachments preview, SignalR live-updates.
+   - Оновити README інструкціями запуску Angular-клієнта + додати e2e smoke сценарій.
+2. 🔲 **CQRS + MediatR + FluentValidation**
+   - Розкласти поточний `CommentService` на handlers (`AddComment`, `AddReply`, `GetCommentsPage`, `GetCommentTree`, `PreviewComment`).
+   - Підключити pipeline behaviors (валідація, логування, telemetry hooks).
+   - Додати unit-тести для handlers/validators.
+
+#### P1 — стабільність та експлуатаційна готовність
+3. 🔲 **Production-hardening RabbitMQ**
+   - Перевести ідемпотентність з in-memory у персистентне сховище (БД або Redis).
+   - Додати retry/backoff + DLQ, метрики success/fail/retry/latency.
+   - Підготувати docs-runbook у `docs/` і базові інтеграційні тести consumer-ланцюга.
+4. 🟨 **Фіналізація Middle+ load-test**
+   - Запустити `load-test/comments-middle.js` у середовищі з увімкненими RabbitMQ + Elasticsearch.
+   - Зберегти `docs/artifacts/k6-middle-summary.json`.
+   - Заповнити `docs/load-test-middle-results.md` реальними p95/p99/error-rate і додати посилання в README.
+
+#### P2 — завершення поставки
+5. 🔲 **Demo-блок у README**
+   - Записати 3–5 хв демо ключових сценаріїв.
+   - Додати секцію `Demo` з посиланням на відео.
 
 ---
 

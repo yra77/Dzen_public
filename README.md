@@ -75,6 +75,17 @@ k6 run --summary-export=docs/artifacts/k6-middle-summary.json load-test/comments
 `docs/load-test-middle-results.md` та оновіть посилання на актуальний
 `summary`-артефакт.
 
+## Актуальний roadmap продовження (ітерація 13)
+
+- **P0 (критично):**
+  - міграція фронтенду на **Angular LTS** у `src/Comments.Web` (список/дерево, create/reply, preview, captcha, attachments, SignalR live updates);
+  - впровадження **CQRS + MediatR + FluentValidation** (handlers, validators, pipeline behaviors).
+- **P1 (production-hardening):**
+  - RabbitMQ: персистентна ідемпотентність, retry/backoff + DLQ, метрики consumer-обробки;
+  - фінальний прогін `load-test/comments-middle.js` у середовищі з RabbitMQ + Elasticsearch із фіксацією `docs/artifacts/k6-middle-summary.json` і метрик у `docs/load-test-middle-results.md`.
+- **P2 (delivery):**
+  - додати `Demo`-секцію в README із посиланням на 3–5 хвилинне відео ключових сценаріїв.
+
 ## Наступні кроки (по ТЗ)
 
 - ✅ Підключено EF Core + підтримку SQL Server (через `Persistence:Provider=SqlServer`).
