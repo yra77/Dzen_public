@@ -4,9 +4,9 @@
 
 ## Підсумок
 
-- **Повністю виконано:** 16 пунктів.
+- **Повністю виконано:** 17 пунктів.
 - **Частково виконано:** 8 пунктів.
-- **Не виконано:** 4 пункти.
+- **Не виконано:** 3 пункти.
 
 > Висновок: поточний стан не покриває **всі** вимоги ТЗ на 100%.
 
@@ -18,7 +18,7 @@
 | `Email` обов'язковий і валідний | ✅ | Валідація `MailAddress.TryCreate`. |
 | `HomePage` необов'язковий, валідний URL | ✅ | Перевірка абсолютного `http/https` URL. |
 | CAPTCHA обов'язкова перевірка | ✅ | Є `BasicCaptchaValidator` + `RecaptchaCaptchaValidator`. |
-| CAPTCHA як зображення + кеш/сесія 5 хв | ❌ | Генерація captcha-зображення відсутня. |
+| CAPTCHA як зображення + кеш/сесія 5 хв | ✅ | Додано endpoint `GET /api/captcha/image`, challenge-кеш у `IMemoryCache`, TTL = 5 хв. |
 | Текст із whitelist HTML-тегів (`a`, `code`, `i`, `strong`) | ❌ | Наразі повний HTML-encode без whitelist. |
 | Перевірка валідного XHTML (закриття тегів) | ❌ | Спеціальної XHTML-валидації немає. |
 | Валідація і на клієнті, і на сервері | 🟨 | Базова клієнтська є, але без повного паритету правил з сервером. |
@@ -88,14 +88,14 @@
 - ✅ Вкладення: реалізовано окремий ліміт для TXT (**100KB**) на backend + frontend.
 - ✅ Вкладення: реалізовано серверний пропорційний resize зображень до **320x240** (без спотворення).
 - ✅ Оновлено UX-підказки у формі SPA щодо актуальних лімітів вкладень.
+- ✅ CAPTCHA: додано endpoint `GET /api/captcha/image` (SVG-капча з simple-math задачами), серверний challenge-store з TTL **5 хв**, інтеграцію у SPA (refresh captcha + передача `challengeId:answer`).
 
 ### Що ще треба зробити
 
 1. Реалізувати **Angular SPA** (заміна/доповнення vanilla JS).
 2. Додати **whitelist HTML sanitizer + XHTML validator** для `Text`.
-3. Додати **captcha-image endpoint** (генерація + TTL 5 хв у кеші).
-4. Розширити GraphQL до окремих операцій `commentsPage`, `commentTree`, `addComment`, `addReply` (зараз є тільки часткове покриття + `previewComment`).
-5. Перейти на **MediatR + FluentValidation** у Application шарі.
-6. Розширити RabbitMQ-пайплайн до окремих задач `indexing`/`file-processing`.
-7. Розширити load-test до вимог Middle+ і зафіксувати метрики.
-8. Додати відео-демо у README.
+3. Розширити GraphQL до окремих операцій `commentsPage`, `commentTree`, `addComment`, `addReply` (зараз є тільки часткове покриття + `previewComment`).
+4. Перейти на **MediatR + FluentValidation** у Application шарі.
+5. Розширити RabbitMQ-пайплайн до окремих задач `indexing`/`file-processing`.
+6. Розширити load-test до вимог Middle+ і зафіксувати метрики.
+7. Додати відео-демо у README.

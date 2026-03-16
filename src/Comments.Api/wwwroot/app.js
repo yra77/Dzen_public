@@ -20,6 +20,9 @@ const replyContextTextEl = document.getElementById('reply-context-text');
 const clearReplyContextBtn = document.getElementById('clear-reply-context');
 const textInput = form.elements.namedItem('text');
 const textPreviewContentEl = document.getElementById('text-preview-content');
+const captchaImageEl = document.getElementById('captcha-image');
+const reloadCaptchaBtn = document.getElementById('reload-captcha');
+const captchaChallengeIdInput = form.elements.namedItem('captchaChallengeId');
 
 const MAX_ATTACHMENT_SIZE = 1024 * 1024;
 const MAX_TEXT_ATTACHMENT_SIZE = 100 * 1024;
@@ -87,6 +90,18 @@ async function fetchPreviewViaGraphQl(text) {
     { text });
 
   return data.previewComment;
+}
+
+
+async function loadCaptcha() {
+  const response = await fetch('/api/captcha/image');
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  const data = await response.json();
+  captchaChallengeIdInput.value = data.challengeId;
+  captchaImageEl.src = `data:${data.mimeType};base64,${data.imageBase64}`;
 }
 
 async function renderTextPreview(rawText) {
@@ -166,6 +181,17 @@ async function fileToAttachment(file) {
     contentType: file.type || 'application/octet-stream',
     base64Content: btoa(binary)
   };
+}
+
+
+function buildCaptchaToken(formData) {
+  const challengeId = formData.get('captchaChallengeId')?.toString().trim() || '';
+  const answer = formData.get('captchaAnswer')?.toString().trim() || '';
+  if (!challengeId || !answer) {
+    return null;
+  }
+
+  return `${challengeId}:${answer}`;
 }
 
 function renderAttachment(attachment) {
@@ -505,7 +531,7 @@ form.addEventListener('submit', async (e) => {
       homePage: formData.get('homePage')?.toString().trim() || null,
       text: formData.get('text')?.toString().trim(),
       parentId: formData.get('parentId')?.toString().trim() || null,
-      captchaToken: formData.get('captchaToken')?.toString().trim() || null,
+      captchaToken: buildCaptchaToken(formData),
       attachment
     };
 
@@ -533,6 +559,7 @@ form.addEventListener('submit', async (e) => {
     clearReplyContext(false);
     statusEl.classList.add('ok');
     statusEl.textContent = 'Коментар створено.';
+    await loadCaptcha();
     await loadComments(1);
   } catch (error) {
     statusEl.classList.add('error');
@@ -616,8 +643,24 @@ apiModeEl.addEventListener('change', () => {
   reloadBtn.click();
   renderTextPreview(textInput.value);
 });
+
+reloadCaptchaBtn.addEventListener('click', () => {
+  loadCaptcha().catch((error) => {
+    statusEl.classList.add('error');
+    statusEl.textContent = `Помилка captcha: ${error.message}`;
+  });
+});
 sortByEl.addEventListener('change', () => reloadBtn.click());
 sortDirectionEl.addEventListener('change', () => reloadBtn.click());
+
+loadCaptcha().catch((error) => {
+  statusEl.classList.add('error');
+  statusEl.textContent = `Помилка captcha: ${error.message}`;
+});
+
+loadComments(1).catch((error) => {
+  commentsEl.innerHTML = `<p>Помилка завантаження: ${error.message}</p>`;
+});
 pageSizeEl.addEventListener('change', () => reloadBtn.click());
 
 searchEl.addEventListener('keydown', (e) => {
@@ -648,8 +691,5 @@ async function connectSignalR() {
   }
 }
 
-loadComments().catch((error) => {
-  commentsEl.innerHTML = `<p>Помилка завантаження: ${error.message}</p>`;
-});
 connectSignalR();
 renderTextPreview(textInput.value);
