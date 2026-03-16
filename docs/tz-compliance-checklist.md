@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 11).
+Останнє оновлення: 2026-03-16 (ітерація 12).
 
 ## Підсумок
 
@@ -9,6 +9,59 @@
 - **Не виконано:** 3 пункти.
 
 > Висновок: поточний стан ще не покриває **всі** вимоги ТЗ на 100%, але закрито документаційний крок для Middle+ load-test (інструкції + шаблон звіту), залишились переважно архітектурні пункти (Angular, CQRS, production-hardening).
+
+---
+
+## Оновлення ітерації 12
+
+- ✅ Синхронізовано формулювання статусу між `README.md` і checklist: зафіксовано, що головний відкритий фронтовий блок — **міграція з vanilla JS на Angular LTS** в `src/Comments.Web`.
+- ✅ Уточнено backlog до рівня практичних кроків із вимірюваними артефактами приймання (Definition of Done) для кожного незакритого пункту.
+- ✅ Додано окремий короткий **execution-план** (що саме робити далі в репозиторії по кроках), щоб наступну ітерацію можна було виконати без додаткового аудиту.
+
+### Що ще треба зробити у проєкті (практичний план)
+
+#### Крок 1 (P0): Angular SPA (LTS)
+1. Створити застосунок у `src/Comments.Web` (Angular 18/19 LTS) з маршрутизацією:
+   - `/` — таблиця root-коментарів + пагінація + сортування;
+   - `/thread/:id` — завантаження дерева через `commentTree`.
+2. Перенести з поточного SPA-функціоналу:
+   - create/reply форми, preview, captcha image challenge, attachments preview;
+   - SignalR subscribe на `commentCreated` з оновленням списку без reload.
+3. Закрити DoD:
+   - e2e smoke (мін. сценарій create + reply + realtime);
+   - оновлений розділ запуску в `README.md`.
+
+#### Крок 2 (P0): CQRS + MediatR + FluentValidation
+1. Розділити `CommentService` на use-case handlers:
+   - Commands: `AddComment`, `AddReply`;
+   - Queries: `GetCommentsPage`, `GetCommentTree`, `PreviewComment`.
+2. Додати валідатори FluentValidation для запитів.
+3. Підключити pipeline-behaviors (валідація + логування + telemetry hooks).
+4. Закрити DoD:
+   - unit-тести validators + handlers;
+   - відсутність регресій API-контрактів REST/GraphQL.
+
+#### Крок 3 (P1): Production-hardening RabbitMQ
+1. Ідемпотентність обробки подій перенести з in-memory у персистентне сховище (БД/Redis).
+2. Retry/backoff політика:
+   - delayed retry;
+   - окрема DLQ для фатальних помилок.
+3. Додати метрики:
+   - success/fail/retry counters;
+   - latency histogram по consumer handlers.
+4. Закрити DoD:
+   - інтеграційні тести consumer-ланцюга;
+   - технічна нотатка в `docs/` з operational runbook.
+
+#### Крок 4 (P1): Фіналізувати Middle+ load-test
+1. Прогнати `load-test/comments-middle.js` проти середовища з увімкненими RabbitMQ + Elasticsearch.
+2. Зберегти `docs/artifacts/k6-middle-summary.json`.
+3. Заповнити `docs/load-test-middle-results.md` фактичними p95/p99/error-rate.
+4. Додати в README посилання на конкретний артефакт прогона.
+
+#### Крок 5 (P2): Demo
+1. Записати 3–5 хв відео основних сценаріїв (create/reply, сортування/пагінація, вкладення, realtime).
+2. Додати секцію `Demo` у README з посиланням.
 
 ## 1) Форма додавання коментаря
 
@@ -208,4 +261,3 @@
 5. 🔲 **Відео-демо в README**
    - Мінімальний DoD: 3–5 хв демонстрація ключових сценаріїв (create/reply, sort/page, attachments preview, realtime).
    - Артефакти: посилання на відео + секція `Demo` в README.
-
