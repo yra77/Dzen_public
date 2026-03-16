@@ -83,6 +83,8 @@ button:disabled {
 .comment-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .reply-btn {
   width: auto;
@@ -96,6 +98,12 @@ button:disabled {
   margin-left: 18px;
   border-left: 2px solid #e5e7eb;
   padding-left: 10px;
+}
+.replies-collapsed {
+  margin-top: 8px;
+  color: #667085;
+  font-size: 14px;
+  font-style: italic;
 }
 .status {
   min-height: 18px;

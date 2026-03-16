@@ -24,7 +24,8 @@ const state = {
   page: 1,
   totalPages: 1,
   hasNextPage: false,
-  isSearchMode: false
+  isSearchMode: false,
+  collapsedThreads: new Set()
 };
 
 function escapeHtml(value) {
@@ -79,6 +80,21 @@ function buildReplyButton(commentId) {
   return `<button class="reply-btn" type="button" data-reply-id="${escapeHtml(commentId)}">↪ Відповісти</button>`;
 }
 
+function buildToggleThreadButton(comment) {
+  const repliesCount = comment.replies?.length ?? 0;
+  if (!repliesCount) {
+    return '';
+  }
+
+  const commentId = String(comment.id);
+  const isCollapsed = state.collapsedThreads.has(commentId);
+  const label = isCollapsed
+    ? `Розгорнути відповіді (${repliesCount})`
+    : `Згорнути відповіді (${repliesCount})`;
+
+  return `<button class="secondary-button" type="button" data-toggle-thread-id="${escapeHtml(commentId)}">${label}</button>`;
+}
+
 function renderComment(comment) {
   const attachment = renderAttachment(comment.attachment);
 
@@ -87,7 +103,9 @@ function renderComment(comment) {
     : '';
 
   const replies = comment.replies?.length
-    ? `<div class="replies">${comment.replies.map(renderComment).join('')}</div>`
+    ? state.collapsedThreads.has(String(comment.id))
+      ? '<div class="replies-collapsed">Відповіді приховано.</div>'
+      : `<div class="replies">${comment.replies.map(renderComment).join('')}</div>`
     : '';
 
   return `
@@ -95,7 +113,7 @@ function renderComment(comment) {
       <div><strong>${escapeHtml(comment.userName)}</strong> (${escapeHtml(comment.email)})${homepage}</div>
       <div class="meta">${new Date(comment.createdAtUtc).toLocaleString()} · ID: ${escapeHtml(comment.id)}</div>
       <p>${escapeHtml(comment.text)}</p>
-      <div class="comment-actions">${buildReplyButton(comment.id)}</div>
+      <div class="comment-actions">${buildReplyButton(comment.id)} ${buildToggleThreadButton(comment)}</div>
       ${attachment}
       ${replies}
     </article>
@@ -296,6 +314,25 @@ attachmentInput.addEventListener('change', (e) => {
 });
 
 commentsEl.addEventListener('click', (e) => {
+  const toggleTarget = e.target.closest('[data-toggle-thread-id]');
+  if (toggleTarget) {
+    const commentId = toggleTarget.getAttribute('data-toggle-thread-id');
+    if (!commentId) {
+      return;
+    }
+
+    if (state.collapsedThreads.has(commentId)) {
+      state.collapsedThreads.delete(commentId);
+    } else {
+      state.collapsedThreads.add(commentId);
+    }
+
+    loadComments(state.page).catch((error) => {
+      commentsEl.innerHTML = `<p>Помилка завантаження: ${error.message}</p>`;
+    });
+    return;
+  }
+
   const target = e.target.closest('[data-reply-id]');
   if (!target) {
     return;
