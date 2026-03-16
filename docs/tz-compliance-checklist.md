@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 35).
+Останнє оновлення: 2026-03-16 (ітерація 36).
 
 ## Підсумок
 
@@ -21,6 +21,34 @@
 
 
 
+
+## Оновлення ітерації 36
+
+### Внесені зміни в цій ітерації
+
+- ✅ Розширено integration-тести `src/Comments.Api.Tests/ValidationIntegrationTests.cs` новими happy-path сценаріями для REST: `POST /api/comments/preview` (успішний sanitize HTML) та `GET /api/comments/search` (перевірка shape `PagedResult`).
+- ✅ Додано GraphQL happy-path покриття для `previewComment` і `searchComments` з перевіркою відсутності `errors`, валідного `data` і коректної paged-структури (`page`, `pageSize`, `totalCount`, `items`).
+- ✅ Частково закрито backlog по CQRS + FluentValidation contract coverage: окрім `create/thread`, тепер покрито success-path для `preview/search` у REST та GraphQL.
+
+### Що ще треба зробити у проєкті (актуально після ітерації 36)
+
+1. 🟨 **Angular LTS (довести до production-ready):**
+   - додати e2e smoke для ключових user-flow (`root create`, `thread reply`, `preview`, `attachments`, `realtime`);
+   - уніфікувати UX-відображення API/GraphQL validation помилок.
+2. 🟨 **CQRS + MediatR + FluentValidation (закриття edge-cases):**
+   - додати edge-case інтеграційні сценарії для `preview/search` (boundary text, mixed sort/filter combos) у REST та GraphQL;
+   - формалізувати контракт `validationErrors` у GraphQL `extensions` в README/API docs.
+3. 🟨 **RabbitMQ production-hardening:**
+   - довести delayed retry + DLQ replay tooling;
+   - додати метрики consumer-обробки та базові alert-умови.
+4. 🔲 **Фінальний Middle+ load-test у цільовому контурі RabbitMQ + Elasticsearch:**
+   - виконати прогін `load-test/comments-middle.js`;
+   - заповнити `docs/load-test-middle-results.md` фактичними метриками та додати актуальний `docs/artifacts/k6-middle-summary.json`.
+5. 🔲 **Delivery-артефакт Demo:**
+   - додати секцію `Demo` у `README.md`;
+   - прикріпити посилання на 3–5 хв відео з ключовими сценаріями.
+
+---
 
 ## Оновлення ітерації 35
 
