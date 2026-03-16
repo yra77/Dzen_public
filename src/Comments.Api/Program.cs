@@ -32,7 +32,15 @@ builder.Services.AddDbContext<CommentsDbContext>(options =>
 builder.Services.AddScoped<ICommentRepository, EfCommentRepository>();
 builder.Services.AddSingleton<ITextSanitizer, BasicTextSanitizer>();
 builder.Services.AddSingleton(captchaOptions);
-builder.Services.AddScoped<ICaptchaValidator, BasicCaptchaValidator>();
+if (captchaOptions.Provider.Equals("Recaptcha", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddHttpClient<RecaptchaCaptchaValidator>();
+    builder.Services.AddScoped<ICaptchaValidator>(sp => sp.GetRequiredService<RecaptchaCaptchaValidator>());
+}
+else
+{
+    builder.Services.AddScoped<ICaptchaValidator, BasicCaptchaValidator>();
+}
 builder.Services.AddSingleton(attachmentStorageOptions);
 builder.Services.AddScoped<IAttachmentStorage, LocalAttachmentStorage>();
 
