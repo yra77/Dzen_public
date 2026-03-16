@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Коментарі SPA</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+  <script defer src="/app.js"></script>
+</head>
+<body>
+  <main class="container">
+    <h1>SPA «Коментарі»</h1>
+
+    <section class="panel">
+      <h2>Створити коментар</h2>
+      <form id="comment-form" class="form-grid">
+        <label>Імʼя <input required name="userName" maxlength="100" /></label>
+        <label>Email <input required type="email" name="email" maxlength="200" /></label>
+        <label>Домашня сторінка <input type="url" name="homePage" placeholder="https://example.com" /></label>
+        <label>Captcha token <input name="captchaToken" placeholder="1234" /></label>
+        <label>Parent comment ID <input name="parentId" placeholder="опціонально" /></label>
+        <label class="wide">Текст
+          <textarea required name="text" rows="4" maxlength="5000"></textarea>
+        </label>
+        <label class="wide">Вкладення (txt/png/jpg/gif, до 1MB)
+          <input type="file" name="attachment" accept=".txt,image/png,image/jpeg,image/gif" />
+        </label>
+        <button type="submit">Опублікувати</button>
+      </form>
+      <p id="form-status" class="status"></p>
+    </section>
+
+    <section class="panel">
+      <div class="toolbar">
+        <h2>Список коментарів</h2>
+        <input id="search" placeholder="Пошук (потрібен Elasticsearch)" />
+        <select id="sortBy">
+          <option value="CreatedAtUtc">Дата</option>
+          <option value="UserName">Імʼя</option>
+          <option value="Email">Email</option>
+        </select>
+        <select id="sortDirection">
+          <option value="Desc">Спочатку нові</option>
+          <option value="Asc">Спочатку старі</option>
+        </select>
+        <button id="reload">Оновити</button>
+      </div>
+      <div id="comments"></div>
+    </section>
+  </main>
+</body>
+</html>
