@@ -31,59 +31,8 @@
 ---
 
 
-## Оновлення ітерації 19
 
-### Внесені зміни в цій ітерації
-
-- ✅ Додано `docs/iteration-19-continuation-plan.md` як короткий continuation-план для наступних комітів без повторного аудиту ТЗ.
-- ✅ Синхронізовано `README.md` і checklist щодо пріоритетів продовження після ітерації 18.
-- ✅ Уточнено commit-order та acceptance-артефакти для незакритих P0/P1/P2 пунктів.
-
-### Що ще треба зробити у проєкті (актуально після ітерації 19)
-
-1. 🔲 Завершити **Angular LTS migration** у `src/Comments.Web` (routes `/`, `/thread/:id`, list/tree, create/reply, preview, captcha, attachments, realtime).
-2. 🔲 Завершити **CQRS + MediatR + FluentValidation** у backend use-cases без змін зовнішніх REST/GraphQL контрактів.
-3. 🟨 Закрити **RabbitMQ production-hardening**: персистентна ідемпотентність, delayed retry/DLQ/replay, метрики consumer-обробки.
-4. 🟨 Виконати **фінальний Middle+ load-test** у середовищі RabbitMQ+Elasticsearch і оновити артефакти в `docs/`.
-5. 🔲 Додати **Demo**-секцію у `README.md` з посиланням на 3–5 хвилинне відео.
-
----
-
-## Оновлення ітерації 18
-
-### Внесені зміни в цій ітерації
-
-- ✅ Додано `docs/iteration-18-delivery-plan.md` з чітким delivery-фокусом на закриття P0/P1/P2 до фінального приймання.
-- ✅ Оновлено `README.md`: додано окремий блок «Продовження робіт (ітерація 18)» та синхронізовано пріоритети наступних кроків.
-- ✅ Уточнено операційний backlog «що ще треба зробити у проєкті» без повторного повного аудиту всіх пунктів ТЗ.
-
-### Що ще треба зробити у проєкті (актуально після ітерації 18)
-
-1. 🔲 Завершити **Angular LTS migration** у `src/Comments.Web` (routes `/`, `/thread/:id`, list/tree, create/reply, preview, captcha, attachments, realtime).
-2. 🔲 Завершити **CQRS + MediatR + FluentValidation** у backend use-cases без змін зовнішніх REST/GraphQL контрактів.
-3. 🟨 Закрити **RabbitMQ production-hardening**: персистентна ідемпотентність, метрики consumer-обробки, інтеграційний сценарій retry→DLQ→replay.
-4. 🟨 Виконати **фінальний Middle+ load-test** у середовищі RabbitMQ+Elasticsearch і оновити артефакти в `docs/`.
-5. 🔲 Додати **Demo**-секцію у `README.md` з посиланням на 3–5 хвилинне відео.
-
----
-
-## Оновлення ітерації 17
-
-### Внесені зміни в цій ітерації
-
-- ✅ Додано окремий execution plan `docs/iteration-17-execution-plan.md` з покроковою декомпозицією робіт до 100% відповідності ТЗ.
-- ✅ Зафіксовано конкретний порядок наступних комітів для P0 (Angular LTS, CQRS/MediatR/FluentValidation), P1 (RabbitMQ hardening, фінальний load-test) і P2 (Demo).
-- ✅ Синхронізовано документаційний контур: README + checklist тепер посилаються на план ітерації 17 як на операційний source of truth.
-
-### Що ще треба зробити у проєкті (актуально після ітерації 17)
-
-1. 🔲 Реалізувати Angular LTS SPA у `src/Comments.Web` (routes `/` і `/thread/:id`, create/reply, preview, captcha, attachments, realtime).
-2. 🔲 Впровадити CQRS + MediatR + FluentValidation у backend use-cases без зміни публічних контрактів API.
-3. 🟨 Закрити production-hardening RabbitMQ (персистентна ідемпотентність, метрики, retry→DLQ інтеграційний сценарій).
-4. 🟨 Виконати фінальний Middle+ load-test у середовищі RabbitMQ+Elasticsearch і оновити артефакти в `docs/`.
-5. 🔲 Додати секцію `Demo` у README з посиланням на 3–5 хвилинне відео.
-
----
+> Примітка: застарілі операційні плани ітерацій 17–19 прибрано з `docs/` як дублікати; їхній зміст зведено в ітерацію 20 та цей чекліст.
 
 ## Оновлення ітерації 16
 
