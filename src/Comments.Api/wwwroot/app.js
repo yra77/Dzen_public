@@ -288,6 +288,64 @@ function renderComment(comment) {
   `;
 }
 
+function renderRootCommentsTable(comments) {
+  if (!comments.length) {
+    return '<p>Коментарів ще немає.</p>';
+  }
+
+  const rows = comments.map((comment) => {
+    const homepage = comment.homePage
+      ? `<a href="${escapeHtml(comment.homePage)}" target="_blank" rel="noreferrer">сайт</a>`
+      : '—';
+
+    const replies = comment.replies?.length
+      ? state.collapsedThreads.has(String(comment.id))
+        ? '<div class="replies-collapsed">Відповіді приховано.</div>'
+        : `<div class="replies">${comment.replies.map(renderComment).join('')}</div>`
+      : '<div class="replies-empty">Немає відповідей.</div>';
+
+    return `
+      <tr>
+        <td><strong>${escapeHtml(comment.userName)}</strong></td>
+        <td>${escapeHtml(comment.email)}</td>
+        <td>${homepage}</td>
+        <td>${new Date(comment.createdAtUtc).toLocaleString()}</td>
+        <td>${escapeHtml(comment.text)}</td>
+        <td>
+          ${renderAttachment(comment.attachment)}
+          <div class="comment-actions">${buildReplyButton(comment.id)} ${buildToggleThreadButton(comment)}</div>
+        </td>
+      </tr>
+      <tr class="root-comment-thread-row">
+        <td colspan="6">
+          <div class="meta">ID: ${escapeHtml(comment.id)}</div>
+          ${replies}
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <div class="comments-table-wrapper">
+      <table class="comments-table">
+        <thead>
+          <tr>
+            <th>Користувач</th>
+            <th>Email</th>
+            <th>HomePage</th>
+            <th>Дата</th>
+            <th>Текст</th>
+            <th>Дії / Вкладення</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
 
 function collectCommentIdsWithReplies(comments, target = new Set()) {
   for (const comment of comments ?? []) {
@@ -477,9 +535,7 @@ async function loadComments(page = state.page) {
 
   syncVisibleThreadIds(data.items);
 
-  commentsEl.innerHTML = data.items.length
-    ? data.items.map(renderComment).join('')
-    : '<p>Коментарів ще немає.</p>';
+  commentsEl.innerHTML = renderRootCommentsTable(data.items);
 }
 
 function clearReplyContext(showStatus = true) {
