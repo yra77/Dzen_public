@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { CommentsApiService } from '../../core/comments-api.service';
+import { CommentNode, CommentsApiService } from '../../core/comments-api.service';
 
 @Component({
   selector: 'app-root-list-page',
@@ -25,6 +25,7 @@ import { CommentsApiService } from '../../core/comments-api.service';
               <a [routerLink]="['/thread', comment.id]">#{{ comment.id }} {{ comment.userName }}</a>
               <small>{{ comment.createdAtUtc | date: 'short' }}</small>
               <p>{{ comment.text }}</p>
+              <small>Відповідей: {{ comment.replies.length }}</small>
             </li>
           }
         </ul>
@@ -51,7 +52,8 @@ import { CommentsApiService } from '../../core/comments-api.service';
       }
 
       small {
-        margin-left: 8px;
+        display: inline-block;
+        margin-top: 8px;
         color: #5f6f85;
       }
     `
@@ -60,7 +62,7 @@ import { CommentsApiService } from '../../core/comments-api.service';
 export class RootListPageComponent {
   private readonly commentsApi = inject(CommentsApiService);
 
-  comments: ReadonlyArray<{ id: number; userName: string; text: string; createdAtUtc: string }> = [];
+  comments: ReadonlyArray<CommentNode> = [];
   isLoading = false;
   errorMessage = '';
 

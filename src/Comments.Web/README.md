@@ -1,8 +1,9 @@
 # Comments.Web (Angular LTS scaffold)
 
-У цій ітерації додано базовий Angular standalone-shell з маршрутизацією:
+У поточній ітерації Angular-клієнт уже має базові робочі сценарії:
 - `/` — сторінка списку root-коментарів з читанням `GET /api/comments`;
-- `/thread/:id` — заготовка сторінки гілки коментаря.
+- `/thread/:id` — сторінка гілки, що завантажує `GET /api/comments/{rootId}/thread`;
+- reply-flow на thread-сторінці: форма (user/email/text), `GET /api/captcha/image`, submit через `POST /api/comments`.
 
 ## Запуск локально
 
@@ -18,7 +19,7 @@ npm start
 
 ## Наступні кроки міграції
 
-1. Перенести форму create/reply + preview.
-2. Підключити captcha image challenge та attachments preview.
+1. Додати preview тексту перед submit (REST/GraphQL parity).
+2. Підключити attachments upload/preview.
 3. Додати SignalR live updates.
 4. Додати e2e smoke для create + reply + realtime.
