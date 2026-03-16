@@ -16,7 +16,13 @@ public sealed class CommentMutations
             input.HomePage,
             input.Text,
             input.ParentId,
-            input.CaptchaToken);
+            input.CaptchaToken,
+            input.Attachment is null
+                ? null
+                : new AttachmentUploadRequest(
+                    input.Attachment.FileName,
+                    input.Attachment.ContentType,
+                    input.Attachment.Base64Content));
 
         return commentService.CreateAsync(request, cancellationToken);
     }

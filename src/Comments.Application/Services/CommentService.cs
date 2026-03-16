@@ -10,22 +10,31 @@ public sealed class CommentService
     private readonly ITextSanitizer _textSanitizer;
     private readonly ICommentCreatedPublisher _commentCreatedPublisher;
     private readonly ICaptchaValidator _captchaValidator;
+    private readonly IAttachmentStorage _attachmentStorage;
 
     public CommentService(
         ICommentRepository repository,
         ITextSanitizer textSanitizer,
         ICommentCreatedPublisher commentCreatedPublisher,
-        ICaptchaValidator captchaValidator)
+        ICaptchaValidator captchaValidator,
+        IAttachmentStorage attachmentStorage)
     {
         _repository = repository;
         _textSanitizer = textSanitizer;
         _commentCreatedPublisher = commentCreatedPublisher;
         _captchaValidator = captchaValidator;
+        _attachmentStorage = attachmentStorage;
     }
 
     public async Task<CommentDto> CreateAsync(CreateCommentRequest request, CancellationToken cancellationToken)
     {
         await ValidateAsync(request, cancellationToken);
+
+        StoredAttachment? storedAttachment = null;
+        if (request.Attachment is not null)
+        {
+            storedAttachment = await _attachmentStorage.SaveAsync(request.Attachment, cancellationToken);
+        }
 
         var sanitizedText = _textSanitizer.Sanitize(request.Text);
         var comment = new Comment(
@@ -35,7 +44,11 @@ public sealed class CommentService
             request.Email.Trim(),
             request.HomePage?.Trim(),
             sanitizedText,
-            DateTime.UtcNow);
+            DateTime.UtcNow,
+            storedAttachment?.FileName,
+            storedAttachment?.ContentType,
+            storedAttachment?.StoragePath,
+            storedAttachment?.SizeBytes);
 
         if (request.ParentId is not null)
         {
@@ -105,6 +118,13 @@ public sealed class CommentService
             comment.HomePage,
             comment.Text,
             comment.CreatedAtUtc,
+            comment.AttachmentStoragePath is null
+                ? null
+                : new AttachmentDto(
+                    comment.AttachmentFileName!,
+                    comment.AttachmentContentType!,
+                    comment.AttachmentStoragePath,
+                    comment.AttachmentSizeBytes ?? 0),
             replies);
     }
 }

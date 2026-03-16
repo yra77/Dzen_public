@@ -6,4 +6,10 @@ public sealed record CreateCommentRequest(
     string? HomePage,
     string Text,
     Guid? ParentId,
-    string? CaptchaToken);
+    string? CaptchaToken,
+    AttachmentUploadRequest? Attachment);
+
+public sealed record AttachmentUploadRequest(
+    string FileName,
+    string ContentType,
+    string Base64Content);

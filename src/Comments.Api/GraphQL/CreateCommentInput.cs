@@ -6,4 +6,10 @@ public sealed record CreateCommentInput(
     string Email,
     string? HomePage,
     string Text,
-    string? CaptchaToken);
+    string? CaptchaToken,
+    AttachmentInput? Attachment);
+
+public sealed record AttachmentInput(
+    string FileName,
+    string ContentType,
+    string Base64Content);

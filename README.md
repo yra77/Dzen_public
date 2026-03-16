@@ -45,6 +45,7 @@ dotnet run --project src/Comments.Api/Comments.Api.csproj
 - ✅ Додано GraphQL (HotChocolate): `comments` query + `createComment` mutation.
 - ✅ Додано публікацію події `comment.created` у RabbitMQ (опційно, через конфіг `RabbitMq:Enabled=true`).
 - ✅ Додано базову CAPTCHA-перевірку під час створення коментаря (`Captcha:Enabled`, `Captcha:ExpectedToken`).
+- ✅ Додано базову підтримку вкладень `image/txt` (base64 upload, валідація типу/розміру, локальне збереження).
 - Інтегрувати Elasticsearch.
 - Додати CAPTCHA, завантаження файлів (image/txt), прев’ю та SignalR.
 - Підняти Angular SPA (таблиця, nested thread view).
@@ -75,10 +76,11 @@ dotnet run --project src/Comments.Api/Comments.Api.csproj
 2. 🟨 **Антиспам/безпека для форми**
    - ✅ базова серверна CAPTCHA-перевірка у створенні коментаря,
    - 🔲 інтеграція з реальною CAPTCHA-платформою (наприклад, reCAPTCHA/hCaptcha).
-3. 🔲 **Файлові вкладення**
-   - upload `image/txt`,
-   - валідація та безпечне збереження,
-   - відображення/preview.
+3. 🟨 **Файлові вкладення**
+   - ✅ upload `image/txt` через API (base64 payload),
+   - ✅ валідація MIME-типу та максимального розміру,
+   - ✅ локальне збереження з метаданими в коментарі,
+   - 🔲 відображення/preview у SPA.
 4. 🔲 **Realtime оновлення**
    - SignalR-хаб для появи нових коментарів без перезавантаження.
 5. 🔲 **Frontend (Angular SPA)**

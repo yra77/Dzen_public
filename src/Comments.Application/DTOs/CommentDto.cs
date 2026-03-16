@@ -8,4 +8,11 @@ public sealed record CommentDto(
     string? HomePage,
     string Text,
     DateTime CreatedAtUtc,
+    AttachmentDto? Attachment,
     IReadOnlyCollection<CommentDto> Replies);
+
+public sealed record AttachmentDto(
+    string FileName,
+    string ContentType,
+    string StoragePath,
+    long SizeBytes);
