@@ -12,6 +12,7 @@
   - `CommentService` (валідація, санітизація, бізнес-логіка створення/вибірки).
 - `Comments.Api`:
   - REST API `POST /api/comments`, `GET /api/comments` (пагінація + сортування),
+  - GraphQL endpoint `POST /graphql` (query comments + mutation createComment),
   - EF Core репозиторій (`InMemory` за замовчуванням + підтримка `SqlServer` через конфіг),
   - базовий HTML sanitizer,
   - Swagger в development-режимі.
@@ -41,7 +42,7 @@ dotnet run --project src/Comments.Api/Comments.Api.csproj
 ## Наступні кроки (по ТЗ)
 
 - ✅ Підключено EF Core + підтримку SQL Server (через `Persistence:Provider=SqlServer`).
-- Додати GraphQL (HotChocolate).
+- ✅ Додано GraphQL (HotChocolate): `comments` query + `createComment` mutation.
 - Інтегрувати RabbitMQ + Elasticsearch.
 - Додати CAPTCHA, завантаження файлів (image/txt), прев’ю та SignalR.
 - Підняти Angular SPA (таблиця, nested thread view).
