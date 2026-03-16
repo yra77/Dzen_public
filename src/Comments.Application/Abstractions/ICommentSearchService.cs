@@ -1,6 +1,6 @@
 using Comments.Application.DTOs;
 
-namespace Comments.Api.Infrastructure;
+namespace Comments.Application.Abstractions;
 
 public interface ICommentSearchService
 {

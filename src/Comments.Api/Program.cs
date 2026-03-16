@@ -1,8 +1,8 @@
 using Comments.Application.Common.Behaviors;
 using Comments.Api.Infrastructure;
+using Comments.Application.Abstractions;
 using Comments.Api.GraphQL;
 using Comments.Api.Realtime;
-using Comments.Application.Abstractions;
 using Comments.Application.Services;
 using Microsoft.EntityFrameworkCore;
 using MediatR;

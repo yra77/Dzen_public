@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 22).
+Останнє оновлення: 2026-03-16 (ітерація 23).
 
 ## Підсумок
 
@@ -12,6 +12,24 @@
 
 ---
 
+
+## Оновлення ітерації 23
+
+### Внесені зміни в цій ітерації
+
+- ✅ Додано dedicated CQRS-запит `SearchCommentsQuery` + `SearchCommentsQueryHandler` + `SearchCommentsQueryValidator` для пошуку коментарів через MediatR/FluentValidation pipeline.
+- ✅ REST (`GET /api/comments/search`) і GraphQL (`searchComments`) переведено на dispatch пошуку через `IMediator` замість прямого виклику search-сервісу.
+- ✅ Контракт `ICommentSearchService` перенесено до `Comments.Application.Abstractions` (ізоляція use-case від API Infrastructure), а в `CommentService` прибрано дублювання більшості валідацій create/preview (залишено CAPTCHA-guard).
+
+### Що ще треба зробити у проєкті (актуально після ітерації 23)
+
+1. 🔲 Завершити **Angular LTS migration** у `src/Comments.Web` (routes `/`, `/thread/:id`, list/tree, create/reply, preview, captcha, attachments, realtime).
+2. 🟨 Дозавершити **CQRS + MediatR + FluentValidation**: покрити unit/integration тестами validator/pipeline-сценарії, прибрати залишкове дублювання guard-перевірок у `CommentService` (page/pageSize) на користь query-validators.
+3. 🟨 Дозавершити **RabbitMQ production-hardening**: delayed retry/DLQ replay tooling, метрики consumer-обробки та алерти.
+4. 🟨 Виконати **фінальний Middle+ load-test** у середовищі RabbitMQ+Elasticsearch і оновити артефакти в `docs/`.
+5. 🔲 Додати **Demo**-секцію у `README.md` з посиланням на 3–5 хвилинне відео.
+
+---
 
 ## Оновлення ітерації 22
 

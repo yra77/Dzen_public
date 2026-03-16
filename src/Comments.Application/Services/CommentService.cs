@@ -1,18 +1,11 @@
 using Comments.Application.Abstractions;
 using Comments.Application.DTOs;
 using Comments.Domain.Entities;
-using System.Net.Mail;
-using System.Text.RegularExpressions;
 
 namespace Comments.Application.Services;
 
 public sealed class CommentService
 {
-    private static readonly Regex UserNameRegex = new("^[a-zA-Z0-9]+$", RegexOptions.Compiled);
-    private const int MaxUserNameLength = 100;
-    private const int MaxEmailLength = 200;
-    private const int MaxHomePageLength = 2048;
-    private const int MaxTextLength = 5000;
 
     private readonly ICommentRepository _repository;
     private readonly ITextSanitizer _textSanitizer;
@@ -123,58 +116,11 @@ public sealed class CommentService
             return string.Empty;
         }
 
-        if (text.Trim().Length > MaxTextLength)
-        {
-            throw new ArgumentException($"Text must be at most {MaxTextLength} characters.");
-        }
-
         return _textSanitizer.Sanitize(text);
     }
 
     private async Task ValidateAsync(CreateCommentRequest request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.UserName)) throw new ArgumentException("User name is required.");
-        if (string.IsNullOrWhiteSpace(request.Email)) throw new ArgumentException("Email is required.");
-        if (string.IsNullOrWhiteSpace(request.Text)) throw new ArgumentException("Text is required.");
-
-        if (!UserNameRegex.IsMatch(request.UserName.Trim()))
-        {
-            throw new ArgumentException("User name must contain only latin letters and digits.");
-        }
-
-        if (request.UserName.Trim().Length > MaxUserNameLength)
-        {
-            throw new ArgumentException($"User name must be at most {MaxUserNameLength} characters.");
-        }
-
-        if (request.Email.Trim().Length > MaxEmailLength)
-        {
-            throw new ArgumentException($"Email must be at most {MaxEmailLength} characters.");
-        }
-
-        if (request.Text.Trim().Length > MaxTextLength)
-        {
-            throw new ArgumentException($"Text must be at most {MaxTextLength} characters.");
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.HomePage)
-            && request.HomePage.Trim().Length > MaxHomePageLength)
-        {
-            throw new ArgumentException($"Home page must be at most {MaxHomePageLength} characters.");
-        }
-
-        if (!MailAddress.TryCreate(request.Email.Trim(), out _))
-        {
-            throw new ArgumentException("Email format is invalid.");
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.HomePage)
-            && (!Uri.TryCreate(request.HomePage.Trim(), UriKind.Absolute, out var homePageUri)
-                || (homePageUri.Scheme != Uri.UriSchemeHttp && homePageUri.Scheme != Uri.UriSchemeHttps)))
-        {
-            throw new ArgumentException("Home page must be a valid absolute URL with http/https scheme.");
-        }
-
         var captchaIsValid = await _captchaValidator.ValidateAsync(request.CaptchaToken, cancellationToken);
         if (!captchaIsValid)
         {

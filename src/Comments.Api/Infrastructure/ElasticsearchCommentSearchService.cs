@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Comments.Application.Abstractions;
 using Comments.Application.DTOs;
 
 namespace Comments.Api.Infrastructure;
