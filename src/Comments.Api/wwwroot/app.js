@@ -10,6 +10,8 @@ const pageInfoEl = document.getElementById('page-info');
 const prevPageBtn = document.getElementById('prev-page');
 const nextPageBtn = document.getElementById('next-page');
 const reloadBtn = document.getElementById('reload');
+const expandAllBtn = document.getElementById('expand-all');
+const collapseAllBtn = document.getElementById('collapse-all');
 const attachmentInput = document.getElementById('attachment');
 const attachmentPreviewEl = document.getElementById('attachment-preview');
 const parentIdInput = form.elements.namedItem('parentId');
@@ -25,7 +27,8 @@ const state = {
   totalPages: 1,
   hasNextPage: false,
   isSearchMode: false,
-  collapsedThreads: new Set()
+  collapsedThreads: new Set(),
+  visibleThreadIds: new Set()
 };
 
 function escapeHtml(value) {
@@ -118,6 +121,29 @@ function renderComment(comment) {
       ${replies}
     </article>
   `;
+}
+
+
+function collectCommentIdsWithReplies(comments, target = new Set()) {
+  for (const comment of comments ?? []) {
+    if ((comment.replies?.length ?? 0) > 0) {
+      target.add(String(comment.id));
+      collectCommentIdsWithReplies(comment.replies, target);
+    }
+  }
+
+  return target;
+}
+
+function syncVisibleThreadIds(comments) {
+  state.visibleThreadIds = collectCommentIdsWithReplies(comments);
+  state.collapsedThreads = new Set(
+    [...state.collapsedThreads].filter((id) => state.visibleThreadIds.has(id))
+  );
+
+  const hasThreads = state.visibleThreadIds.size > 0;
+  expandAllBtn.disabled = !hasThreads;
+  collapseAllBtn.disabled = !hasThreads;
 }
 
 function updatePaginationControls() {
@@ -282,6 +308,8 @@ async function loadComments(page = state.page) {
   state.page = data.page;
   updatePaginationControls();
 
+  syncVisibleThreadIds(data.items);
+
   commentsEl.innerHTML = data.items.length
     ? data.items.map(renderComment).join('')
     : '<p>Коментарів ще немає.</p>';
@@ -430,6 +458,20 @@ nextPageBtn.addEventListener('click', () => {
 
 clearReplyContextBtn.addEventListener('click', () => {
   clearReplyContext();
+});
+
+expandAllBtn.addEventListener('click', () => {
+  state.collapsedThreads.clear();
+  loadComments(state.page).catch((error) => {
+    commentsEl.innerHTML = `<p>Помилка завантаження: ${error.message}</p>`;
+  });
+});
+
+collapseAllBtn.addEventListener('click', () => {
+  state.collapsedThreads = new Set(state.visibleThreadIds);
+  loadComments(state.page).catch((error) => {
+    commentsEl.innerHTML = `<p>Помилка завантаження: ${error.message}</p>`;
+  });
 });
 
 parentIdInput.addEventListener('input', () => {
