@@ -48,6 +48,26 @@ dotnet run --project src/Comments.Api/Comments.Api.csproj
 
 3. Відкрити Swagger: `http://localhost:5000/swagger` (або порт, який покаже `dotnet run`).
 
+## Load testing (k6)
+
+У репозиторії є два k6-сценарії:
+
+- `load-test/comments-smoke.js` — коротка smoke-перевірка доступності `GET /api/comments`.
+- `load-test/comments-middle.js` — розширений змішаний профіль (list/create/search + GraphQL) із threshold-метриками для p95/p99 та помилок.
+
+Приклади запуску:
+
+```bash
+# smoke
+k6 run load-test/comments-smoke.js
+
+# розширений профіль у mixed-режимі
+k6 run load-test/comments-middle.js
+
+# тільки GraphQL (за потреби передайте валідний CAPTCHA token)
+API_MODE=graphql CAPTCHA_TOKEN=test k6 run load-test/comments-middle.js
+```
+
 ## Наступні кроки (по ТЗ)
 
 - ✅ Підключено EF Core + підтримку SQL Server (через `Persistence:Provider=SqlServer`).
