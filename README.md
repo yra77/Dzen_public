@@ -81,8 +81,9 @@ dotnet run --project src/Comments.Api/Comments.Api.csproj
    - ✅ валідація MIME-типу та максимального розміру,
    - ✅ локальне збереження з метаданими в коментарі,
    - 🔲 відображення/preview у SPA.
-4. 🔲 **Realtime оновлення**
-   - SignalR-хаб для появи нових коментарів без перезавантаження.
+4. 🟨 **Realtime оновлення**
+   - ✅ Додано SignalR-хаб `/hubs/comments` і публікацію події `commentCreated` при створенні коментаря.
+   - 🔲 Підключення SPA-клієнта до хабу і оновлення UI в реальному часі.
 5. 🔲 **Frontend (Angular SPA)**
    - таблиця + сортування,
    - nested thread view,

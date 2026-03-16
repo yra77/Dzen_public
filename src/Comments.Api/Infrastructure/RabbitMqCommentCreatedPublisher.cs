@@ -1,12 +1,11 @@
 using System.Text;
 using System.Text.Json;
-using Comments.Application.Abstractions;
 using Comments.Application.DTOs;
 using RabbitMQ.Client;
 
 namespace Comments.Api.Infrastructure;
 
-public sealed class RabbitMqCommentCreatedPublisher : ICommentCreatedPublisher
+public sealed class RabbitMqCommentCreatedPublisher : ICommentCreatedChannel
 {
     private readonly RabbitMqOptions _options;
 

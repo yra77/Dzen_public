@@ -1,5 +1,6 @@
 using Comments.Api.Infrastructure;
 using Comments.Api.GraphQL;
+using Comments.Api.Realtime;
 using Comments.Application.Abstractions;
 using Comments.Application.Services;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ var provider = builder.Configuration["Persistence:Provider"] ?? "InMemory";
 var rabbitMqOptions = builder.Configuration.GetSection("RabbitMq").Get<RabbitMqOptions>() ?? new RabbitMqOptions();
 var captchaOptions = builder.Configuration.GetSection("Captcha").Get<CaptchaOptions>() ?? new CaptchaOptions();
 var attachmentStorageOptions = builder.Configuration.GetSection("Attachments").Get<LocalAttachmentStorageOptions>() ?? new LocalAttachmentStorageOptions();
+var signalrOptions = builder.Configuration.GetSection("SignalR").Get<SignalROptions>() ?? new SignalROptions();
 
 builder.Services.AddDbContext<CommentsDbContext>(options =>
 {
@@ -32,17 +34,23 @@ builder.Services.AddScoped<ICaptchaValidator, BasicCaptchaValidator>();
 builder.Services.AddSingleton(attachmentStorageOptions);
 builder.Services.AddScoped<IAttachmentStorage, LocalAttachmentStorage>();
 
+builder.Services.AddScoped<ICommentCreatedPublisher, CompositeCommentCreatedPublisher>();
+
 if (rabbitMqOptions.Enabled)
 {
     builder.Services.AddSingleton(rabbitMqOptions);
-    builder.Services.AddScoped<ICommentCreatedPublisher, RabbitMqCommentCreatedPublisher>();
+    builder.Services.AddScoped<ICommentCreatedChannel, RabbitMqCommentCreatedPublisher>();
 }
-else
+
+builder.Services.AddSingleton(signalrOptions);
+if (signalrOptions.Enabled)
 {
-    builder.Services.AddScoped<ICommentCreatedPublisher, NoOpCommentCreatedPublisher>();
+    builder.Services.AddScoped<ICommentCreatedChannel, SignalRCommentCreatedChannel>();
 }
+
 builder.Services.AddScoped<CommentService>();
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 builder.Services
     .AddGraphQLServer()
     .AddQueryType<CommentQueries>()
@@ -66,4 +74,5 @@ if (app.Environment.IsDevelopment())
 
 app.MapControllers();
 app.MapGraphQL("/graphql");
+app.MapHub<CommentsHub>("/hubs/comments");
 app.Run();
