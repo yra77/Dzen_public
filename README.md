@@ -109,7 +109,18 @@ k6 run --summary-export=docs/artifacts/k6-middle-summary.json load-test/comments
 - Визначено пріоритет найближчих кроків:
   1. Angular LTS migration у `src/Comments.Web` (паритет з поточним SPA-функціоналом);
   2. CQRS + MediatR + FluentValidation у backend без зміни зовнішніх REST/GraphQL контрактів;
-  3. production-hardening RabbitMQ + фіналізація Middle+ load-test + Demo-артефакт у README.
+3. production-hardening RabbitMQ + фіналізація Middle+ load-test + Demo-артефакт у README.
+
+## Продовження робіт (ітерація 19)
+
+- Додано continuation-план: `docs/iteration-19-continuation-plan.md` із синхронізованим переліком «що внесено» і «що ще треба зробити».
+- Оновлено `docs/tz-compliance-checklist.md`: зафіксовано статус після ітерації 18 і пріоритети на ітерацію 19 (P0/P1/P2).
+- Найближчий фокус незмінний:
+  1. Angular LTS migration у `src/Comments.Web` з паритетом до поточного SPA;
+  2. CQRS + MediatR + FluentValidation у backend без зміни зовнішніх контрактів;
+  3. RabbitMQ hardening + фінальний Middle+ load-test + Demo-секція в README.
+
+> Актуальний операційний план продовження див. у `docs/iteration-19-continuation-plan.md`.
 
 ## Наступні кроки (по ТЗ)
 

@@ -13,6 +13,24 @@
 ---
 
 
+## Оновлення ітерації 19
+
+### Внесені зміни в цій ітерації
+
+- ✅ Додано `docs/iteration-19-continuation-plan.md` як короткий continuation-план для наступних комітів без повторного аудиту ТЗ.
+- ✅ Синхронізовано `README.md` і checklist щодо пріоритетів продовження після ітерації 18.
+- ✅ Уточнено commit-order та acceptance-артефакти для незакритих P0/P1/P2 пунктів.
+
+### Що ще треба зробити у проєкті (актуально після ітерації 19)
+
+1. 🔲 Завершити **Angular LTS migration** у `src/Comments.Web` (routes `/`, `/thread/:id`, list/tree, create/reply, preview, captcha, attachments, realtime).
+2. 🔲 Завершити **CQRS + MediatR + FluentValidation** у backend use-cases без змін зовнішніх REST/GraphQL контрактів.
+3. 🟨 Закрити **RabbitMQ production-hardening**: персистентна ідемпотентність, delayed retry/DLQ/replay, метрики consumer-обробки.
+4. 🟨 Виконати **фінальний Middle+ load-test** у середовищі RabbitMQ+Elasticsearch і оновити артефакти в `docs/`.
+5. 🔲 Додати **Demo**-секцію у `README.md` з посиланням на 3–5 хвилинне відео.
+
+---
+
 ## Оновлення ітерації 18
 
 ### Внесені зміни в цій ітерації
