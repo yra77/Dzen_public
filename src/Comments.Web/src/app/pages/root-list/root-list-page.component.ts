@@ -1,16 +1,79 @@
 import { DatePipe } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, OnDestroy, inject } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 
-import { CommentNode, CommentsApiService } from '../../core/comments-api.service';
+import {
+  CommentNode,
+  CommentsApiService,
+  CreateCommentAttachmentRequest
+} from '../../core/comments-api.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-root-list-page',
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink],
   template: `
     <section class="card">
       <h2>Останні кореневі коментарі</h2>
-      <button type="button" (click)="load()">Оновити</button>
+      <button type="button" (click)="load()" [disabled]="isLoading">Оновити</button>
+
+      <h3>Додати кореневий коментар</h3>
+      <form [formGroup]="createForm" (ngSubmit)="submitComment()">
+        <label>
+          Ім'я
+          <input type="text" formControlName="userName" />
+        </label>
+
+        <label>
+          Email
+          <input type="email" formControlName="email" />
+        </label>
+
+        <label>
+          Homepage
+          <input type="url" formControlName="homePage" placeholder="https://example.com" />
+        </label>
+
+        <label>
+          Текст
+          <textarea rows="5" formControlName="text" (input)="previewText()"></textarea>
+        </label>
+
+        @if (textPreviewHtml) {
+          <div class="text-preview">
+            <div class="text-preview-title">Preview повідомлення</div>
+            <div [innerHTML]="textPreviewHtml"></div>
+          </div>
+        }
+
+        <label>
+          Вкладення (png/jpg/gif/txt, до 1MB)
+          <input type="file" (change)="onAttachmentSelected($event)" accept=".txt,image/png,image/jpeg,image/gif,text/plain" />
+        </label>
+        @if (attachmentMessage) {
+          <p class="meta">{{ attachmentMessage }}</p>
+        }
+
+        @if (captchaImageDataUrl) {
+          <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" />
+        }
+
+        <label>
+          CAPTCHA (сума чисел)
+          <input type="text" formControlName="captchaAnswer" />
+        </label>
+
+        <div class="actions">
+          <button type="button" (click)="reloadCaptcha()">Оновити CAPTCHA</button>
+          <button type="submit" [disabled]="createForm.invalid || isSubmitting">Створити коментар</button>
+        </div>
+
+        @if (submitMessage) {
+          <p>{{ submitMessage }}</p>
+        }
+      </form>
 
       @if (isLoading) {
         <p>Завантаження...</p>
@@ -59,15 +122,41 @@ import { CommentNode, CommentsApiService } from '../../core/comments-api.service
     `
   ]
 })
-export class RootListPageComponent {
+export class RootListPageComponent implements OnDestroy {
   private readonly commentsApi = inject(CommentsApiService);
+  private readonly formBuilder = inject(FormBuilder);
+
+  private signalRConnection: HubConnection | null = null;
 
   comments: ReadonlyArray<CommentNode> = [];
   isLoading = false;
+  isSubmitting = false;
   errorMessage = '';
+  submitMessage = '';
+  captchaChallengeId = '';
+  captchaImageDataUrl = '';
+  textPreviewHtml = '';
+  attachmentMessage = '';
+  attachment: CreateCommentAttachmentRequest | null = null;
+
+  readonly createForm = this.formBuilder.nonNullable.group({
+    userName: ['', [Validators.required, Validators.maxLength(100)]],
+    email: ['', [Validators.required, Validators.email]],
+    homePage: ['', [Validators.pattern('https?://.+')]],
+    text: ['', [Validators.required, Validators.maxLength(5000)]],
+    captchaAnswer: ['', [Validators.required]]
+  });
 
   constructor() {
     this.load();
+    this.reloadCaptcha();
+    this.initializeSignalR();
+  }
+
+  ngOnDestroy(): void {
+    if (this.signalRConnection) {
+      void this.signalRConnection.stop();
+    }
   }
 
   load(): void {
@@ -84,5 +173,128 @@ export class RootListPageComponent {
         this.isLoading = false;
       }
     });
+  }
+
+  previewText(): void {
+    const text = this.createForm.controls.text.value;
+    if (!text || !text.trim()) {
+      this.textPreviewHtml = '';
+      return;
+    }
+
+    this.commentsApi.previewComment(text).subscribe({
+      next: (preview) => {
+        this.textPreviewHtml = preview;
+      }
+    });
+  }
+
+  onAttachmentSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    this.attachment = null;
+    this.attachmentMessage = '';
+
+    if (!file) {
+      return;
+    }
+
+    if (file.size > 1_000_000) {
+      this.attachmentMessage = 'Файл перевищує 1MB.';
+      input.value = '';
+      return;
+    }
+
+    const allowedContentTypes = ['image/png', 'image/jpeg', 'image/gif', 'text/plain'];
+    if (!allowedContentTypes.includes(file.type)) {
+      this.attachmentMessage = 'Недозволений тип вкладення.';
+      input.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== 'string') {
+        this.attachmentMessage = 'Не вдалося прочитати файл.';
+        return;
+      }
+
+      const base64Content = result.includes(',') ? result.split(',')[1] : result;
+      this.attachment = {
+        fileName: file.name,
+        contentType: file.type,
+        base64Content
+      };
+      this.attachmentMessage = `Вкладення готове: ${file.name}`;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  reloadCaptcha(): void {
+    this.commentsApi.getCaptcha().subscribe({
+      next: (response) => {
+        this.captchaChallengeId = response.challengeId;
+        this.captchaImageDataUrl = `data:${response.mimeType};base64,${response.imageBase64}`;
+      }
+    });
+  }
+
+  submitComment(): void {
+    if (this.createForm.invalid || !this.captchaChallengeId) {
+      return;
+    }
+
+    this.isSubmitting = true;
+    this.submitMessage = '';
+
+    const raw = this.createForm.getRawValue();
+
+    this.commentsApi
+      .createComment({
+        userName: raw.userName,
+        email: raw.email,
+        homePage: raw.homePage.trim() ? raw.homePage : null,
+        text: raw.text,
+        parentId: null,
+        captchaToken: `${this.captchaChallengeId}:${raw.captchaAnswer}`,
+        attachment: this.attachment
+      })
+      .subscribe({
+        next: () => {
+          this.submitMessage = 'Коментар успішно створено.';
+          this.createForm.reset({
+            userName: raw.userName,
+            email: raw.email,
+            homePage: raw.homePage,
+            text: '',
+            captchaAnswer: ''
+          });
+          this.textPreviewHtml = '';
+          this.attachment = null;
+          this.attachmentMessage = '';
+          this.load();
+          this.reloadCaptcha();
+          this.isSubmitting = false;
+        },
+        error: () => {
+          this.submitMessage = 'Не вдалося створити коментар. Перевірте дані форми.';
+          this.reloadCaptcha();
+          this.isSubmitting = false;
+        }
+      });
+  }
+
+  private initializeSignalR(): void {
+    this.signalRConnection = new HubConnectionBuilder()
+      .withUrl(`${environment.apiBaseUrl}/hubs/comments`)
+      .withAutomaticReconnect()
+      .build();
+
+    this.signalRConnection.on('commentCreated', () => {
+      this.load();
+    });
+
+    void this.signalRConnection.start();
   }
 }
