@@ -1,4 +1,5 @@
 using Comments.Api.Infrastructure;
+using Comments.Api.GraphQL;
 using Comments.Application.Abstractions;
 using Comments.Application.Services;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +26,10 @@ builder.Services.AddScoped<ICommentRepository, EfCommentRepository>();
 builder.Services.AddSingleton<ITextSanitizer, BasicTextSanitizer>();
 builder.Services.AddScoped<CommentService>();
 builder.Services.AddControllers();
+builder.Services
+    .AddGraphQLServer()
+    .AddQueryType<CommentQueries>()
+    .AddMutationType<CommentMutations>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -43,4 +48,5 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapControllers();
+app.MapGraphQL("/graphql");
 app.Run();
