@@ -48,7 +48,7 @@ dotnet run --project src/Comments.Api/Comments.Api.csproj
 - ✅ Додано базову CAPTCHA-перевірку під час створення коментаря (`Captcha:Enabled`, `Captcha:ExpectedToken`).
 - ✅ Додано базову підтримку вкладень `image/txt` (base64 upload, валідація типу/розміру, локальне збереження).
 - ✅ Додано опційну інтеграцію з Elasticsearch (індексація + пошук).
-- Додати CAPTCHA, завантаження файлів (image/txt), прев’ю та SignalR.
+- ✅ Додано CAPTCHA (Basic + опційно reCAPTCHA), завантаження файлів (image/txt), прев’ю та SignalR.
 - Підняти Angular SPA (таблиця, nested thread view).
 
 ## Поточний статус реалізації (аудит)
@@ -76,7 +76,7 @@ dotnet run --project src/Comments.Api/Comments.Api.csproj
    - ✅ автоматичний бекфіл/реіндексація історичних даних при старті API (`Elasticsearch:BackfillOnStartup`).
 2. 🟨 **Антиспам/безпека для форми**
    - ✅ базова серверна CAPTCHA-перевірка у створенні коментаря,
-   - 🔲 інтеграція з реальною CAPTCHA-платформою (наприклад, reCAPTCHA/hCaptcha).
+   - ✅ опційна інтеграція з reCAPTCHA (`Captcha:Provider=Recaptcha`, `Captcha:SecretKey`).
 3. 🟨 **Файлові вкладення**
    - ✅ upload `image/txt` через API (base64 payload),
    - ✅ валідація MIME-типу та максимального розміру,
