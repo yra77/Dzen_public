@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 37).
+Останнє оновлення: 2026-03-16 (ітерація 38).
 
 ## Підсумок
 
@@ -20,6 +20,34 @@
 
 
 
+
+
+## Оновлення ітерації 38
+
+### Внесені зміни в цій ітерації
+
+- ✅ Розширено integration-покриття `src/Comments.Api.Tests/ValidationIntegrationTests.cs` для сценарію сортування дерева у REST: додано тест `GetThread_WithSortByUserNameAsc_ReturnsRepliesSortedAscending`, який перевіряє `sortBy=UserName&sortDirection=Asc` на реальних reply-коментарях.
+- ✅ Додано GraphQL integration-сценарій `GraphQlCommentTree_WithSortByEmailDesc_ReturnsRepliesSortedDescending` для перевірки контракту `commentTree(sortBy: Email, sortDirection: Desc)` з очікуваним порядком `replies`.
+- ✅ Винесено helper `CreateCommentAsync` у тестовому класі, щоб стандартизувати підготовку тестових даних для mixed sort/filter backlog і зменшити дублювання payload у нових інтеграційних кейсах.
+
+### Що ще треба зробити у проєкті (актуально після ітерації 38)
+
+1. 🟨 **Angular LTS (довести до production-ready):**
+   - додати e2e smoke для ключових user-flow (`root create`, `thread reply`, `preview`, `attachments`, `realtime`);
+   - уніфікувати UX-відображення API/GraphQL validation помилок.
+2. 🟨 **CQRS + MediatR + FluentValidation (закриття edge-cases):**
+   - додати mixed `sort/filter` сценарії для paged list (`comments`) у REST та GraphQL, включно з boundary pagination у комбінації з `sortBy/sortDirection`;
+   - формалізувати контракт `validationErrors` у GraphQL `extensions` в README/API docs.
+3. 🟨 **RabbitMQ production-hardening:**
+   - довести delayed retry + DLQ replay tooling;
+   - додати метрики consumer-обробки та базові alert-умови.
+4. 🔲 **Фінальний Middle+ load-test у цільовому контурі RabbitMQ + Elasticsearch:**
+   - виконати прогін `load-test/comments-middle.js`;
+   - заповнити `docs/load-test-middle-results.md` фактичними метриками та додати актуальний `docs/artifacts/k6-middle-summary.json`.
+5. 👤 **Delivery-артефакт Demo:**
+   - пункт делеговано власнику репозиторію (секція `Demo` у `README.md` + посилання на відео) — у цій ітерації не змінювався.
+
+---
 
 
 ## Оновлення ітерації 37
