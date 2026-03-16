@@ -26,4 +26,11 @@ public sealed class CommentQueries
     {
         return searchService.SearchAsync(query, page, pageSize, cancellationToken);
     }
+
+    public string PreviewComment(
+        [Service] CommentService commentService,
+        string text)
+    {
+        return commentService.Preview(text);
+    }
 }

@@ -4,9 +4,9 @@
 
 ## Підсумок
 
-- **Повністю виконано:** 15 пунктів.
-- **Частково виконано:** 7 пунктів.
-- **Не виконано:** 5 пунктів.
+- **Повністю виконано:** 16 пунктів.
+- **Частково виконано:** 8 пунктів.
+- **Не виконано:** 4 пункти.
 
 > Висновок: поточний стан не покриває **всі** вимоги ТЗ на 100%.
 
@@ -44,7 +44,7 @@
 | Пагінація по 25 за замовчуванням | ✅ | `pageSize=25` за замовчуванням. |
 | Дефолтне сортування LIFO (CreatedAt DESC) | ✅ | Виконується у сервісі та GraphQL defaults. |
 | Кнопки швидких тегів `[i] [strong] [code] [a]` | ✅ | Додано toolbar у формі, вставка тегів у textarea. |
-| Preview повідомлення без перезавантаження | 🟨 | Додано live preview у SPA на клієнті; окремого backend preview endpoint ще немає. |
+| Preview повідомлення без перезавантаження | ✅ | Додано live preview у SPA через серверний preview API (REST/GraphQL) без reload сторінки. |
 
 ## 4) API / інтеграції
 
@@ -52,7 +52,7 @@
 |---|---|---|
 | REST API create/list | ✅ | Реалізовано. |
 | GraphQL як основний API | 🟨 | GraphQL є, але REST також перший клас; у UI перемикач режимів. |
-| GraphQL операції `commentsPage`, `commentTree`, `addComment`, `addReply`, `previewComment` | ❌ | Є `comments`, `searchComments`, `createComment`; решта не виділені окремо. |
+| GraphQL операції `commentsPage`, `commentTree`, `addComment`, `addReply`, `previewComment` | 🟨 | Додано `previewComment`; але `commentsPage`/`commentTree`/`addReply` ще не виділені окремими операціями. |
 | RabbitMQ подія `comment.created` | ✅ | Реалізовано опційно через конфіг. |
 | Черги `indexing` і `file-processing` | ❌ | Публікується в `comments` exchange routing key `comment.created`; окремих черг логікою застосунку немає. |
 | Elasticsearch індексація/пошук | ✅ | Індексування при створенні + пошук + backfill. |
@@ -82,6 +82,9 @@
 
 ### Внесено в цій ітерації
 
+- ✅ API: додано серверний preview endpoint `POST /api/comments/preview` для санітизованого превʼю повідомлення.
+- ✅ GraphQL: додано query `previewComment(text: String!)` для превʼю на сервері.
+- ✅ SPA: live preview переведено на використання backend preview (REST/GraphQL) із оновленням без reload.
 - ✅ Вкладення: реалізовано окремий ліміт для TXT (**100KB**) на backend + frontend.
 - ✅ Вкладення: реалізовано серверний пропорційний resize зображень до **320x240** (без спотворення).
 - ✅ Оновлено UX-підказки у формі SPA щодо актуальних лімітів вкладень.
@@ -91,7 +94,7 @@
 1. Реалізувати **Angular SPA** (заміна/доповнення vanilla JS).
 2. Додати **whitelist HTML sanitizer + XHTML validator** для `Text`.
 3. Додати **captcha-image endpoint** (генерація + TTL 5 хв у кеші).
-4. Додати **previewComment** API (GraphQL mutation/query), щоб preview був не лише клієнтський, а і серверний.
+4. Розширити GraphQL до окремих операцій `commentsPage`, `commentTree`, `addComment`, `addReply` (зараз є тільки часткове покриття + `previewComment`).
 5. Перейти на **MediatR + FluentValidation** у Application шарі.
 6. Розширити RabbitMQ-пайплайн до окремих задач `indexing`/`file-processing`.
 7. Розширити load-test до вимог Middle+ і зафіксувати метрики.

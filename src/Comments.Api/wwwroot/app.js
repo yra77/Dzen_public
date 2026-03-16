@@ -26,6 +26,8 @@ const MAX_TEXT_ATTACHMENT_SIZE = 100 * 1024;
 const ALLOWED_ATTACHMENT_TYPES = new Set(['text/plain', 'image/png', 'image/jpeg', 'image/gif']);
 const MAX_GRAPHQL_THREAD_DEPTH = 10;
 
+let previewRequestSeq = 0;
+
 const state = {
   page: 1,
   totalPages: 1,
@@ -63,27 +65,56 @@ function toSafeHref(rawUrl) {
   }
 }
 
-function renderTextPreview(rawText) {
+async function fetchPreviewViaRest(text) {
+  const response = await fetch('/api/comments/preview', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text })
+  });
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  return response.text();
+}
+
+async function fetchPreviewViaGraphQl(text) {
+  const data = await fetchGraphQl(
+    `query PreviewComment($text: String!) {
+  previewComment(text: $text)
+}`,
+    { text });
+
+  return data.previewComment;
+}
+
+async function renderTextPreview(rawText) {
   const source = String(rawText ?? '');
   if (!source.trim()) {
     textPreviewContentEl.innerHTML = 'Попередній перегляд зʼявиться тут…';
     return;
   }
 
-  let html = escapeHtml(source);
+  const requestId = ++previewRequestSeq;
 
-  html = html.replace(/&lt;(i|strong|code)&gt;([\s\S]*?)&lt;\/\1&gt;/gi, '<$1>$2</$1>');
+  try {
+    const previewText = apiModeEl.value === 'graphql'
+      ? await fetchPreviewViaGraphQl(source)
+      : await fetchPreviewViaRest(source);
 
-  html = html.replace(/&lt;a\s+href="([^"]+)"&gt;([\s\S]*?)&lt;\/a&gt;/gi, (_, href, label) => {
-    const safeHref = toSafeHref(href);
-    if (!safeHref) {
-      return '<span class="invalid-link">[некоректне посилання]</span>';
+    if (requestId !== previewRequestSeq) {
+      return;
     }
 
-    return `<a href="${escapeHtml(safeHref)}" target="_blank" rel="noreferrer">${label}</a>`;
-  });
+    textPreviewContentEl.innerHTML = String(previewText).replace(/\n/g, '<br />');
+  } catch {
+    if (requestId !== previewRequestSeq) {
+      return;
+    }
 
-  textPreviewContentEl.innerHTML = html.replace(/\n/g, '<br />');
+    textPreviewContentEl.innerHTML = 'Не вдалося побудувати preview на сервері.';
+  }
 }
 
 function insertTag(tag) {
@@ -581,7 +612,10 @@ parentIdInput.addEventListener('input', () => {
   replyContextTextEl.textContent = `Встановлено parentId: ${manualValue}`;
 });
 
-apiModeEl.addEventListener('change', () => reloadBtn.click());
+apiModeEl.addEventListener('change', () => {
+  reloadBtn.click();
+  renderTextPreview(textInput.value);
+});
 sortByEl.addEventListener('change', () => reloadBtn.click());
 sortDirectionEl.addEventListener('change', () => reloadBtn.click());
 pageSizeEl.addEventListener('change', () => reloadBtn.click());
