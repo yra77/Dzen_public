@@ -31,6 +31,92 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
     }
 
     [Fact]
+    public async Task GetThread_WithEmptyGuid_ReturnsBadRequestValidationProblem()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.GetAsync($"/api/comments/{Guid.Empty}/thread");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<ValidationProblemPayload>();
+        Assert.NotNull(payload);
+        Assert.Equal(400, payload!.Status);
+        Assert.True(payload.Errors.ContainsKey("RootCommentId"));
+    }
+
+    [Fact]
+    public async Task Preview_WithTooLongText_ReturnsBadRequestValidationProblem()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/comments/preview", new
+        {
+            text = new string('x', 5001)
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<ValidationProblemPayload>();
+        Assert.NotNull(payload);
+        Assert.Equal(400, payload!.Status);
+        Assert.True(payload.Errors.ContainsKey("Text"));
+    }
+
+    [Fact]
+    public async Task CreateComment_WithInvalidCaptcha_ReturnsBadRequestValidationProblem()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/comments", new
+        {
+            userName = "User123",
+            email = "user@example.com",
+            homePage = "https://example.com",
+            text = "Hello",
+            parentId = (Guid?)null,
+            captchaToken = "wrong-token",
+            attachment = (object?)null
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<ValidationProblemPayload>();
+        Assert.NotNull(payload);
+        Assert.Equal(400, payload!.Status);
+        Assert.True(payload.Errors.ContainsKey("Request.CaptchaToken"));
+    }
+
+    [Fact]
+    public async Task CreateComment_WithInvalidAttachmentBase64_ReturnsBadRequestValidationProblem()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/comments", new
+        {
+            userName = "User123",
+            email = "user@example.com",
+            homePage = "https://example.com",
+            text = "Hello",
+            parentId = (Guid?)null,
+            captchaToken = "1234",
+            attachment = new
+            {
+                fileName = "pic.png",
+                contentType = "image/png",
+                base64Content = "not-base64"
+            }
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<ValidationProblemPayload>();
+        Assert.NotNull(payload);
+        Assert.Equal(400, payload!.Status);
+        Assert.True(payload.Errors.ContainsKey("Request.Attachment"));
+    }
+
+    [Fact]
     public async Task GraphQlSearchComments_WithInvalidInput_ReturnsBadUserInputError()
     {
         using var client = _factory.CreateClient();
@@ -38,6 +124,37 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
         var body = new
         {
             query = "query { searchComments(q: \"\", page: 0, pageSize: 0) { totalCount items { id } } }"
+        };
+
+        var response = await client.PostAsJsonAsync("/graphql", body);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<GraphQlResponse>();
+        Assert.NotNull(payload);
+        Assert.NotNull(payload!.Errors);
+        Assert.NotEmpty(payload.Errors!);
+        Assert.Equal("BAD_USER_INPUT", payload.Errors![0].Extensions?.Code);
+    }
+
+    [Fact]
+    public async Task GraphQlCreateComment_WithInvalidCaptcha_ReturnsBadUserInputError()
+    {
+        using var client = _factory.CreateClient();
+
+        var body = new
+        {
+            query = @"mutation {
+  addComment(input: {
+    userName: \"User123\",
+    email: \"user@example.com\",
+    homePage: \"https://example.com\",
+    text: \"Hello\",
+    captchaToken: \"wrong-token\"
+  }) {
+    id
+  }
+}"
         };
 
         var response = await client.PostAsJsonAsync("/graphql", body);

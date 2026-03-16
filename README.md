@@ -96,6 +96,7 @@ k6 run --summary-export=docs/artifacts/k6-middle-summary.json load-test/comments
 ## Продовження робіт (ітерація 20)
 
 - Додано оперативний аудит: `docs/iteration-20-tz-audit.md` (коротка відповідь на питання відповідності ТЗ + next steps).
+- Ітерація 26: посилено FluentValidation-guard для `CreateComment` (CAPTCHA + attachment pre-validation) і розширено `Comments.Api.Tests` для REST/GraphQL validation-сценаріїв (`thread/preview/create`).
 - Перевірено поточний статус відповідності: **100% виконання ТЗ ще не досягнуто** (залишається 3 невиконані та 2 частково виконані пункти).
 - Актуалізовано backlog у `docs/tz-compliance-checklist.md` і зафіксовано пріоритети:
   1. Angular LTS migration у `src/Comments.Web`;

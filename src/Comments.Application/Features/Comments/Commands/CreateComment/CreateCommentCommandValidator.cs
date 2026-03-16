@@ -1,13 +1,21 @@
 using FluentValidation;
 using System.Text.RegularExpressions;
+using Comments.Application.Abstractions;
 
 namespace Comments.Application.Features.Comments.Commands.CreateComment;
 
 public sealed class CreateCommentCommandValidator : AbstractValidator<CreateCommentCommand>
 {
     private static readonly Regex UserNameRegex = new("^[a-zA-Z0-9]+$", RegexOptions.Compiled);
+    private static readonly HashSet<string> AllowedAttachmentContentTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "text/plain",
+        "image/png",
+        "image/jpeg",
+        "image/gif"
+    };
 
-    public CreateCommentCommandValidator()
+    public CreateCommentCommandValidator(ICaptchaValidator captchaValidator)
     {
         RuleFor(x => x.Request.UserName)
             .NotEmpty()
@@ -29,6 +37,15 @@ public sealed class CreateCommentCommandValidator : AbstractValidator<CreateComm
         RuleFor(x => x.Request.Text)
             .NotEmpty()
             .MaximumLength(5000);
+
+        RuleFor(x => x.Request.CaptchaToken)
+            .MustAsync(async (command, token, cancellationToken) => await captchaValidator.ValidateAsync(token, cancellationToken))
+            .WithMessage("Captcha validation failed.");
+
+        RuleFor(x => x.Request.Attachment)
+            .Must(HasValidAttachment)
+            .When(x => x.Request.Attachment is not null)
+            .WithMessage("Attachment is invalid. Ensure file name, content type and base64 payload are valid.");
     }
 
     private static bool BeValidHomePageUrl(string? homePage)
@@ -40,5 +57,38 @@ public sealed class CreateCommentCommandValidator : AbstractValidator<CreateComm
 
         return Uri.TryCreate(homePage.Trim(), UriKind.Absolute, out var uri)
                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+    }
+
+    private static bool HasValidAttachment(AttachmentUploadRequest? attachment)
+    {
+        if (attachment is null)
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(attachment.FileName))
+        {
+            return false;
+        }
+
+        if (!AllowedAttachmentContentTypes.Contains(attachment.ContentType))
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(attachment.Base64Content))
+        {
+            return false;
+        }
+
+        try
+        {
+            _ = Convert.FromBase64String(attachment.Base64Content);
+            return true;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 }
