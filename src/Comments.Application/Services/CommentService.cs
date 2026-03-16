@@ -8,11 +8,16 @@ public sealed class CommentService
 {
     private readonly ICommentRepository _repository;
     private readonly ITextSanitizer _textSanitizer;
+    private readonly ICommentCreatedPublisher _commentCreatedPublisher;
 
-    public CommentService(ICommentRepository repository, ITextSanitizer textSanitizer)
+    public CommentService(
+        ICommentRepository repository,
+        ITextSanitizer textSanitizer,
+        ICommentCreatedPublisher commentCreatedPublisher)
     {
         _repository = repository;
         _textSanitizer = textSanitizer;
+        _commentCreatedPublisher = commentCreatedPublisher;
     }
 
     public async Task<CommentDto> CreateAsync(CreateCommentRequest request, CancellationToken cancellationToken)
@@ -41,7 +46,11 @@ public sealed class CommentService
         }
 
         await _repository.AddAsync(comment, cancellationToken);
-        return Map(comment);
+
+        var createdComment = Map(comment);
+        await _commentCreatedPublisher.PublishAsync(createdComment, cancellationToken);
+
+        return createdComment;
     }
 
     public async Task<PagedResult<CommentDto>> GetPageAsync(
