@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Comments.Domain", "src/Comments.Domain/Comments.Domain.csproj", "{4E1FF79C-4A88-4741-90A8-56A7A28798B4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Comments.Application", "src/Comments.Application/Comments.Application.csproj", "{4BECC652-DDFB-44B4-B8BF-89C8D7FBF8F0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Comments.Api", "src/Comments.Api/Comments.Api.csproj", "{2C22403D-BC15-4E8B-9E49-107A4C4E8FA3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4E1FF79C-4A88-4741-90A8-56A7A28798B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E1FF79C-4A88-4741-90A8-56A7A28798B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E1FF79C-4A88-4741-90A8-56A7A28798B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E1FF79C-4A88-4741-90A8-56A7A28798B4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4BECC652-DDFB-44B4-B8BF-89C8D7FBF8F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4BECC652-DDFB-44B4-B8BF-89C8D7FBF8F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4BECC652-DDFB-44B4-B8BF-89C8D7FBF8F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4BECC652-DDFB-44B4-B8BF-89C8D7FBF8F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C22403D-BC15-4E8B-9E49-107A4C4E8FA3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C22403D-BC15-4E8B-9E49-107A4C4E8FA3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C22403D-BC15-4E8B-9E49-107A4C4E8FA3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C22403D-BC15-4E8B-9E49-107A4C4E8FA3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
