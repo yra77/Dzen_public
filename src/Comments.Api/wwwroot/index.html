@@ -40,6 +40,10 @@
       <div class="toolbar">
         <h2>Список коментарів</h2>
         <input id="search" placeholder="Пошук (потрібен Elasticsearch)" />
+        <select id="apiMode">
+          <option value="rest" selected>REST API</option>
+          <option value="graphql">GraphQL</option>
+        </select>
         <select id="sortBy">
           <option value="CreatedAtUtc">Дата</option>
           <option value="UserName">Імʼя</option>

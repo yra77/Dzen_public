@@ -2,6 +2,7 @@ const commentsEl = document.getElementById('comments');
 const form = document.getElementById('comment-form');
 const statusEl = document.getElementById('form-status');
 const searchEl = document.getElementById('search');
+const apiModeEl = document.getElementById('apiMode');
 const sortByEl = document.getElementById('sortBy');
 const sortDirectionEl = document.getElementById('sortDirection');
 const pageSizeEl = document.getElementById('pageSize');
@@ -151,22 +152,113 @@ function showAttachmentPreview(file) {
   return true;
 }
 
-async function loadComments(page = state.page) {
-  const q = searchEl.value.trim();
-  const pageSize = Number(pageSizeEl.value || '25');
-  state.page = Math.max(1, page);
-  state.isSearchMode = Boolean(q);
+async function fetchGraphQl(query, variables = {}) {
+  const response = await fetch('/graphql', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, variables })
+  });
 
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  const payload = await response.json();
+  if (payload.errors?.length) {
+    throw new Error(payload.errors.map((x) => x.message).join('; '));
+  }
+
+  return payload.data;
+}
+
+async function fetchCommentsViaRest(q, page, pageSize) {
   const query = q
-    ? `/api/comments/search?q=${encodeURIComponent(q)}&page=${state.page}&pageSize=${pageSize}`
-    : `/api/comments?page=${state.page}&pageSize=${pageSize}&sortBy=${sortByEl.value}&sortDirection=${sortDirectionEl.value}`;
+    ? `/api/comments/search?q=${encodeURIComponent(q)}&page=${page}&pageSize=${pageSize}`
+    : `/api/comments?page=${page}&pageSize=${pageSize}&sortBy=${sortByEl.value}&sortDirection=${sortDirectionEl.value}`;
 
   const response = await fetch(query);
   if (!response.ok) {
     throw new Error(await response.text());
   }
 
-  const data = await response.json();
+  return response.json();
+}
+
+async function fetchCommentsViaGraphQl(q, page, pageSize) {
+  const document = q
+    ? `query SearchComments($query: String!, $page: Int!, $pageSize: Int!) {
+  searchComments(query: $query, page: $page, pageSize: $pageSize) {
+    page
+    pageSize
+    totalCount
+    totalPages
+    items {
+      id
+      parentId
+      userName
+      email
+      homePage
+      text
+      createdAtUtc
+      attachment { fileName contentType storagePath sizeBytes }
+      replies {
+        id parentId userName email homePage text createdAtUtc
+        attachment { fileName contentType storagePath sizeBytes }
+        replies {
+          id parentId userName email homePage text createdAtUtc
+          attachment { fileName contentType storagePath sizeBytes }
+          replies { id parentId userName email homePage text createdAtUtc attachment { fileName contentType storagePath sizeBytes } }
+        }
+      }
+    }
+  }
+}`
+    : `query Comments($page: Int!, $pageSize: Int!, $sortBy: CommentSortField!, $sortDirection: CommentSortDirection!) {
+  comments(page: $page, pageSize: $pageSize, sortBy: $sortBy, sortDirection: $sortDirection) {
+    page
+    pageSize
+    totalCount
+    totalPages
+    items {
+      id
+      parentId
+      userName
+      email
+      homePage
+      text
+      createdAtUtc
+      attachment { fileName contentType storagePath sizeBytes }
+      replies {
+        id parentId userName email homePage text createdAtUtc
+        attachment { fileName contentType storagePath sizeBytes }
+        replies {
+          id parentId userName email homePage text createdAtUtc
+          attachment { fileName contentType storagePath sizeBytes }
+          replies { id parentId userName email homePage text createdAtUtc attachment { fileName contentType storagePath sizeBytes } }
+        }
+      }
+    }
+  }
+}`;
+
+  const variables = q
+    ? { query: q, page, pageSize }
+    : { page, pageSize, sortBy: sortByEl.value, sortDirection: sortDirectionEl.value };
+
+  const data = await fetchGraphQl(document, variables);
+  return q ? data.searchComments : data.comments;
+}
+
+async function loadComments(page = state.page) {
+  const q = searchEl.value.trim();
+  const pageSize = Number(pageSizeEl.value || '25');
+  state.page = Math.max(1, page);
+  state.isSearchMode = Boolean(q);
+
+  const useGraphQl = apiModeEl.value === 'graphql';
+  const data = useGraphQl
+    ? await fetchCommentsViaGraphQl(q, state.page, pageSize)
+    : await fetchCommentsViaRest(q, state.page, pageSize);
   state.totalPages = Math.max(1, data.totalPages || 1);
   state.hasNextPage = data.page < data.totalPages;
   state.page = data.page;
@@ -241,14 +333,22 @@ form.addEventListener('submit', async (e) => {
       attachment
     };
 
-    const response = await fetch('/api/comments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    if (apiModeEl.value === 'graphql') {
+      await fetchGraphQl(
+        `mutation CreateComment($input: CreateCommentInput!) {
+  createComment(input: $input) { id }
+}`,
+        { input: payload });
+    } else {
+      const response = await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-    if (!response.ok) {
-      throw new Error(await response.text());
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
     }
 
     form.reset();
@@ -307,6 +407,7 @@ parentIdInput.addEventListener('input', () => {
   replyContextTextEl.textContent = `Встановлено parentId: ${manualValue}`;
 });
 
+apiModeEl.addEventListener('change', () => reloadBtn.click());
 sortByEl.addEventListener('change', () => reloadBtn.click());
 sortDirectionEl.addEventListener('change', () => reloadBtn.click());
 pageSizeEl.addEventListener('change', () => reloadBtn.click());
