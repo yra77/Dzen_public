@@ -1,11 +1,15 @@
 using Comments.Application.Abstractions;
 using Comments.Application.DTOs;
 using Comments.Domain.Entities;
+using System.Net.Mail;
+using System.Text.RegularExpressions;
 
 namespace Comments.Application.Services;
 
 public sealed class CommentService
 {
+    private static readonly Regex UserNameRegex = new("^[a-zA-Z0-9]+$", RegexOptions.Compiled);
+
     private readonly ICommentRepository _repository;
     private readonly ITextSanitizer _textSanitizer;
     private readonly ICommentCreatedPublisher _commentCreatedPublisher;
@@ -98,6 +102,23 @@ public sealed class CommentService
         if (string.IsNullOrWhiteSpace(request.UserName)) throw new ArgumentException("User name is required.");
         if (string.IsNullOrWhiteSpace(request.Email)) throw new ArgumentException("Email is required.");
         if (string.IsNullOrWhiteSpace(request.Text)) throw new ArgumentException("Text is required.");
+
+        if (!UserNameRegex.IsMatch(request.UserName.Trim()))
+        {
+            throw new ArgumentException("User name must contain only latin letters and digits.");
+        }
+
+        if (!MailAddress.TryCreate(request.Email.Trim(), out _))
+        {
+            throw new ArgumentException("Email format is invalid.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.HomePage)
+            && (!Uri.TryCreate(request.HomePage.Trim(), UriKind.Absolute, out var homePageUri)
+                || (homePageUri.Scheme != Uri.UriSchemeHttp && homePageUri.Scheme != Uri.UriSchemeHttps)))
+        {
+            throw new ArgumentException("Home page must be a valid absolute URL with http/https scheme.");
+        }
 
         var captchaIsValid = await _captchaValidator.ValidateAsync(request.CaptchaToken, cancellationToken);
         if (!captchaIsValid)
