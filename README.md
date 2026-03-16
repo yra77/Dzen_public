@@ -43,6 +43,7 @@ dotnet run --project src/Comments.Api/Comments.Api.csproj
 
 - ✅ Підключено EF Core + підтримку SQL Server (через `Persistence:Provider=SqlServer`).
 - ✅ Додано GraphQL (HotChocolate): `comments` query + `createComment` mutation.
-- Інтегрувати RabbitMQ + Elasticsearch.
+- ✅ Додано публікацію події `comment.created` у RabbitMQ (опційно, через конфіг `RabbitMq:Enabled=true`).
+- Інтегрувати Elasticsearch.
 - Додати CAPTCHA, завантаження файлів (image/txt), прев’ю та SignalR.
 - Підняти Angular SPA (таблиця, nested thread view).
