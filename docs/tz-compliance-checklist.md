@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 34).
+Останнє оновлення: 2026-03-16 (ітерація 35).
 
 ## Підсумок
 
@@ -21,6 +21,34 @@
 
 
 
+
+## Оновлення ітерації 35
+
+### Внесені зміни в цій ітерації
+
+- ✅ Розширено integration-тести `src/Comments.Api.Tests/ValidationIntegrationTests.cs` позитивними (happy-path) REST сценаріями: успішне створення коментаря (`POST /api/comments`) та побудова дерева (`GET /api/comments/{rootId}/thread`) після створення reply.
+- ✅ Додано GraphQL happy-path сценарій для `addComment`: перевіряється відсутність `errors`, наявність `data.addComment` і коректність ключових полів (`id`, `userName`, `text`).
+- ✅ Це додатково закриває edge-case прогалини по пункту CQRS + FluentValidation contract coverage (не лише negative-path, а й success-path для REST/GraphQL).
+
+### Що ще треба зробити у проєкті (актуально після ітерації 35)
+
+1. 🟨 **Angular LTS (довести до production-ready):**
+   - додати e2e smoke для ключових user-flow (`root create`, `thread reply`, `preview`, `attachments`, `realtime`);
+   - уніфікувати UX-відображення API/GraphQL validation помилок.
+2. 🟨 **CQRS + MediatR + FluentValidation (закриття edge-cases):**
+   - додати ще integration-сценарії для `preview`/`search` happy-path у GraphQL та REST (з перевіркою shape paged-result);
+   - формалізувати контракт `validationErrors` у GraphQL `extensions` в README/API docs.
+3. 🟨 **RabbitMQ production-hardening:**
+   - довести delayed retry + DLQ replay tooling;
+   - додати метрики consumer-обробки та базові alert-умови.
+4. 🔲 **Фінальний Middle+ load-test у цільовому контурі RabbitMQ + Elasticsearch:**
+   - виконати прогін `load-test/comments-middle.js`;
+   - заповнити `docs/load-test-middle-results.md` фактичними метриками та додати актуальний `docs/artifacts/k6-middle-summary.json`.
+5. 🔲 **Delivery-артефакт Demo:**
+   - додати секцію `Demo` у `README.md`;
+   - прикріпити посилання на 3–5 хв відео з ключовими сценаріями.
+
+---
 
 ## Оновлення ітерації 34
 

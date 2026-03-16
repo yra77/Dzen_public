@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
+using Comments.Application.DTOs;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
@@ -117,6 +119,75 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
     }
 
     [Fact]
+    public async Task CreateComment_WithValidPayload_ReturnsCreatedComment()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/comments", new
+        {
+            userName = "User123",
+            email = "user@example.com",
+            homePage = "https://example.com",
+            text = "Hello",
+            parentId = (Guid?)null,
+            captchaToken = "1234",
+            attachment = (object?)null
+        });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<CommentDto>();
+        Assert.NotNull(payload);
+        Assert.NotEqual(Guid.Empty, payload!.Id);
+        Assert.Equal("User123", payload.UserName);
+        Assert.Equal("Hello", payload.Text);
+        Assert.Empty(payload.Replies);
+    }
+
+    [Fact]
+    public async Task GetThread_WithCreatedReply_ReturnsTree()
+    {
+        using var client = _factory.CreateClient();
+
+        var rootResponse = await client.PostAsJsonAsync("/api/comments", new
+        {
+            userName = "RootUser",
+            email = "root@example.com",
+            homePage = "https://example.com",
+            text = "Root comment",
+            parentId = (Guid?)null,
+            captchaToken = "1234",
+            attachment = (object?)null
+        });
+
+        Assert.Equal(HttpStatusCode.Created, rootResponse.StatusCode);
+        var root = await rootResponse.Content.ReadFromJsonAsync<CommentDto>();
+        Assert.NotNull(root);
+
+        var replyResponse = await client.PostAsJsonAsync("/api/comments", new
+        {
+            userName = "ReplyUser",
+            email = "reply@example.com",
+            homePage = "https://example.com",
+            text = "Reply comment",
+            parentId = root!.Id,
+            captchaToken = "1234",
+            attachment = (object?)null
+        });
+
+        Assert.Equal(HttpStatusCode.Created, replyResponse.StatusCode);
+
+        var threadResponse = await client.GetAsync($"/api/comments/{root.Id}/thread");
+        Assert.Equal(HttpStatusCode.OK, threadResponse.StatusCode);
+
+        var thread = await threadResponse.Content.ReadFromJsonAsync<CommentDto>();
+        Assert.NotNull(thread);
+        Assert.Equal(root.Id, thread!.Id);
+        Assert.Single(thread.Replies);
+        Assert.Equal("ReplyUser", thread.Replies.Single().UserName);
+    }
+
+    [Fact]
     public async Task GraphQlSearchComments_WithInvalidInput_ReturnsBadUserInputError()
     {
         using var client = _factory.CreateClient();
@@ -211,6 +282,42 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
         Assert.True(payload.Errors![0].Extensions!.ValidationErrors!.ContainsKey("Request.Attachment.ContentType"));
     }
 
+    [Fact]
+    public async Task GraphQlCreateComment_WithValidPayload_ReturnsDataWithoutErrors()
+    {
+        using var client = _factory.CreateClient();
+
+        var body = new
+        {
+            query = @"mutation {
+  addComment(input: {
+    userName: \"User123\",
+    email: \"user@example.com\",
+    homePage: \"https://example.com\",
+    text: \"Hello from GraphQL\",
+    captchaToken: \"1234\"
+  }) {
+    id
+    userName
+    text
+  }
+}"
+        };
+
+        var response = await client.PostAsJsonAsync("/graphql", body);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<GraphQlResponse>();
+        Assert.NotNull(payload);
+        Assert.Null(payload!.Errors);
+        Assert.True(payload.Data.HasValue);
+
+        var addComment = payload.Data!.Value.GetProperty("addComment");
+        Assert.Equal("User123", addComment.GetProperty("userName").GetString());
+        Assert.Equal("Hello from GraphQL", addComment.GetProperty("text").GetString());
+        Assert.NotEqual(Guid.Empty, addComment.GetProperty("id").GetGuid());
+    }
+
     private sealed class ValidationProblemPayload
     {
         public int Status { get; set; }
@@ -220,6 +327,7 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
     private sealed class GraphQlResponse
     {
         public List<GraphQlError>? Errors { get; set; }
+        public JsonElement? Data { get; set; }
     }
 
     private sealed class GraphQlError
