@@ -4,14 +4,9 @@ public sealed class Comment
 {
     private readonly List<Comment> _replies = new();
 
-    public Guid Id { get; }
-    public Guid? ParentId { get; }
-    public string UserName { get; }
-    public string Email { get; }
-    public string? HomePage { get; }
-    public string Text { get; private set; }
-    public DateTime CreatedAtUtc { get; }
-    public IReadOnlyCollection<Comment> Replies => _replies.AsReadOnly();
+    private Comment()
+    {
+    }
 
     public Comment(
         Guid id,
@@ -30,6 +25,17 @@ public sealed class Comment
         Text = text;
         CreatedAtUtc = createdAtUtc;
     }
+
+    public Guid Id { get; private set; }
+    public Guid? ParentId { get; private set; }
+    public string UserName { get; private set; } = string.Empty;
+    public string Email { get; private set; } = string.Empty;
+    public string? HomePage { get; private set; }
+    public string Text { get; private set; } = string.Empty;
+    public DateTime CreatedAtUtc { get; private set; }
+
+    public Comment? Parent { get; private set; }
+    public IReadOnlyCollection<Comment> Replies => _replies.AsReadOnly();
 
     public void AddReply(Comment reply)
     {
