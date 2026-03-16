@@ -88,39 +88,10 @@ k6 run --summary-export=docs/artifacts/k6-middle-summary.json load-test/comments
 
 > Детальний стан відповідності ТЗ і покроковий backlog див. у `docs/tz-compliance-checklist.md`.
 
-## Продовження робіт (ітерація 16)
+## Продовження робіт (ітерації 16–19)
 
-- Оновлено комплаєнс-чекліст у `docs/tz-compliance-checklist.md`: зафіксовано поточний стан після останніх доробок backend/UI та пріоритетний план подальших кроків.
-- Фокус наступної ітерації: **Angular LTS migration (P0)** та **MediatR + FluentValidation (P0)** як два блокери до повної відповідності ТЗ.
-- Для P1 зафіксовано технічний борг: production-hardening RabbitMQ (персистентна ідемпотентність, delayed retry/backoff, метрики/алерти).
-- Для P2 залишено delivery-артефакт: додати demo-відео та секцію `Demo` в README.
-
-
-## Продовження робіт (ітерація 17)
-
-- Додано execution plan: `docs/iteration-17-execution-plan.md` з поетапною декомпозицією P0/P1/P2 до рівня наступних комітів і артефактів приймання.
-- Уточнено найближчий фокус: **Angular LTS migration** + **CQRS/MediatR/FluentValidation** без зміни зовнішніх REST/GraphQL контрактів.
-- Зафіксовано порядок наступних комітів, щоб пришвидшити доведення проєкту до 100% відповідності ТЗ.
-
-## Продовження робіт (ітерація 18)
-
-- Додано оновлений delivery-план: `docs/iteration-18-delivery-plan.md` з фокусом на завершення P0-блокерів та підготовку приймальних артефактів.
-- Оновлено `docs/tz-compliance-checklist.md`: синхронізовано поточний стан після ітерації 17 і зафіксовано конкретний backlog «що ще треба зробити» для P0/P1/P2.
-- Визначено пріоритет найближчих кроків:
-  1. Angular LTS migration у `src/Comments.Web` (паритет з поточним SPA-функціоналом);
-  2. CQRS + MediatR + FluentValidation у backend без зміни зовнішніх REST/GraphQL контрактів;
-3. production-hardening RabbitMQ + фіналізація Middle+ load-test + Demo-артефакт у README.
-
-## Продовження робіт (ітерація 19)
-
-- Додано continuation-план: `docs/iteration-19-continuation-plan.md` із синхронізованим переліком «що внесено» і «що ще треба зробити».
-- Оновлено `docs/tz-compliance-checklist.md`: зафіксовано статус після ітерації 18 і пріоритети на ітерацію 19 (P0/P1/P2).
-- Найближчий фокус незмінний:
-  1. Angular LTS migration у `src/Comments.Web` з паритетом до поточного SPA;
-  2. CQRS + MediatR + FluentValidation у backend без зміни зовнішніх контрактів;
-  3. RabbitMQ hardening + фінальний Middle+ load-test + Demo-секція в README.
-
-> Актуальний операційний план продовження див. у `docs/iteration-19-continuation-plan.md`.
+- Проміжні плани ітерацій 16–19 консолідовано в актуальний аудит і backlog ітерації 20.
+- Для поточної роботи використовуйте лише `docs/iteration-20-tz-audit.md` та `docs/tz-compliance-checklist.md`.
 
 ## Продовження робіт (ітерація 20)
 
