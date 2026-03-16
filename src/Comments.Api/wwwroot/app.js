@@ -18,6 +18,8 @@ const parentIdInput = form.elements.namedItem('parentId');
 const replyContextEl = document.getElementById('reply-context');
 const replyContextTextEl = document.getElementById('reply-context-text');
 const clearReplyContextBtn = document.getElementById('clear-reply-context');
+const textInput = form.elements.namedItem('text');
+const textPreviewContentEl = document.getElementById('text-preview-content');
 
 const MAX_ATTACHMENT_SIZE = 1024 * 1024;
 const ALLOWED_ATTACHMENT_TYPES = new Set(['text/plain', 'image/png', 'image/jpeg', 'image/gif']);
@@ -39,6 +41,80 @@ function escapeHtml(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
+}
+
+
+function toSafeHref(rawUrl) {
+  const value = String(rawUrl ?? '').trim();
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return null;
+    }
+
+    return parsed.href;
+  } catch {
+    return null;
+  }
+}
+
+function renderTextPreview(rawText) {
+  const source = String(rawText ?? '');
+  if (!source.trim()) {
+    textPreviewContentEl.innerHTML = 'Попередній перегляд зʼявиться тут…';
+    return;
+  }
+
+  let html = escapeHtml(source);
+
+  html = html.replace(/&lt;(i|strong|code)&gt;([\s\S]*?)&lt;\/\1&gt;/gi, '<$1>$2</$1>');
+
+  html = html.replace(/&lt;a\s+href="([^"]+)"&gt;([\s\S]*?)&lt;\/a&gt;/gi, (_, href, label) => {
+    const safeHref = toSafeHref(href);
+    if (!safeHref) {
+      return '<span class="invalid-link">[некоректне посилання]</span>';
+    }
+
+    return `<a href="${escapeHtml(safeHref)}" target="_blank" rel="noreferrer">${label}</a>`;
+  });
+
+  textPreviewContentEl.innerHTML = html.replace(/\n/g, '<br />');
+}
+
+function insertTag(tag) {
+  const textarea = textInput;
+  if (!(textarea instanceof HTMLTextAreaElement)) {
+    return;
+  }
+
+  const selectionStart = textarea.selectionStart ?? 0;
+  const selectionEnd = textarea.selectionEnd ?? selectionStart;
+  const selectedText = textarea.value.slice(selectionStart, selectionEnd);
+
+  const openTag = `<${tag}>`;
+  const closeTag = `</${tag}>`;
+  let replacement = `${openTag}${selectedText}${closeTag}`;
+  let caretPosition = selectionStart + openTag.length;
+
+  if (tag === 'a') {
+    const hasSelection = selectedText.trim().length > 0;
+    const linkText = hasSelection ? selectedText : 'посилання';
+    replacement = `<a href="https://example.com">${linkText}</a>`;
+    caretPosition = hasSelection
+      ? selectionStart + replacement.length
+      : selectionStart + '<a href="'.length;
+  } else if (selectedText.length > 0) {
+    caretPosition = selectionStart + replacement.length;
+  }
+
+  textarea.setRangeText(replacement, selectionStart, selectionEnd, 'end');
+  textarea.focus();
+  textarea.setSelectionRange(caretPosition, caretPosition);
+  renderTextPreview(textarea.value);
 }
 
 function isAllowedAttachment(file) {
@@ -472,6 +548,21 @@ collapseAllBtn.addEventListener('click', () => {
   });
 });
 
+textInput.addEventListener('input', () => {
+  renderTextPreview(textInput.value);
+});
+
+document.querySelectorAll('.quick-tag-btn').forEach((button) => {
+  button.addEventListener('click', () => {
+    const tag = button.getAttribute('data-tag');
+    if (!tag) {
+      return;
+    }
+
+    insertTag(tag);
+  });
+});
+
 parentIdInput.addEventListener('input', () => {
   const manualValue = parentIdInput.value.trim();
   if (!manualValue) {
@@ -521,3 +612,4 @@ loadComments().catch((error) => {
   commentsEl.innerHTML = `<p>Помилка завантаження: ${error.message}</p>`;
 });
 connectSignalR();
+renderTextPreview(textInput.value);

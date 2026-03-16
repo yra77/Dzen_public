@@ -4,9 +4,9 @@
 
 ## Підсумок
 
-- **Повністю виконано:** 14 пунктів.
-- **Частково виконано:** 6 пунктів.
-- **Не виконано:** 7 пунктів.
+- **Повністю виконано:** 15 пунктів.
+- **Частково виконано:** 7 пунктів.
+- **Не виконано:** 5 пунктів.
 
 > Висновок: поточний стан не покриває **всі** вимоги ТЗ на 100%.
 
@@ -43,8 +43,8 @@
 | Сортування за UserName/Email/Date ASC/DESC | ✅ | Підтримується REST і GraphQL. |
 | Пагінація по 25 за замовчуванням | ✅ | `pageSize=25` за замовчуванням. |
 | Дефолтне сортування LIFO (CreatedAt DESC) | ✅ | Виконується у сервісі та GraphQL defaults. |
-| Кнопки швидких тегів `[i] [strong] [code] [a]` | ❌ | Панелі кнопок у формі немає. |
-| Preview повідомлення без перезавантаження | ❌ | Окремого endpoint/режиму preview тексту немає. |
+| Кнопки швидких тегів `[i] [strong] [code] [a]` | ✅ | Додано toolbar у формі, вставка тегів у textarea. |
+| Preview повідомлення без перезавантаження | 🟨 | Додано live preview у SPA на клієнті; окремого backend preview endpoint ще немає. |
 
 ## 4) API / інтеграції
 
@@ -84,9 +84,8 @@
 2. Додати **whitelist HTML sanitizer + XHTML validator** для `Text`.
 3. Додати **captcha-image endpoint** (генерація + TTL 5 хв у кеші).
 4. Допрацювати вкладення: **TXT ≤ 100KB**, **resize до 320x240** для image.
-5. Додати **previewComment** API (GraphQL mutation/query) і UI preview блоку.
-6. Додати toolbar кнопки `[i] [strong] [code] [a]`.
-7. Перейти на **MediatR + FluentValidation** у Application шарі.
-8. Розширити RabbitMQ-пайплайн до окремих задач `indexing`/`file-processing`.
-9. Розширити load-test до вимог Middle+ і зафіксувати метрики.
-10. Додати відео-демо у README.
+5. Додати **previewComment** API (GraphQL mutation/query), щоб preview був не лише клієнтський, а і серверний.
+6. Перейти на **MediatR + FluentValidation** у Application шарі.
+7. Розширити RabbitMQ-пайплайн до окремих задач `indexing`/`file-processing`.
+8. Розширити load-test до вимог Middle+ і зафіксувати метрики.
+9. Додати відео-демо у README.
