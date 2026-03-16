@@ -20,6 +20,7 @@ const replyContextTextEl = document.getElementById('reply-context-text');
 const clearReplyContextBtn = document.getElementById('clear-reply-context');
 const textInput = form.elements.namedItem('text');
 const textPreviewContentEl = document.getElementById('text-preview-content');
+const textValidationErrorsEl = document.getElementById('text-validation-errors');
 const captchaImageEl = document.getElementById('captcha-image');
 const reloadCaptchaBtn = document.getElementById('reload-captcha');
 const captchaChallengeIdInput = form.elements.namedItem('captchaChallengeId');
@@ -67,9 +68,56 @@ function toSafeHref(rawUrl) {
     }
 
     return parsed.href;
-  } catch {
+  } catch (error) {
     return null;
   }
+}
+
+
+function setTextValidationErrors(messages) {
+  if (!textValidationErrorsEl) {
+    return;
+  }
+
+  if (!messages.length) {
+    textValidationErrorsEl.classList.add('hidden');
+    textValidationErrorsEl.innerHTML = '';
+    return;
+  }
+
+  textValidationErrorsEl.classList.remove('hidden');
+  textValidationErrorsEl.innerHTML = `<ul>${messages.map((message) => `<li>${escapeHtml(message)}</li>`).join('')}</ul>`;
+}
+
+function extractTextValidationMessages(errorMessage) {
+  const source = String(errorMessage ?? '');
+  if (!source) {
+    return [];
+  }
+
+  if (source.includes('Comment text must be valid XHTML.')) {
+    return ['Текст повинен містити валідний XHTML (усі теги мають бути коректно закриті).'];
+  }
+
+  const tagNotAllowedMatch = source.match(/HTML tag '([^']+)' is not allowed/i);
+  if (tagNotAllowedMatch) {
+    return [`Тег <${tagNotAllowedMatch[1]}> заборонений. Дозволено лише: <a>, <code>, <i>, <strong>.`];
+  }
+
+  if (source.includes("Only 'href' attribute is allowed for <a> tags.")) {
+    return ['Для тегу <a> дозволено тільки атрибут href.'];
+  }
+
+  if (source.includes('<a href> must be a valid absolute http/https URL.')) {
+    return ['У <a href> потрібно вказати абсолютний URL з протоколом http або https.'];
+  }
+
+  const attrsNotAllowedMatch = source.match(/Attributes are not allowed for <([^>]+)> tags\./i);
+  if (attrsNotAllowedMatch) {
+    return [`Атрибути заборонені для тегу <${attrsNotAllowedMatch[1]}>.`];
+  }
+
+  return [];
 }
 
 async function fetchPreviewViaRest(text) {
@@ -112,6 +160,7 @@ async function renderTextPreview(rawText) {
   const source = String(rawText ?? '');
   if (!source.trim()) {
     textPreviewContentEl.innerHTML = 'Попередній перегляд зʼявиться тут…';
+    setTextValidationErrors([]);
     return;
   }
 
@@ -127,12 +176,17 @@ async function renderTextPreview(rawText) {
     }
 
     textPreviewContentEl.innerHTML = String(previewText).replace(/\n/g, '<br />');
-  } catch {
+    setTextValidationErrors([]);
+  } catch (error) {
     if (requestId !== previewRequestSeq) {
       return;
     }
 
-    textPreviewContentEl.innerHTML = 'Не вдалося побудувати preview на сервері.';
+    const validationMessages = extractTextValidationMessages(error?.message || '');
+    setTextValidationErrors(validationMessages);
+    textPreviewContentEl.innerHTML = validationMessages.length
+      ? 'Preview недоступний, доки не виправите помилки форматування.'
+      : 'Не вдалося побудувати preview на сервері.';
   }
 }
 
@@ -610,6 +664,7 @@ form.addEventListener('submit', async (e) => {
   e.preventDefault();
   statusEl.className = 'status';
   statusEl.textContent = 'Збереження...';
+  setTextValidationErrors([]);
 
   try {
     const formData = new FormData(form);
@@ -659,6 +714,11 @@ form.addEventListener('submit', async (e) => {
     await loadCaptcha();
     await loadComments(1);
   } catch (error) {
+    const validationMessages = extractTextValidationMessages(error?.message || '');
+    if (validationMessages.length) {
+      setTextValidationErrors(validationMessages);
+    }
+
     statusEl.classList.add('error');
     statusEl.textContent = `Помилка: ${error.message}`;
   }
@@ -737,6 +797,7 @@ parentIdInput.addEventListener('input', () => {
 });
 
 apiModeEl.addEventListener('change', () => {
+  setTextValidationErrors([]);
   reloadBtn.click();
   renderTextPreview(textInput.value);
 });
@@ -797,7 +858,7 @@ async function connectSignalR() {
 
   try {
     await connection.start();
-  } catch {
+  } catch (error) {
     // SignalR optional via config; ignore in UI when disabled.
   }
 }
