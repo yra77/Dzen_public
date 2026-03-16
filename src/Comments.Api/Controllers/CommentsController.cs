@@ -1,4 +1,5 @@
 using Comments.Application.DTOs;
+using Comments.Application.Exceptions;
 using Comments.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,10 +18,23 @@ public sealed class CommentsController : ControllerBase
 
     [HttpPost]
     [ProducesResponseType(typeof(CommentDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Create([FromBody] CreateCommentRequest request, CancellationToken cancellationToken)
     {
-        var created = await _commentService.CreateAsync(request, cancellationToken);
-        return CreatedAtAction(nameof(GetPage), new { page = 1, pageSize = 25 }, created);
+        try
+        {
+            var created = await _commentService.CreateAsync(request, cancellationToken);
+            return CreatedAtAction(nameof(GetPage), new { page = 1, pageSize = 25 }, created);
+        }
+        catch (CommentValidationException exception)
+        {
+            return BadRequest(new { error = exception.Message });
+        }
+        catch (CommentNotFoundException exception)
+        {
+            return NotFound(new { error = exception.Message });
+        }
     }
 
     [HttpGet]

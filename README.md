@@ -44,6 +44,7 @@ dotnet run --project src/Comments.Api/Comments.Api.csproj
 - ✅ Підключено EF Core + підтримку SQL Server (через `Persistence:Provider=SqlServer`).
 - ✅ Додано GraphQL (HotChocolate): `comments` query + `createComment` mutation.
 - ✅ Додано публікацію події `comment.created` у RabbitMQ (опційно, через конфіг `RabbitMq:Enabled=true`).
+- ✅ Додано базову CAPTCHA-перевірку під час створення коментаря (`Captcha:Enabled`, `Captcha:ExpectedToken`), без дефолтного hardcoded токена.
 - Інтегрувати Elasticsearch.
 - Додати CAPTCHA, завантаження файлів (image/txt), прев’ю та SignalR.
 - Підняти Angular SPA (таблиця, nested thread view).
@@ -56,6 +57,7 @@ dotnet run --project src/Comments.Api/Comments.Api.csproj
 - ✅ **REST API**:
   - `POST /api/comments`
   - `GET /api/comments` (пагінація + сортування)
+  - помилки валідації повертаються як HTTP 400, відсутній parent-коментар — HTTP 404.
 - ✅ **GraphQL API**:
   - query `comments`
   - mutation `createComment`
@@ -71,8 +73,9 @@ dotnet run --project src/Comments.Api/Comments.Api.csproj
    - індексація коментарів,
    - запити пошуку/фільтрації,
    - синхронізація з основним сховищем.
-2. 🔲 **Антиспам/безпека для форми**
-   - CAPTCHA у створенні коментаря.
+2. 🟨 **Антиспам/безпека для форми**
+   - ✅ базова серверна CAPTCHA-перевірка у створенні коментаря,
+   - 🔲 інтеграція з реальною CAPTCHA-платформою (наприклад, reCAPTCHA/hCaptcha).
 3. 🔲 **Файлові вкладення**
    - upload `image/txt`,
    - валідація та безпечне збереження,
