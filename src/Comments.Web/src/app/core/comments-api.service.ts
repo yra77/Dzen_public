@@ -30,6 +30,12 @@ export interface PagedCommentsResponse {
   items: CommentNode[];
 }
 
+export interface CreateCommentAttachmentRequest {
+  fileName: string;
+  contentType: string;
+  base64Content: string;
+}
+
 export interface CreateCommentRequest {
   userName: string;
   email: string;
@@ -37,7 +43,7 @@ export interface CreateCommentRequest {
   text: string;
   parentId: string | null;
   captchaToken: string | null;
-  attachment: null;
+  attachment: CreateCommentAttachmentRequest | null;
 }
 
 export interface CaptchaImageResponse {
@@ -67,4 +73,9 @@ export class CommentsApiService {
   createComment(request: CreateCommentRequest): Observable<CommentNode> {
     return this.httpClient.post<CommentNode>(`${this.apiBaseUrl}/api/comments`, request);
   }
+
+  previewComment(text: string): Observable<string> {
+    return this.httpClient.post(`${this.apiBaseUrl}/api/comments/preview`, { text }, { responseType: 'text' });
+  }
 }
+

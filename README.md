@@ -99,6 +99,7 @@ k6 run --summary-export=docs/artifacts/k6-middle-summary.json load-test/comments
 - Ітерація 26: посилено FluentValidation-guard для `CreateComment` (CAPTCHA + attachment pre-validation) і розширено `Comments.Api.Tests` для REST/GraphQL validation-сценаріїв (`thread/preview/create`).
 - Ітерація 27: додано Angular LTS standalone scaffold у `src/Comments.Web` (роути `/` і `/thread/:id`, базовий API service для root-list).
 - Ітерація 28: реалізовано робочий thread-flow в Angular (`/thread/:id`): завантаження гілки, CAPTCHA image reload і submit reply через `POST /api/comments`.
+- Ітерація 29: `thread-page` в Angular доповнено recursive-render reply, live text preview (`POST /api/comments/preview`), attachment upload (base64) і SignalR auto-refresh через `/hubs/comments`.
 - Перевірено поточний статус відповідності: **100% виконання ТЗ ще не досягнуто** (залишається 3 невиконані та 2 частково виконані пункти).
 - Актуалізовано backlog у `docs/tz-compliance-checklist.md` і зафіксовано пріоритети:
   1. Angular LTS migration у `src/Comments.Web`;
