@@ -1,0 +1,44 @@
+version: '3.9'
+
+services:
+  comments-api:
+    build:
+      context: .
+      dockerfile: src/Comments.Api/Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:5000
+      Persistence__Provider: SqlServer
+      Persistence__ConnectionString: Server=sqlserver;Database=CommentsDb;User Id=sa;Password=Your_password123;TrustServerCertificate=true;
+      RabbitMq__Enabled: 'true'
+      RabbitMq__Host: rabbitmq
+      Elasticsearch__Enabled: 'true'
+      Elasticsearch__Url: http://elasticsearch:9200
+    depends_on:
+      - sqlserver
+      - rabbitmq
+      - elasticsearch
+    ports:
+      - '5000:5000'
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: 'Y'
+      SA_PASSWORD: 'Your_password123'
+    ports:
+      - '1433:1433'
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: 'false'
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+    ports:
+      - '9200:9200'
