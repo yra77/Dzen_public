@@ -77,5 +77,9 @@ export class CommentsApiService {
   previewComment(text: string): Observable<string> {
     return this.httpClient.post(`${this.apiBaseUrl}/api/comments/preview`, { text }, { responseType: 'text' });
   }
-}
 
+  getAttachmentText(storagePath: string): Observable<string> {
+    const normalizedPath = storagePath.startsWith('/') ? storagePath : `/${storagePath}`;
+    return this.httpClient.get(`${this.apiBaseUrl}${normalizedPath}`, { responseType: 'text' });
+  }
+}

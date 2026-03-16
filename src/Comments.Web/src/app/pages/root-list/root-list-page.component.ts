@@ -88,6 +88,27 @@ import { environment } from '../../../environments/environment';
               <a [routerLink]="['/thread', comment.id]">#{{ comment.id }} {{ comment.userName }}</a>
               <small>{{ comment.createdAtUtc | date: 'short' }}</small>
               <p>{{ comment.text }}</p>
+              @if (comment.attachment) {
+                <div class="attachment-inline">
+                  @if (comment.attachment.contentType.startsWith('image/')) {
+                    <a [href]="getAttachmentUrl(comment.attachment.storagePath)" target="_blank" rel="noreferrer">
+                      <img
+                        class="attachment-thumb"
+                        [src]="getAttachmentUrl(comment.attachment.storagePath)"
+                        [alt]="comment.attachment.fileName"
+                      />
+                    </a>
+                  } @else if (comment.attachment.contentType === 'text/plain') {
+                    <button type="button" (click)="loadTextAttachment(comment.attachment.storagePath)">
+                      Показати txt preview
+                    </button>
+                    @if (attachmentTextPreviewByPath[comment.attachment.storagePath]) {
+                      <pre class="attachment-text">{{ attachmentTextPreviewByPath[comment.attachment.storagePath] }}</pre>
+                    }
+                  }
+                  <small>📎 <a [href]="getAttachmentUrl(comment.attachment.storagePath)" target="_blank" rel="noreferrer">{{ comment.attachment.fileName }}</a></small>
+                </div>
+              }
               <small>Відповідей: {{ comment.replies.length }}</small>
             </li>
           }
@@ -119,6 +140,25 @@ import { environment } from '../../../environments/environment';
         margin-top: 8px;
         color: #5f6f85;
       }
+
+      .attachment-inline {
+        margin-top: 8px;
+      }
+
+      .attachment-thumb {
+        max-width: 220px;
+        max-height: 140px;
+        border: 1px solid #d9e0ec;
+        border-radius: 6px;
+      }
+
+      .attachment-text {
+        white-space: pre-wrap;
+        background: #f8fafc;
+        border: 1px solid #d9e0ec;
+        border-radius: 6px;
+        padding: 8px;
+      }
     `
   ]
 })
@@ -138,6 +178,8 @@ export class RootListPageComponent implements OnDestroy {
   textPreviewHtml = '';
   attachmentMessage = '';
   attachment: CreateCommentAttachmentRequest | null = null;
+  attachmentTextPreviewByPath: Record<string, string> = {};
+  attachmentTextLoadingByPath = new Set<string>();
 
   readonly createForm = this.formBuilder.nonNullable.group({
     userName: ['', [Validators.required, Validators.maxLength(100)]],
@@ -283,6 +325,29 @@ export class RootListPageComponent implements OnDestroy {
           this.isSubmitting = false;
         }
       });
+  }
+
+  getAttachmentUrl(storagePath: string): string {
+    const normalizedPath = storagePath.startsWith('/') ? storagePath : `/${storagePath}`;
+    return `${environment.apiBaseUrl}${normalizedPath}`;
+  }
+
+  loadTextAttachment(storagePath: string): void {
+    if (this.attachmentTextPreviewByPath[storagePath] || this.attachmentTextLoadingByPath.has(storagePath)) {
+      return;
+    }
+
+    this.attachmentTextLoadingByPath.add(storagePath);
+    this.commentsApi.getAttachmentText(storagePath).subscribe({
+      next: (content) => {
+        this.attachmentTextPreviewByPath[storagePath] = content;
+        this.attachmentTextLoadingByPath.delete(storagePath);
+      },
+      error: () => {
+        this.attachmentTextPreviewByPath[storagePath] = 'Не вдалося завантажити txt-preview.';
+        this.attachmentTextLoadingByPath.delete(storagePath);
+      }
+    });
   }
 
   private initializeSignalR(): void {

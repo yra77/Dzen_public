@@ -28,7 +28,23 @@ import { environment } from '../../../environments/environment';
           <p class="meta"><strong>{{ thread.userName }}</strong> · {{ thread.createdAtUtc | date: 'short' }}</p>
           <p>{{ thread.text }}</p>
           @if (thread.attachment) {
-            <p class="attachment-meta">📎 {{ thread.attachment.fileName }} ({{ thread.attachment.contentType }})</p>
+            <div class="attachment-inline">
+              @if (thread.attachment.contentType.startsWith('image/')) {
+                <a [href]="getAttachmentUrl(thread.attachment.storagePath)" target="_blank" rel="noreferrer">
+                  <img
+                    class="attachment-thumb"
+                    [src]="getAttachmentUrl(thread.attachment.storagePath)"
+                    [alt]="thread.attachment.fileName"
+                  />
+                </a>
+              } @else if (thread.attachment.contentType === 'text/plain') {
+                <button type="button" (click)="loadTextAttachment(thread.attachment.storagePath)">Показати txt preview</button>
+                @if (attachmentTextPreviewByPath[thread.attachment.storagePath]) {
+                  <pre class="attachment-text">{{ attachmentTextPreviewByPath[thread.attachment.storagePath] }}</pre>
+                }
+              }
+              <p class="attachment-meta">📎 <a [href]="getAttachmentUrl(thread.attachment.storagePath)" target="_blank" rel="noreferrer">{{ thread.attachment.fileName }}</a> ({{ thread.attachment.contentType }})</p>
+            </div>
           }
         </div>
 
@@ -47,7 +63,23 @@ import { environment } from '../../../environments/environment';
                   <p class="meta"><strong>{{ reply.userName }}</strong> · {{ reply.createdAtUtc | date: 'short' }}</p>
                   <p>{{ reply.text }}</p>
                   @if (reply.attachment) {
-                    <p class="attachment-meta">📎 {{ reply.attachment.fileName }} ({{ reply.attachment.contentType }})</p>
+                    <div class="attachment-inline">
+                      @if (reply.attachment.contentType.startsWith('image/')) {
+                        <a [href]="getAttachmentUrl(reply.attachment.storagePath)" target="_blank" rel="noreferrer">
+                          <img
+                            class="attachment-thumb"
+                            [src]="getAttachmentUrl(reply.attachment.storagePath)"
+                            [alt]="reply.attachment.fileName"
+                          />
+                        </a>
+                      } @else if (reply.attachment.contentType === 'text/plain') {
+                        <button type="button" (click)="loadTextAttachment(reply.attachment.storagePath)">Показати txt preview</button>
+                        @if (attachmentTextPreviewByPath[reply.attachment.storagePath]) {
+                          <pre class="attachment-text">{{ attachmentTextPreviewByPath[reply.attachment.storagePath] }}</pre>
+                        }
+                      }
+                      <p class="attachment-meta">📎 <a [href]="getAttachmentUrl(reply.attachment.storagePath)" target="_blank" rel="noreferrer">{{ reply.attachment.fileName }}</a> ({{ reply.attachment.contentType }})</p>
+                    </div>
                   }
                 </article>
 
@@ -117,6 +149,9 @@ import { environment } from '../../../environments/environment';
       .error { color: #b32d2e; }
       .meta { color: #5f6f85; }
       .attachment-meta { color: #5f6f85; font-size: 0.9rem; }
+      .attachment-inline { margin-top: 8px; }
+      .attachment-thumb { max-width: 220px; max-height: 140px; border: 1px solid #d9e0ec; border-radius: 6px; }
+      .attachment-text { white-space: pre-wrap; background: #f8fafc; border: 1px solid #d9e0ec; border-radius: 6px; padding: 8px; }
       .thread-node { border: 1px solid #d9e0ec; border-radius: 8px; padding: 12px; margin-top: 8px; }
       .tree { list-style: none; margin: 0; padding-left: 12px; }
       form { display: grid; gap: 10px; }
@@ -145,6 +180,8 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   textPreviewHtml = '';
   attachmentMessage = '';
   attachment: CreateCommentAttachmentRequest | null = null;
+  attachmentTextPreviewByPath: Record<string, string> = {};
+  attachmentTextLoadingByPath = new Set<string>();
 
   readonly replyForm = this.formBuilder.nonNullable.group({
     userName: ['', [Validators.required, Validators.maxLength(100)]],
@@ -267,6 +304,29 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
           this.isSubmitting = false;
         }
       });
+  }
+
+  getAttachmentUrl(storagePath: string): string {
+    const normalizedPath = storagePath.startsWith('/') ? storagePath : `/${storagePath}`;
+    return `${environment.apiBaseUrl}${normalizedPath}`;
+  }
+
+  loadTextAttachment(storagePath: string): void {
+    if (this.attachmentTextPreviewByPath[storagePath] || this.attachmentTextLoadingByPath.has(storagePath)) {
+      return;
+    }
+
+    this.attachmentTextLoadingByPath.add(storagePath);
+    this.commentsApi.getAttachmentText(storagePath).subscribe({
+      next: (content) => {
+        this.attachmentTextPreviewByPath[storagePath] = content;
+        this.attachmentTextLoadingByPath.delete(storagePath);
+      },
+      error: () => {
+        this.attachmentTextPreviewByPath[storagePath] = 'Не вдалося завантажити txt-preview.';
+        this.attachmentTextLoadingByPath.delete(storagePath);
+      }
+    });
   }
 
   private initializeSignalR(): void {

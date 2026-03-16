@@ -100,6 +100,8 @@ k6 run --summary-export=docs/artifacts/k6-middle-summary.json load-test/comments
 - Ітерація 27: додано Angular LTS standalone scaffold у `src/Comments.Web` (роути `/` і `/thread/:id`, базовий API service для root-list).
 - Ітерація 28: реалізовано робочий thread-flow в Angular (`/thread/:id`): завантаження гілки, CAPTCHA image reload і submit reply через `POST /api/comments`.
 - Ітерація 29: `thread-page` в Angular доповнено recursive-render reply, live text preview (`POST /api/comments/preview`), attachment upload (base64) і SignalR auto-refresh через `/hubs/comments`.
+- Ітерація 30: на root-list реалізовано create flow (submit + preview + captcha + attachment + SignalR live-refresh).
+- Ітерація 31: у `src/Comments.Web` додано media-preview вкладень (inline image preview + lazy txt preview) для root-list і thread-view.
 - Перевірено поточний статус відповідності: **100% виконання ТЗ ще не досягнуто** (залишається 3 невиконані та 2 частково виконані пункти).
 - Актуалізовано backlog у `docs/tz-compliance-checklist.md` і зафіксовано пріоритети:
   1. Angular LTS migration у `src/Comments.Web`;
