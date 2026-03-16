@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 27).
+Останнє оновлення: 2026-03-16 (ітерація 28).
 
 ## Підсумок
 
@@ -16,6 +16,25 @@
 
 
 
+
+
+## Оновлення ітерації 28
+
+### Внесені зміни в цій ітерації
+
+- ✅ Розширено `CommentsApiService` у `src/Comments.Web`: додано типізовані контракти `CommentNode`/`CommentAttachment`, завантаження thread (`GET /api/comments/{rootId}/thread`), CAPTCHA (`GET /api/captcha/image`) та створення коментаря/reply (`POST /api/comments`).
+- ✅ Оновлено сторінку `root-list`: виправлено тип `id` на `string` (GUID-сумісно з backend), додано відображення кількості відповідей і стабілізовано навігацію у `/thread/:id`.
+- ✅ Замість scaffold-заглушки реалізовано робочий `thread`-екран: завантаження гілки, рендер root-коментаря + відповідей, форма reply (user/email/text), оновлення CAPTCHA та повторне завантаження thread після успішного submit.
+
+### Що ще треба зробити у проєкті (актуально після ітерації 28)
+
+1. 🟨 Завершити **Angular LTS migration** у `src/Comments.Web`: додати рекурсивний tree-render для вкладених reply, preview перед submit, attachment upload/preview та SignalR live updates + e2e smoke.
+2. 🟨 Дозавершити **CQRS + MediatR + FluentValidation**: розширити success-path та edge-case integration покриття (REST + GraphQL), включно з shape `validationErrors` у GraphQL `extensions`.
+3. 🟨 Дозавершити **RabbitMQ production-hardening**: delayed retry/DLQ replay tooling, метрики consumer-обробки та алерти.
+4. 🟨 Виконати **фінальний Middle+ load-test** у середовищі RabbitMQ+Elasticsearch з оновленням `docs/load-test-middle-results.md` і `docs/artifacts/k6-middle-summary.json`.
+5. 🔲 Додати **Demo**-секцію в `README.md` з посиланням на 3–5 хв відео сценаріїв.
+
+---
 
 ## Оновлення ітерації 27
 
