@@ -24,10 +24,15 @@ public sealed class CommentsController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyCollection<CommentDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetPage([FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken cancellationToken = default)
+    [ProducesResponseType(typeof(PagedResult<CommentDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetPage(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 25,
+        [FromQuery] CommentSortField sortBy = CommentSortField.CreatedAtUtc,
+        [FromQuery] CommentSortDirection sortDirection = CommentSortDirection.Desc,
+        CancellationToken cancellationToken = default)
     {
-        var comments = await _commentService.GetPageAsync(page, pageSize, cancellationToken);
+        var comments = await _commentService.GetPageAsync(page, pageSize, sortBy, sortDirection, cancellationToken);
         return Ok(comments);
     }
 }

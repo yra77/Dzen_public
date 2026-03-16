@@ -11,7 +11,7 @@
   - DTO,
   - `CommentService` (валідація, санітизація, бізнес-логіка створення/вибірки).
 - `Comments.Api`:
-  - REST API `POST /api/comments`, `GET /api/comments`,
+  - REST API `POST /api/comments`, `GET /api/comments` (пагінація + сортування),
   - in-memory репозиторій,
   - базовий HTML sanitizer,
   - Swagger в development-режимі.
@@ -44,4 +44,4 @@ dotnet run --project src/Comments.Api/Comments.Api.csproj
 - Додати GraphQL (HotChocolate).
 - Інтегрувати RabbitMQ + Elasticsearch.
 - Додати CAPTCHA, завантаження файлів (image/txt), прев’ю та SignalR.
-- Підняти Angular SPA (таблиця, пагінація, сортування, nested thread view).
+- Підняти Angular SPA (таблиця, nested thread view).
