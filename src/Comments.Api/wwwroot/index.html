@@ -45,7 +45,18 @@
           <option value="Desc">Спочатку нові</option>
           <option value="Asc">Спочатку старі</option>
         </select>
+        <select id="pageSize">
+          <option value="10">10 / стор.</option>
+          <option value="25" selected>25 / стор.</option>
+          <option value="50">50 / стор.</option>
+          <option value="100">100 / стор.</option>
+        </select>
         <button id="reload">Оновити</button>
+      </div>
+      <div class="pagination" id="pagination-controls">
+        <button id="prev-page" type="button">← Попередня</button>
+        <span id="page-info">Сторінка 1</span>
+        <button id="next-page" type="button">Наступна →</button>
       </div>
       <div id="comments"></div>
     </section>

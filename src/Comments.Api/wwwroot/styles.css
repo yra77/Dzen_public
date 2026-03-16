@@ -40,14 +40,34 @@ button {
   color: white;
   border: none;
 }
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 .toolbar {
   display: grid;
-  grid-template-columns: 1fr 1fr 180px 180px 120px;
+  grid-template-columns: 1fr 1fr 150px 160px 130px 120px;
   gap: 8px;
   align-items: center;
 }
 .toolbar h2 {
   margin: 0;
+}
+.pagination {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+}
+.pagination button {
+  width: auto;
+  margin-top: 0;
+  padding-inline: 12px;
+}
+#page-info {
+  font-size: 14px;
+  color: #475467;
 }
 .comment {
   border: 1px solid #e5e7eb;
@@ -59,6 +79,18 @@ button {
 .comment .meta {
   font-size: 12px;
   color: #6b7280;
+}
+.comment-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.reply-btn {
+  width: auto;
+  margin-top: 0;
+  padding: 6px 10px;
+  background: #eaf2ff;
+  color: #1d4ed8;
+  border: 1px solid #bfd1ff;
 }
 .replies {
   margin-left: 18px;
@@ -79,6 +111,14 @@ button {
   .form-grid,
   .toolbar {
     grid-template-columns: 1fr;
+  }
+
+  .pagination {
+    justify-content: stretch;
+  }
+
+  .pagination button {
+    width: 100%;
   }
 }
 

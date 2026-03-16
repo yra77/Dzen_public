@@ -4,12 +4,24 @@ const statusEl = document.getElementById('form-status');
 const searchEl = document.getElementById('search');
 const sortByEl = document.getElementById('sortBy');
 const sortDirectionEl = document.getElementById('sortDirection');
+const pageSizeEl = document.getElementById('pageSize');
+const pageInfoEl = document.getElementById('page-info');
+const prevPageBtn = document.getElementById('prev-page');
+const nextPageBtn = document.getElementById('next-page');
 const reloadBtn = document.getElementById('reload');
 const attachmentInput = document.getElementById('attachment');
 const attachmentPreviewEl = document.getElementById('attachment-preview');
+const parentIdInput = form.elements.namedItem('parentId');
 
 const MAX_ATTACHMENT_SIZE = 1024 * 1024;
 const ALLOWED_ATTACHMENT_TYPES = new Set(['text/plain', 'image/png', 'image/jpeg', 'image/gif']);
+
+const state = {
+  page: 1,
+  totalPages: 1,
+  hasNextPage: false,
+  isSearchMode: false
+};
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -59,6 +71,10 @@ function renderAttachment(attachment) {
   return `<div>📎 <a href="${storagePath}" target="_blank">${fileName}</a></div>`;
 }
 
+function buildReplyButton(commentId) {
+  return `<button class="reply-btn" type="button" data-reply-id="${escapeHtml(commentId)}">↪ Відповісти</button>`;
+}
+
 function renderComment(comment) {
   const attachment = renderAttachment(comment.attachment);
 
@@ -75,10 +91,17 @@ function renderComment(comment) {
       <div><strong>${escapeHtml(comment.userName)}</strong> (${escapeHtml(comment.email)})${homepage}</div>
       <div class="meta">${new Date(comment.createdAtUtc).toLocaleString()} · ID: ${escapeHtml(comment.id)}</div>
       <p>${escapeHtml(comment.text)}</p>
+      <div class="comment-actions">${buildReplyButton(comment.id)}</div>
       ${attachment}
       ${replies}
     </article>
   `;
+}
+
+function updatePaginationControls() {
+  pageInfoEl.textContent = `Сторінка ${state.page} з ${state.totalPages}`;
+  prevPageBtn.disabled = state.page <= 1;
+  nextPageBtn.disabled = !state.hasNextPage;
 }
 
 function showAttachmentPreview(file) {
@@ -125,11 +148,15 @@ function showAttachmentPreview(file) {
   return true;
 }
 
-async function loadComments() {
+async function loadComments(page = state.page) {
   const q = searchEl.value.trim();
+  const pageSize = Number(pageSizeEl.value || '25');
+  state.page = Math.max(1, page);
+  state.isSearchMode = Boolean(q);
+
   const query = q
-    ? `/api/comments/search?q=${encodeURIComponent(q)}&page=1&pageSize=100`
-    : `/api/comments?page=1&pageSize=100&sortBy=${sortByEl.value}&sortDirection=${sortDirectionEl.value}`;
+    ? `/api/comments/search?q=${encodeURIComponent(q)}&page=${state.page}&pageSize=${pageSize}`
+    : `/api/comments?page=${state.page}&pageSize=${pageSize}&sortBy=${sortByEl.value}&sortDirection=${sortDirectionEl.value}`;
 
   const response = await fetch(query);
   if (!response.ok) {
@@ -137,14 +164,39 @@ async function loadComments() {
   }
 
   const data = await response.json();
+  state.totalPages = Math.max(1, data.totalPages || 1);
+  state.hasNextPage = data.page < data.totalPages;
+  state.page = data.page;
+  updatePaginationControls();
+
   commentsEl.innerHTML = data.items.length
     ? data.items.map(renderComment).join('')
     : '<p>Коментарів ще немає.</p>';
 }
 
+function focusReply(commentId) {
+  parentIdInput.value = commentId;
+  parentIdInput.focus();
+  parentIdInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  statusEl.className = 'status ok';
+  statusEl.textContent = `Відповідь буде додана до коментаря ${commentId}`;
+}
+
 attachmentInput.addEventListener('change', (e) => {
   const file = e.target.files?.[0] ?? null;
   showAttachmentPreview(file);
+});
+
+commentsEl.addEventListener('click', (e) => {
+  const target = e.target.closest('[data-reply-id]');
+  if (!target) {
+    return;
+  }
+
+  const commentId = target.getAttribute('data-reply-id');
+  if (commentId) {
+    focusReply(commentId);
+  }
 });
 
 form.addEventListener('submit', async (e) => {
@@ -184,10 +236,11 @@ form.addEventListener('submit', async (e) => {
     }
 
     form.reset();
+    state.page = 1;
     attachmentPreviewEl.innerHTML = '';
     statusEl.classList.add('ok');
     statusEl.textContent = 'Коментар створено.';
-    await loadComments();
+    await loadComments(1);
   } catch (error) {
     statusEl.classList.add('error');
     statusEl.textContent = `Помилка: ${error.message}`;
@@ -195,13 +248,35 @@ form.addEventListener('submit', async (e) => {
 });
 
 reloadBtn.addEventListener('click', () => {
-  loadComments().catch((error) => {
+  state.page = 1;
+  loadComments(1).catch((error) => {
+    commentsEl.innerHTML = `<p>Помилка завантаження: ${error.message}</p>`;
+  });
+});
+
+prevPageBtn.addEventListener('click', () => {
+  if (state.page <= 1) {
+    return;
+  }
+
+  loadComments(state.page - 1).catch((error) => {
+    commentsEl.innerHTML = `<p>Помилка завантаження: ${error.message}</p>`;
+  });
+});
+
+nextPageBtn.addEventListener('click', () => {
+  if (!state.hasNextPage) {
+    return;
+  }
+
+  loadComments(state.page + 1).catch((error) => {
     commentsEl.innerHTML = `<p>Помилка завантаження: ${error.message}</p>`;
   });
 });
 
 sortByEl.addEventListener('change', () => reloadBtn.click());
 sortDirectionEl.addEventListener('change', () => reloadBtn.click());
+pageSizeEl.addEventListener('change', () => reloadBtn.click());
 
 searchEl.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
@@ -221,7 +296,7 @@ async function connectSignalR() {
     .build();
 
   connection.on('commentCreated', async () => {
-    await loadComments();
+    await loadComments(state.page);
   });
 
   try {
