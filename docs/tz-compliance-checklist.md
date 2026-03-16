@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 13).
+Останнє оновлення: 2026-03-16 (ітерація 14).
 
 ## Підсумок
 
@@ -9,6 +9,41 @@
 - **Не виконано:** 3 пункти.
 
 > Висновок: поточний стан ще не покриває **всі** вимоги ТЗ на 100%. Документаційний контур синхронізовано з README, а незакриті пункти сфокусовано в практичному roadmap (Angular, CQRS, production-hardening RabbitMQ, фінальний прогін Middle+ load-test, demo).
+
+---
+
+
+## Оновлення ітерації 14
+
+- ✅ Підтверджено та зафіксовано єдиний статус між `README.md` і checklist: незакриті блоки залишаються ті самі (**Angular LTS frontend**, **CQRS/MediatR/FluentValidation**, **production-hardening RabbitMQ**, **фіналізація Middle+ load-test**, **demo**).
+- ✅ Додано практичний формат продовження робіт «що робити наступним комітом», щоб можна було рухатись без повторного перечитування всього ТЗ.
+- ✅ Уточнено очікувані артефакти приймання для кожного відкритого блоку (код + документ/звіт).
+
+### Що ще треба зробити у проєкті (актуально після ітерації 14)
+
+#### P0 — must-have для закриття ТЗ
+1. 🔲 **Angular SPA (LTS) у `src/Comments.Web`**
+   - Підняти Angular shell + маршрути `/` (таблиця root) і `/thread/:id` (гілка).
+   - Перенести функціонал з поточного `wwwroot`: create/reply, preview, captcha image challenge, attachments preview, SignalR live updates.
+   - Артефакти приймання: e2e smoke (create + reply + realtime) + оновлений README (розділ запуску фронтенду).
+2. 🔲 **CQRS + MediatR + FluentValidation**
+   - Винести use-cases у handlers (`AddComment`, `AddReply`, `GetCommentsPage`, `GetCommentTree`, `PreviewComment`).
+   - Додати validators + pipeline behaviors (validation/logging/telemetry).
+   - Артефакти приймання: unit-тести handlers/validators, без зміни зовнішніх REST/GraphQL контрактів.
+
+#### P1 — production readiness
+3. 🔲 **RabbitMQ hardening**
+   - Перенести ідемпотентність з in-memory у персистентне сховище (SQL/Redis).
+   - Додати retry/backoff policy, DLQ-спостережуваність, лічильники success/fail/retry + latency метрики.
+   - Артефакти приймання: runbook у `docs/` + інтеграційний тестовий сценарій для consumer chain.
+4. 🟨 **Middle+ load-test (фіналізація)**
+   - Реально виконати `load-test/comments-middle.js` у середовищі з RabbitMQ + Elasticsearch.
+   - Заповнити `docs/load-test-middle-results.md` і додати артефакт `docs/artifacts/k6-middle-summary.json`.
+   - Синхронізувати README посиланням на конкретний згенерований summary-файл.
+
+#### P2 — поставка
+5. 🔲 **Demo у README**
+   - Додати `Demo`-секцію з посиланням на 3–5 хв відео основних сценаріїв (create/reply, search/sort/page, attachment preview, realtime).
 
 ---
 
