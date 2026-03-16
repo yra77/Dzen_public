@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 15).
+Останнє оновлення: 2026-03-16 (ітерація 16).
 
 ## Підсумок
 
@@ -9,6 +9,43 @@
 - **Не виконано:** 3 пункти.
 
 > Висновок: поточний стан ще не покриває **всі** вимоги ТЗ на 100%. Документаційний контур синхронізовано з README, а незакриті пункти сфокусовано в практичному roadmap (Angular, CQRS, production-hardening RabbitMQ, фінальний прогін Middle+ load-test, demo).
+
+---
+
+## Оновлення ітерації 16
+
+### Внесені зміни в цій ітерації
+
+- ✅ Оновлено документаційний контур: `README.md` синхронізовано з поточним етапом (**ітерація 16**) і відкритими блокерами до 100% відповідності ТЗ.
+- ✅ У чеклісті зафіксовано актуальний фокус продовження без повторного повного аудиту: Angular LTS + CQRS/MediatR/FluentValidation як два P0-блокери.
+- ✅ Для P1/P2 уточнено практичний backlog: що саме доробити в RabbitMQ hardening, Middle+ load-test та delivery-частині (demo-відео).
+
+### Що ще треба зробити у проєкті (актуально після ітерації 16)
+
+#### P0 — must-have для закриття ТЗ
+1. 🔲 **Angular SPA (LTS) у `src/Comments.Web`**
+   - Підняти Angular shell + маршрути `/` (таблиця root) і `/thread/:id` (гілка).
+   - Перенести функціонал з поточного `wwwroot`: create/reply, preview, captcha image challenge, attachments preview, SignalR live updates.
+   - Артефакти приймання: e2e smoke (create + reply + realtime) + оновлений README (розділ запуску фронтенду).
+2. 🔲 **CQRS + MediatR + FluentValidation**
+   - Винести use-cases у handlers (`AddComment`, `AddReply`, `GetCommentsPage`, `GetCommentTree`, `PreviewComment`).
+   - Додати validators + pipeline behaviors (validation/logging/telemetry).
+   - Артефакти приймання: unit-тести handlers/validators, без зміни зовнішніх REST/GraphQL контрактів.
+
+#### P1 — production readiness
+3. 🟨 **RabbitMQ hardening**
+   - ✅ Наявний runbook `docs/rabbitmq-consumer-runbook.md`.
+   - 🔲 Перенести ідемпотентність з in-memory у персистентне сховище (SQL/Redis).
+   - 🔲 Додати метрики consumer-обробки (success/fail/retry + latency) і базові алерти.
+   - 🔲 Додати інтеграційний сценарій перевірки ланцюга retry → DLQ.
+4. 🟨 **Middle+ load-test (фіналізація)**
+   - Виконати `load-test/comments-middle.js` у середовищі з RabbitMQ + Elasticsearch.
+   - Зафіксувати результати в `docs/load-test-middle-results.md`.
+   - Додати/оновити артефакт `docs/artifacts/k6-middle-summary.json` і посилання в README.
+
+#### P2 — поставка
+5. 🔲 **Demo у README**
+   - Додати секцію `Demo` з посиланням на 3–5 хвилинне відео ключових сценаріїв.
 
 ---
 
