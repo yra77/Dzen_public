@@ -102,6 +102,15 @@ k6 run --summary-export=docs/artifacts/k6-middle-summary.json load-test/comments
 - Уточнено найближчий фокус: **Angular LTS migration** + **CQRS/MediatR/FluentValidation** без зміни зовнішніх REST/GraphQL контрактів.
 - Зафіксовано порядок наступних комітів, щоб пришвидшити доведення проєкту до 100% відповідності ТЗ.
 
+## Продовження робіт (ітерація 18)
+
+- Додано оновлений delivery-план: `docs/iteration-18-delivery-plan.md` з фокусом на завершення P0-блокерів та підготовку приймальних артефактів.
+- Оновлено `docs/tz-compliance-checklist.md`: синхронізовано поточний стан після ітерації 17 і зафіксовано конкретний backlog «що ще треба зробити» для P0/P1/P2.
+- Визначено пріоритет найближчих кроків:
+  1. Angular LTS migration у `src/Comments.Web` (паритет з поточним SPA-функціоналом);
+  2. CQRS + MediatR + FluentValidation у backend без зміни зовнішніх REST/GraphQL контрактів;
+  3. production-hardening RabbitMQ + фіналізація Middle+ load-test + Demo-артефакт у README.
+
 ## Наступні кроки (по ТЗ)
 
 - ✅ Підключено EF Core + підтримку SQL Server (через `Persistence:Provider=SqlServer`).
