@@ -99,9 +99,16 @@ import { environment } from '../../../environments/environment';
                       />
                     </a>
                   } @else if (comment.attachment.contentType === 'text/plain') {
-                    <button type="button" (click)="loadTextAttachment(comment.attachment.storagePath)">
+                    <button
+                      type="button"
+                      (click)="loadTextAttachment(comment.attachment.storagePath)"
+                      [disabled]="attachmentTextLoadingByPath.has(comment.attachment.storagePath)"
+                    >
                       Показати txt preview
                     </button>
+                    @if (attachmentTextLoadingByPath.has(comment.attachment.storagePath)) {
+                      <p class="meta">Завантаження txt preview...</p>
+                    }
                     @if (attachmentTextPreviewByPath[comment.attachment.storagePath]) {
                       <pre class="attachment-text">{{ attachmentTextPreviewByPath[comment.attachment.storagePath] }}</pre>
                     }

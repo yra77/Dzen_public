@@ -102,6 +102,7 @@ k6 run --summary-export=docs/artifacts/k6-middle-summary.json load-test/comments
 - Ітерація 29: `thread-page` в Angular доповнено recursive-render reply, live text preview (`POST /api/comments/preview`), attachment upload (base64) і SignalR auto-refresh через `/hubs/comments`.
 - Ітерація 30: на root-list реалізовано create flow (submit + preview + captcha + attachment + SignalR live-refresh).
 - Ітерація 31: у `src/Comments.Web` додано media-preview вкладень (inline image preview + lazy txt preview) для root-list і thread-view.
+- Ітерація 32: для lazy txt-preview у `src/Comments.Web` додано явний loading-state (disabled кнопка + індикатор завантаження) на root-list і thread-view.
 - Перевірено поточний статус відповідності: **100% виконання ТЗ ще не досягнуто** (залишається 3 невиконані та 2 частково виконані пункти).
 - Актуалізовано backlog у `docs/tz-compliance-checklist.md` і зафіксовано пріоритети:
   1. Angular LTS migration у `src/Comments.Web`;

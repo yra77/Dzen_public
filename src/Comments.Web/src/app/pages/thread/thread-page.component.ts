@@ -38,7 +38,16 @@ import { environment } from '../../../environments/environment';
                   />
                 </a>
               } @else if (thread.attachment.contentType === 'text/plain') {
-                <button type="button" (click)="loadTextAttachment(thread.attachment.storagePath)">Показати txt preview</button>
+                <button
+                  type="button"
+                  (click)="loadTextAttachment(thread.attachment.storagePath)"
+                  [disabled]="attachmentTextLoadingByPath.has(thread.attachment.storagePath)"
+                >
+                  Показати txt preview
+                </button>
+                @if (attachmentTextLoadingByPath.has(thread.attachment.storagePath)) {
+                  <p class="meta">Завантаження txt preview...</p>
+                }
                 @if (attachmentTextPreviewByPath[thread.attachment.storagePath]) {
                   <pre class="attachment-text">{{ attachmentTextPreviewByPath[thread.attachment.storagePath] }}</pre>
                 }
@@ -73,7 +82,16 @@ import { environment } from '../../../environments/environment';
                           />
                         </a>
                       } @else if (reply.attachment.contentType === 'text/plain') {
-                        <button type="button" (click)="loadTextAttachment(reply.attachment.storagePath)">Показати txt preview</button>
+                        <button
+                          type="button"
+                          (click)="loadTextAttachment(reply.attachment.storagePath)"
+                          [disabled]="attachmentTextLoadingByPath.has(reply.attachment.storagePath)"
+                        >
+                          Показати txt preview
+                        </button>
+                        @if (attachmentTextLoadingByPath.has(reply.attachment.storagePath)) {
+                          <p class="meta">Завантаження txt preview...</p>
+                        }
                         @if (attachmentTextPreviewByPath[reply.attachment.storagePath]) {
                           <pre class="attachment-text">{{ attachmentTextPreviewByPath[reply.attachment.storagePath] }}</pre>
                         }
