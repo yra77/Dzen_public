@@ -44,13 +44,28 @@ public sealed class CommentService
         return Map(comment);
     }
 
-    public async Task<IReadOnlyCollection<CommentDto>> GetPageAsync(int page, int pageSize, CancellationToken cancellationToken)
+    public async Task<PagedResult<CommentDto>> GetPageAsync(
+        int page,
+        int pageSize,
+        CommentSortField sortField,
+        CommentSortDirection sortDirection,
+        CancellationToken cancellationToken)
     {
         if (page <= 0) throw new ArgumentOutOfRangeException(nameof(page));
         if (pageSize <= 0) throw new ArgumentOutOfRangeException(nameof(pageSize));
 
-        var comments = await _repository.GetRootCommentsAsync(page, pageSize, cancellationToken);
-        return comments.Select(Map).ToArray();
+        var (comments, totalCount) = await _repository.GetRootCommentsAsync(
+            page,
+            pageSize,
+            sortField,
+            sortDirection,
+            cancellationToken);
+
+        return new PagedResult<CommentDto>(
+            page,
+            pageSize,
+            totalCount,
+            comments.Select(Map).ToArray());
     }
 
     private static void Validate(CreateCommentRequest request)
