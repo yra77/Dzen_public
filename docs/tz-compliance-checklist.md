@@ -1,12 +1,12 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 4).
+Останнє оновлення: 2026-03-16 (ітерація 5).
 
 ## Підсумок
 
-- **Повністю виконано:** 29 пунктів.
+- **Повністю виконано:** 30 пунктів.
 - **Частково виконано:** 3 пункти.
-- **Не виконано:** 5 пунктів.
+- **Не виконано:** 4 пункти.
 
 > Висновок: поточний стан ще не покриває **всі** вимоги ТЗ на 100%, але закрито критичний блок валідації `Text`.
 
@@ -54,7 +54,7 @@
 | GraphQL як основний API | 🟨 | GraphQL є, але REST також first-class; у UI перемикач режимів. |
 | GraphQL операції `commentsPage`, `commentTree`, `addComment`, `addReply`, `previewComment` | ✅ | Додано окремі GraphQL операції `commentsPage`, `commentTree`, `addComment`, `addReply`, `previewComment` (збережено зворотну сумісність через `comments`/`createComment`). |
 | RabbitMQ подія `comment.created` | ✅ | Реалізовано опційно через конфіг. |
-| Черги `indexing` і `file-processing` | ❌ | Публікація в `comments` exchange (`comment.created`), без окремої прикладної логіки для 2 черг. |
+| Черги `indexing` і `file-processing` | ✅ | Додано декларацію 2 черг у RabbitMQ, bind до `comments.events` та публікацію окремих routing key (`comment.created.indexing`, `comment.created.file-processing`). |
 | Elasticsearch індексація/пошук | ✅ | Індексування при створенні + пошук + backfill. |
 | SignalR real-time події нових коментарів | ✅ | Hub `/hubs/comments`, подія `commentCreated`. |
 
@@ -112,9 +112,11 @@
   - mutation `createComment` залишена як alias для сумісності.
 - ✅ Оновлено статус відповідності ТЗ для блоку GraphQL-операцій.
 
+- ✅ RabbitMQ-публікацію розширено для задачних черг: додано `indexing` і `file-processing` (declare/bind/publish) з окремими routing keys; `file-processing` подія відправляється лише коли коментар має вкладення.
+
 ## Що ще треба зробити у проєкті
 
 1. 🔲 **Angular SPA (LTS) замість vanilla JS** — критичний невиконаний пункт ТЗ.
 2. 🔲 **CQRS + MediatR + FluentValidation** — впровадити command/query pipeline та валідатори.
 3. 🟨 **Довільна глибина вкладеності коментарів** — прибрати/переглянути ліміт `MaxThreadDepth=10` або узгодити як технічне обмеження.
-4. 🟨 **RabbitMQ черги `indexing` і `file-processing`** — додати прикладну маршрутизацію/консьюмери окремо від загальної події `comment.created`.
+4. 🟨 **RabbitMQ-консьюмери для `indexing`/`file-processing`** — черги і routing вже є, але відсутні окремі worker/consumer сервіси з retry/DLQ.
