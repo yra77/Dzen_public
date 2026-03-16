@@ -5,4 +5,5 @@ public sealed record CreateCommentRequest(
     string Email,
     string? HomePage,
     string Text,
-    Guid? ParentId);
+    Guid? ParentId,
+    string? CaptchaToken);
