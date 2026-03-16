@@ -22,6 +22,7 @@ const textInput = form.elements.namedItem('text');
 const textPreviewContentEl = document.getElementById('text-preview-content');
 
 const MAX_ATTACHMENT_SIZE = 1024 * 1024;
+const MAX_TEXT_ATTACHMENT_SIZE = 100 * 1024;
 const ALLOWED_ATTACHMENT_TYPES = new Set(['text/plain', 'image/png', 'image/jpeg', 'image/gif']);
 const MAX_GRAPHQL_THREAD_DEPTH = 10;
 
@@ -238,6 +239,11 @@ function showAttachmentPreview(file) {
 
   if (!isAllowedAttachment(file)) {
     attachmentPreviewEl.innerHTML = '<p class="error">Недозволений тип вкладення.</p>';
+    return false;
+  }
+
+  if (file.type === 'text/plain' && file.size > MAX_TEXT_ATTACHMENT_SIZE) {
+    attachmentPreviewEl.innerHTML = '<p class="error">TXT-файл перевищує 100KB.</p>';
     return false;
   }
 
