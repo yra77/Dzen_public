@@ -1,11 +1,11 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16.
+Останнє оновлення: 2026-03-16 (ітерація 2).
 
 ## Підсумок
 
-- **Повністю виконано:** 20 пунктів.
-- **Частково виконано:** 6 пунктів.
+- **Повністю виконано:** 21 пункт.
+- **Частково виконано:** 5 пунктів.
 - **Не виконано:** 2 пункти.
 
 > Висновок: поточний стан ще не покриває **всі** вимоги ТЗ на 100%, але закрито критичний блок валідації `Text`.
@@ -52,7 +52,7 @@
 |---|---|---|
 | REST API create/list | ✅ | Реалізовано. |
 | GraphQL як основний API | 🟨 | GraphQL є, але REST також first-class; у UI перемикач режимів. |
-| GraphQL операції `commentsPage`, `commentTree`, `addComment`, `addReply`, `previewComment` | 🟨 | Додано `previewComment`; `commentsPage`/`commentTree`/`addReply` ще не виділені окремими операціями. |
+| GraphQL операції `commentsPage`, `commentTree`, `addComment`, `addReply`, `previewComment` | ✅ | Додано окремі GraphQL операції `commentsPage`, `commentTree`, `addComment`, `addReply`, `previewComment` (збережено зворотну сумісність через `comments`/`createComment`). |
 | RabbitMQ подія `comment.created` | ✅ | Реалізовано опційно через конфіг. |
 | Черги `indexing` і `file-processing` | ❌ | Публікація в `comments` exchange (`comment.created`), без окремої прикладної логіки для 2 черг. |
 | Elasticsearch індексація/пошук | ✅ | Індексування при створенні + пошук + backfill. |
@@ -96,3 +96,24 @@
 5. Розширити RabbitMQ-пайплайн до окремих задач `indexing`/`file-processing`.
 6. Розширити load-test до вимог Middle+ і зафіксувати метрики.
 7. Додати відео-демо у README.
+
+
+## Останні внесені зміни
+
+- ✅ Додано сервісний метод `GetThreadAsync(...)` для отримання дерева конкретної гілки коментарів за `rootCommentId`.
+- ✅ У GraphQL додано окремі операції:
+  - query `commentsPage` (окремо від legacy `comments`),
+  - query `commentTree(rootCommentId, ...)`,
+  - mutation `addComment`,
+  - mutation `addReply`,
+  - mutation `createComment` залишена як alias для сумісності.
+- ✅ Оновлено статус відповідності ТЗ для блоку GraphQL-операцій.
+
+## Що ще треба зробити у проєкті
+
+1. 🔲 **Angular SPA (LTS) замість vanilla JS** — критичний невиконаний пункт ТЗ.
+2. 🔲 **CQRS + MediatR + FluentValidation** — впровадити command/query pipeline та валідатори.
+3. 🟨 **Довільна глибина вкладеності коментарів** — прибрати/переглянути ліміт `MaxThreadDepth=10` або узгодити як технічне обмеження.
+4. 🟨 **Табличний рендер кореневих коментарів** — перейти з cards-layout на table-markup згідно формулювання ТЗ.
+5. 🟨 **Клієнтська валідація parity** — довести UX-паритет із сервером для всіх кейсів sanitizer/XHTML помилок.
+6. 🟨 **RabbitMQ черги `indexing` і `file-processing`** — додати прикладну маршрутизацію/консьюмери окремо від загальної події `comment.created`.
