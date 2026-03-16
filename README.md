@@ -12,6 +12,7 @@
   - `CommentService` (валідація, санітизація, бізнес-логіка створення/вибірки).
 - `Comments.Api`:
   - REST API `POST /api/comments`, `GET /api/comments` (пагінація + сортування),
+  - REST API пошуку `GET /api/comments/search?q=...` через Elasticsearch,
   - GraphQL endpoint `POST /graphql` (query comments + mutation createComment),
   - EF Core репозиторій (`InMemory` за замовчуванням + підтримка `SqlServer` через конфіг),
   - базовий HTML sanitizer,
@@ -46,7 +47,7 @@ dotnet run --project src/Comments.Api/Comments.Api.csproj
 - ✅ Додано публікацію події `comment.created` у RabbitMQ (опційно, через конфіг `RabbitMq:Enabled=true`).
 - ✅ Додано базову CAPTCHA-перевірку під час створення коментаря (`Captcha:Enabled`, `Captcha:ExpectedToken`).
 - ✅ Додано базову підтримку вкладень `image/txt` (base64 upload, валідація типу/розміру, локальне збереження).
-- Інтегрувати Elasticsearch.
+- ✅ Додано опційну інтеграцію з Elasticsearch (індексація + пошук).
 - Додати CAPTCHA, завантаження файлів (image/txt), прев’ю та SignalR.
 - Підняти Angular SPA (таблиця, nested thread view).
 
@@ -59,7 +60,7 @@ dotnet run --project src/Comments.Api/Comments.Api.csproj
   - `POST /api/comments`
   - `GET /api/comments` (пагінація + сортування)
 - ✅ **GraphQL API**:
-  - query `comments`
+  - query `comments`, `searchComments`
   - mutation `createComment`
 - ✅ **Persistence**:
   - InMemory провайдер за замовчуванням,
@@ -70,9 +71,9 @@ dotnet run --project src/Comments.Api/Comments.Api.csproj
 ### Ще не реалізовано (наступний етап)
 
 1. 🔲 **Elasticsearch**
-   - індексація коментарів,
-   - запити пошуку/фільтрації,
-   - синхронізація з основним сховищем.
+   - ✅ індексація нових коментарів при створенні,
+   - ✅ запити повнотекстового пошуку (`text`, `userName`, `email`),
+   - 🟨 синхронізація історичних даних з основним сховищем (бекфіл/реіндексація).
 2. 🟨 **Антиспам/безпека для форми**
    - ✅ базова серверна CAPTCHA-перевірка у створенні коментаря,
    - 🔲 інтеграція з реальною CAPTCHA-платформою (наприклад, reCAPTCHA/hCaptcha).
