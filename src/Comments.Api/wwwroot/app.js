@@ -12,6 +12,9 @@ const reloadBtn = document.getElementById('reload');
 const attachmentInput = document.getElementById('attachment');
 const attachmentPreviewEl = document.getElementById('attachment-preview');
 const parentIdInput = form.elements.namedItem('parentId');
+const replyContextEl = document.getElementById('reply-context');
+const replyContextTextEl = document.getElementById('reply-context-text');
+const clearReplyContextBtn = document.getElementById('clear-reply-context');
 
 const MAX_ATTACHMENT_SIZE = 1024 * 1024;
 const ALLOWED_ATTACHMENT_TYPES = new Set(['text/plain', 'image/png', 'image/jpeg', 'image/gif']);
@@ -174,8 +177,21 @@ async function loadComments(page = state.page) {
     : '<p>Коментарів ще немає.</p>';
 }
 
+function clearReplyContext(showStatus = true) {
+  parentIdInput.value = '';
+  replyContextEl.classList.add('hidden');
+  replyContextTextEl.textContent = '';
+
+  if (showStatus) {
+    statusEl.className = 'status';
+    statusEl.textContent = 'Режим відповіді скасовано.';
+  }
+}
+
 function focusReply(commentId) {
   parentIdInput.value = commentId;
+  replyContextEl.classList.remove('hidden');
+  replyContextTextEl.textContent = `Ви відповідаєте на коментар ${commentId}`;
   parentIdInput.focus();
   parentIdInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
   statusEl.className = 'status ok';
@@ -238,6 +254,7 @@ form.addEventListener('submit', async (e) => {
     form.reset();
     state.page = 1;
     attachmentPreviewEl.innerHTML = '';
+    clearReplyContext(false);
     statusEl.classList.add('ok');
     statusEl.textContent = 'Коментар створено.';
     await loadComments(1);
@@ -272,6 +289,22 @@ nextPageBtn.addEventListener('click', () => {
   loadComments(state.page + 1).catch((error) => {
     commentsEl.innerHTML = `<p>Помилка завантаження: ${error.message}</p>`;
   });
+});
+
+clearReplyContextBtn.addEventListener('click', () => {
+  clearReplyContext();
+});
+
+parentIdInput.addEventListener('input', () => {
+  const manualValue = parentIdInput.value.trim();
+  if (!manualValue) {
+    replyContextEl.classList.add('hidden');
+    replyContextTextEl.textContent = '';
+    return;
+  }
+
+  replyContextEl.classList.remove('hidden');
+  replyContextTextEl.textContent = `Встановлено parentId: ${manualValue}`;
 });
 
 sortByEl.addEventListener('change', () => reloadBtn.click());
