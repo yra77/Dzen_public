@@ -67,7 +67,7 @@ public sealed class CommentService
 
         await _repository.AddAsync(comment, cancellationToken);
 
-        var createdComment = Map(comment);
+        var createdComment = Map(comment, CommentSortField.CreatedAtUtc, CommentSortDirection.Desc);
         await _commentCreatedPublisher.PublishAsync(createdComment, cancellationToken);
 
         return createdComment;
@@ -94,7 +94,7 @@ public sealed class CommentService
             page,
             pageSize,
             totalCount,
-            comments.Select(Map).ToArray());
+            comments.Select(x => Map(x, sortField, sortDirection)).ToArray());
     }
 
     private async Task ValidateAsync(CreateCommentRequest request, CancellationToken cancellationToken)
@@ -127,9 +127,11 @@ public sealed class CommentService
         }
     }
 
-    private static CommentDto Map(Comment comment)
+    private static CommentDto Map(Comment comment, CommentSortField sortField, CommentSortDirection sortDirection)
     {
-        var replies = comment.Replies.Select(Map).ToArray();
+        var replies = Sort(comment.Replies, sortField, sortDirection)
+            .Select(x => Map(x, sortField, sortDirection))
+            .ToArray();
 
         return new CommentDto(
             comment.Id,
@@ -147,5 +149,21 @@ public sealed class CommentService
                     comment.AttachmentStoragePath,
                     comment.AttachmentSizeBytes ?? 0),
             replies);
+    }
+
+    private static IEnumerable<Comment> Sort(
+        IEnumerable<Comment> comments,
+        CommentSortField sortField,
+        CommentSortDirection sortDirection)
+    {
+        return (sortField, sortDirection) switch
+        {
+            (CommentSortField.UserName, CommentSortDirection.Asc) => comments.OrderBy(x => x.UserName),
+            (CommentSortField.UserName, CommentSortDirection.Desc) => comments.OrderByDescending(x => x.UserName),
+            (CommentSortField.Email, CommentSortDirection.Asc) => comments.OrderBy(x => x.Email),
+            (CommentSortField.Email, CommentSortDirection.Desc) => comments.OrderByDescending(x => x.Email),
+            (CommentSortField.CreatedAtUtc, CommentSortDirection.Asc) => comments.OrderBy(x => x.CreatedAtUtc),
+            _ => comments.OrderByDescending(x => x.CreatedAtUtc)
+        };
     }
 }
