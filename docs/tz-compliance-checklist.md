@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 23).
+Останнє оновлення: 2026-03-16 (ітерація 24).
 
 ## Підсумок
 
@@ -9,6 +9,26 @@
 - **Не виконано:** 3 пункти.
 
 > Висновок: поточний стан ще не покриває **всі** вимоги ТЗ на 100%. Документаційний контур синхронізовано з README, а незакриті пункти сфокусовано в практичному roadmap (Angular, CQRS, production-hardening RabbitMQ, фінальний прогін Middle+ load-test, demo).
+
+---
+
+
+
+## Оновлення ітерації 24
+
+### Внесені зміни в цій ітерації
+
+- ✅ Додано окремий test-проєкт `Comments.Application.Tests` з unit-тестами для `ValidationBehavior` (happy-path + `ValidationException` сценарій).
+- ✅ Посилено перевірку CQRS/FluentValidation: додано автотест, що невалідний `SearchCommentsQuery` (empty query, invalid page/pageSize) блокується pipeline-ом до виконання handler.
+- ✅ Із `CommentService.GetPageAsync` прибрано дублювання guard-перевірок `page/pageSize`; тепер валідація централізована на рівні query validator + MediatR pipeline.
+
+### Що ще треба зробити у проєкті (актуально після ітерації 24)
+
+1. 🔲 Завершити **Angular LTS migration** у `src/Comments.Web` (routes `/`, `/thread/:id`, list/tree, create/reply, preview, captcha, attachments, realtime).
+2. 🟨 Дозавершити **CQRS + MediatR + FluentValidation**: додати API/integration тести для HTTP/GraphQL-помилок валідації (400/GraphQL errors) і покрити решту edge-case валідацій.
+3. 🟨 Дозавершити **RabbitMQ production-hardening**: delayed retry/DLQ replay tooling, метрики consumer-обробки та алерти.
+4. 🟨 Виконати **фінальний Middle+ load-test** у середовищі RabbitMQ+Elasticsearch і оновити артефакти в `docs/`.
+5. 🔲 Додати **Demo**-секцію у `README.md` з посиланням на 3–5 хвилинне відео.
 
 ---
 
