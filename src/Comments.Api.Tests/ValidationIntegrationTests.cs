@@ -582,6 +582,89 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
         Assert.Equal(new[] { $"zulu-{unique}@example.com", $"alpha-{unique}@example.com" }, replies);
     }
 
+    [Fact]
+    public async Task GetComments_WithSortAndPagination_ReturnsExpectedPageSlice()
+    {
+        using var client = _factory.CreateClient();
+
+        var unique = Guid.NewGuid().ToString("N");
+
+        await CreateCommentAsync(client, $"Echo{unique}", $"echo-{unique}@example.com", "Root Echo");
+        await CreateCommentAsync(client, $"Alpha{unique}", $"alpha-{unique}@example.com", "Root Alpha");
+        await CreateCommentAsync(client, $"Delta{unique}", $"delta-{unique}@example.com", "Root Delta");
+        await CreateCommentAsync(client, $"Charlie{unique}", $"charlie-{unique}@example.com", "Root Charlie");
+        await CreateCommentAsync(client, $"Bravo{unique}", $"bravo-{unique}@example.com", "Root Bravo");
+
+        var response = await client.GetAsync("/api/comments?page=2&pageSize=2&sortBy=UserName&sortDirection=Asc");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<PagedResult<CommentDto>>();
+        Assert.NotNull(payload);
+        Assert.Equal(2, payload!.Page);
+        Assert.Equal(2, payload.PageSize);
+        Assert.True(payload.TotalCount >= 5);
+        Assert.Equal(2, payload.Items.Count);
+        Assert.Equal($"Charlie{unique}", payload.Items[0].UserName);
+        Assert.Equal($"Delta{unique}", payload.Items[1].UserName);
+    }
+
+    [Fact]
+    public async Task GraphQlComments_WithSortAndBoundaryPageSize_ReturnsExpectedOrderingWithoutErrors()
+    {
+        using var client = _factory.CreateClient();
+
+        var unique = Guid.NewGuid().ToString("N");
+
+        await CreateCommentAsync(client, $"UserA{unique}", $"a-{unique}@example.com", "Root A");
+        await CreateCommentAsync(client, $"UserB{unique}", $"b-{unique}@example.com", "Root B");
+        await CreateCommentAsync(client, $"UserC{unique}", $"c-{unique}@example.com", "Root C");
+
+        var body = new
+        {
+            query = @"query($page: Int!, $pageSize: Int!, $sortBy: CommentSortField!, $sortDirection: CommentSortDirection!) {
+  comments(page: $page, pageSize: $pageSize, sortBy: $sortBy, sortDirection: $sortDirection) {
+    page
+    pageSize
+    totalCount
+    items {
+      email
+    }
+  }
+}",
+            variables = new
+            {
+                page = 1,
+                pageSize = 100,
+                sortBy = "Email",
+                sortDirection = "Desc"
+            }
+        };
+
+        var response = await client.PostAsJsonAsync("/graphql", body);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<GraphQlResponse>();
+        Assert.NotNull(payload);
+        Assert.Null(payload!.Errors);
+        Assert.True(payload.Data.HasValue);
+
+        var comments = payload.Data!.Value.GetProperty("comments");
+        Assert.Equal(1, comments.GetProperty("page").GetInt32());
+        Assert.Equal(100, comments.GetProperty("pageSize").GetInt32());
+
+        var uniqueEmails = comments
+            .GetProperty("items")
+            .EnumerateArray()
+            .Select(x => x.GetProperty("email").GetString())
+            .Where(x => x is not null && x.Contains(unique, StringComparison.Ordinal))
+            .Cast<string>()
+            .ToArray();
+
+        Assert.Equal(new[] { $"c-{unique}@example.com", $"b-{unique}@example.com", $"a-{unique}@example.com" }, uniqueEmails);
+    }
+
     private static async Task<CommentDto> CreateCommentAsync(
         HttpClient client,
         string userName,

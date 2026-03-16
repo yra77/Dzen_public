@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 38).
+Останнє оновлення: 2026-03-16 (ітерація 39).
 
 ## Підсумок
 
@@ -21,6 +21,33 @@
 
 
 
+
+## Оновлення ітерації 39
+
+### Внесені зміни в цій ітерації
+
+- ✅ Розширено integration-покриття `src/Comments.Api.Tests/ValidationIntegrationTests.cs` mixed sort/pagination сценарієм для REST: додано тест `GetComments_WithSortAndPagination_ReturnsExpectedPageSlice`, який перевіряє `page=2&pageSize=2&sortBy=UserName&sortDirection=Asc` і очікуваний порядок елементів на другій сторінці.
+- ✅ Додано GraphQL integration-сценарій `GraphQlComments_WithSortAndBoundaryPageSize_ReturnsExpectedOrderingWithoutErrors`, що перевіряє комбінацію `comments(page:1, pageSize:100, sortBy: Email, sortDirection: Desc)` та порядок елементів у `items`.
+- ✅ Backlog по CQRS + FluentValidation edge-cases звужено для paged-list контрактів: mixed sort/filter напрямок деталізовано додатковими mixed sort/pagination перевірками у REST і GraphQL.
+
+### Що ще треба зробити у проєкті (актуально після ітерації 39)
+
+1. 🟨 **Angular LTS (довести до production-ready):**
+   - додати e2e smoke для ключових user-flow (`root create`, `thread reply`, `preview`, `attachments`, `realtime`);
+   - уніфікувати UX-відображення API/GraphQL validation помилок.
+2. 🟨 **CQRS + MediatR + FluentValidation (закриття edge-cases):**
+   - додати mixed `sort/filter` сценарії для paged list (`comments`) у REST та GraphQL, включно з boundary pagination у комбінації з `sortBy/sortDirection` (частково закрито цією ітерацією; залишаються кейси з одночасним filter-параметром);
+   - формалізувати контракт `validationErrors` у GraphQL `extensions` в README/API docs.
+3. 🟨 **RabbitMQ production-hardening:**
+   - довести delayed retry + DLQ replay tooling;
+   - додати метрики consumer-обробки та базові alert-умови.
+4. 🔲 **Фінальний Middle+ load-test у цільовому контурі RabbitMQ + Elasticsearch:**
+   - виконати прогін `load-test/comments-middle.js`;
+   - заповнити `docs/load-test-middle-results.md` фактичними метриками та додати актуальний `docs/artifacts/k6-middle-summary.json`.
+5. 👤 **Delivery-артефакт Demo:**
+   - пункт делеговано власнику репозиторію (секція `Demo` у `README.md` + посилання на відео) — у цій ітерації не змінювався.
+
+---
 
 ## Оновлення ітерації 38
 
