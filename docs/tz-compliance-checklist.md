@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 21).
+Останнє оновлення: 2026-03-16 (ітерація 22).
 
 ## Підсумок
 
@@ -12,6 +12,24 @@
 
 ---
 
+
+## Оновлення ітерації 22
+
+### Внесені зміни в цій ітерації
+
+- ✅ Розпочато практичну декомпозицію backend use-cases у CQRS-стиль через MediatR: додано команди/запити `CreateComment`, `GetCommentsPage`, `GetCommentThread`, `PreviewComment` з окремими handler-ами.
+- ✅ Додано FluentValidation + MediatR pipeline behavior (`ValidationBehavior`) для валідації команд/запитів до виконання бізнес-логіки.
+- ✅ Оновлено REST/GraphQL інтеграцію на dispatch через `IMediator` без змін зовнішніх контрактів; додано REST endpoint гілки `GET /api/comments/{rootCommentId}/thread`.
+
+### Що ще треба зробити у проєкті (актуально після ітерації 22)
+
+1. 🔲 Завершити **Angular LTS migration** у `src/Comments.Web` (routes `/`, `/thread/:id`, list/tree, create/reply, preview, captcha, attachments, realtime).
+2. 🟨 Дозавершити **CQRS + MediatR + FluentValidation**: винести пошук у dedicated query/handler, прибрати дублювання валідації з `CommentService`, додати інтеграційні тести пайплайну валідації.
+3. 🟨 Дозавершити **RabbitMQ production-hardening**: delayed retry/DLQ replay tooling, метрики consumer-обробки та алерти.
+4. 🟨 Виконати **фінальний Middle+ load-test** у середовищі RabbitMQ+Elasticsearch і оновити артефакти в `docs/`.
+5. 🔲 Додати **Demo**-секцію у `README.md` з посиланням на 3–5 хвилинне відео.
+
+---
 
 ## Оновлення ітерації 21
 

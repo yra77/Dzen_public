@@ -1,43 +1,44 @@
 using Comments.Application.DTOs;
-using Comments.Application.Services;
+using Comments.Application.Features.Comments.Queries.GetCommentsPage;
+using Comments.Application.Features.Comments.Queries.GetCommentThread;
+using Comments.Application.Features.Comments.Queries.PreviewComment;
 using Comments.Api.Infrastructure;
+using MediatR;
 
 namespace Comments.Api.GraphQL;
 
 public sealed class CommentQueries
 {
     public Task<PagedResult<CommentDto>> CommentsPage(
-        [Service] CommentService commentService,
+        [Service] IMediator mediator,
         int page = 1,
         int pageSize = 25,
         CommentSortField sortBy = CommentSortField.CreatedAtUtc,
         CommentSortDirection sortDirection = CommentSortDirection.Desc,
         CancellationToken cancellationToken = default)
     {
-        return commentService.GetPageAsync(page, pageSize, sortBy, sortDirection, cancellationToken);
+        return mediator.Send(new GetCommentsPageQuery(page, pageSize, sortBy, sortDirection), cancellationToken);
     }
 
-
-
     public Task<PagedResult<CommentDto>> Comments(
-        [Service] CommentService commentService,
+        [Service] IMediator mediator,
         int page = 1,
         int pageSize = 25,
         CommentSortField sortBy = CommentSortField.CreatedAtUtc,
         CommentSortDirection sortDirection = CommentSortDirection.Desc,
         CancellationToken cancellationToken = default)
     {
-        return CommentsPage(commentService, page, pageSize, sortBy, sortDirection, cancellationToken);
+        return CommentsPage(mediator, page, pageSize, sortBy, sortDirection, cancellationToken);
     }
 
     public Task<CommentDto> CommentTree(
-        [Service] CommentService commentService,
+        [Service] IMediator mediator,
         Guid rootCommentId,
         CommentSortField sortBy = CommentSortField.CreatedAtUtc,
         CommentSortDirection sortDirection = CommentSortDirection.Desc,
         CancellationToken cancellationToken = default)
     {
-        return commentService.GetThreadAsync(rootCommentId, sortBy, sortDirection, cancellationToken);
+        return mediator.Send(new GetCommentThreadQuery(rootCommentId, sortBy, sortDirection), cancellationToken);
     }
 
     public Task<PagedResult<CommentDto>> SearchComments(
@@ -50,10 +51,11 @@ public sealed class CommentQueries
         return searchService.SearchAsync(query, page, pageSize, cancellationToken);
     }
 
-    public string PreviewComment(
-        [Service] CommentService commentService,
-        string text)
+    public async Task<string> PreviewComment(
+        [Service] IMediator mediator,
+        string text,
+        CancellationToken cancellationToken = default)
     {
-        return commentService.Preview(text);
+        return await mediator.Send(new PreviewCommentQuery(text), cancellationToken);
     }
 }

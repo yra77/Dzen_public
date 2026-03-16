@@ -1,12 +1,13 @@
 using Comments.Application.DTOs;
-using Comments.Application.Services;
+using Comments.Application.Features.Comments.Commands.CreateComment;
+using MediatR;
 
 namespace Comments.Api.GraphQL;
 
 public sealed class CommentMutations
 {
     public Task<CommentDto> AddComment(
-        [Service] CommentService commentService,
+        [Service] IMediator mediator,
         CreateCommentInput input,
         CancellationToken cancellationToken)
     {
@@ -24,11 +25,11 @@ public sealed class CommentMutations
                     input.Attachment.ContentType,
                     input.Attachment.Base64Content));
 
-        return commentService.CreateAsync(request, cancellationToken);
+        return mediator.Send(new CreateCommentCommand(request), cancellationToken);
     }
 
     public Task<CommentDto> AddReply(
-        [Service] CommentService commentService,
+        [Service] IMediator mediator,
         AddReplyInput input,
         CancellationToken cancellationToken)
     {
@@ -46,14 +47,14 @@ public sealed class CommentMutations
                     input.Attachment.ContentType,
                     input.Attachment.Base64Content));
 
-        return commentService.CreateAsync(request, cancellationToken);
+        return mediator.Send(new CreateCommentCommand(request), cancellationToken);
     }
 
     public Task<CommentDto> CreateComment(
-        [Service] CommentService commentService,
+        [Service] IMediator mediator,
         CreateCommentInput input,
         CancellationToken cancellationToken)
     {
-        return AddComment(commentService, input, cancellationToken);
+        return AddComment(mediator, input, cancellationToken);
     }
 }

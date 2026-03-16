@@ -1,9 +1,12 @@
+using Comments.Application.Common.Behaviors;
 using Comments.Api.Infrastructure;
 using Comments.Api.GraphQL;
 using Comments.Api.Realtime;
 using Comments.Application.Abstractions;
 using Comments.Application.Services;
 using Microsoft.EntityFrameworkCore;
+using MediatR;
+using FluentValidation;
 using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -89,6 +92,9 @@ if (signalrOptions.Enabled)
 }
 
 builder.Services.AddScoped<CommentService>();
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<CommentService>());
+builder.Services.AddValidatorsFromAssemblyContaining<CommentService>();
+builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
 builder.Services
