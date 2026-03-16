@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Comments.Application", "src
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Comments.Api", "src/Comments.Api/Comments.Api.csproj", "{2C22403D-BC15-4E8B-9E49-107A4C4E8FA3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Comments.Infrastructure", "src/Comments.Infrastructure/Comments.Infrastructure.csproj", "{B8D78959-1DF1-4F3F-8AB3-B47A901CF7F0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,5 +28,9 @@ Global
 		{2C22403D-BC15-4E8B-9E49-107A4C4E8FA3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2C22403D-BC15-4E8B-9E49-107A4C4E8FA3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2C22403D-BC15-4E8B-9E49-107A4C4E8FA3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8D78959-1DF1-4F3F-8AB3-B47A901CF7F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8D78959-1DF1-4F3F-8AB3-B47A901CF7F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8D78959-1DF1-4F3F-8AB3-B47A901CF7F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8D78959-1DF1-4F3F-8AB3-B47A901CF7F0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

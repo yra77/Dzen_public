@@ -21,12 +21,20 @@
 ## Структура
 
 ```text
-src/
-  Comments.Domain/
-  Comments.Application/
-  Comments.Api/
-Comments.sln
+comments-spa/
+├── src/
+│   ├── Comments.Api/            # ASP.NET Core + GraphQL + SignalR
+│   ├── Comments.Application/    # CQRS/service layer, contracts, DTO
+│   ├── Comments.Domain/         # Entities + domain logic
+│   ├── Comments.Infrastructure/ # Виділений шар під EF/RabbitMQ/Elasticsearch (scaffold)
+│   └── Comments.Web/            # Місце під Angular SPA (scaffold)
+├── docker-compose.yml
+├── README.md
+├── load-test/
+└── Comments.sln
 ```
+
+> Наразі частина інфраструктурної реалізації ще фізично знаходиться в `Comments.Api` і буде поступово винесена в `Comments.Infrastructure` на наступних ітераціях.
 
 ## Запуск локально
 
