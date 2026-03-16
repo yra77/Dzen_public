@@ -12,6 +12,7 @@ var rabbitMqOptions = builder.Configuration.GetSection("RabbitMq").Get<RabbitMqO
 var captchaOptions = builder.Configuration.GetSection("Captcha").Get<CaptchaOptions>() ?? new CaptchaOptions();
 var attachmentStorageOptions = builder.Configuration.GetSection("Attachments").Get<LocalAttachmentStorageOptions>() ?? new LocalAttachmentStorageOptions();
 var signalrOptions = builder.Configuration.GetSection("SignalR").Get<SignalROptions>() ?? new SignalROptions();
+var elasticsearchOptions = builder.Configuration.GetSection("Elasticsearch").Get<ElasticsearchOptions>() ?? new ElasticsearchOptions();
 
 builder.Services.AddDbContext<CommentsDbContext>(options =>
 {
@@ -35,6 +36,27 @@ builder.Services.AddSingleton(attachmentStorageOptions);
 builder.Services.AddScoped<IAttachmentStorage, LocalAttachmentStorage>();
 
 builder.Services.AddScoped<ICommentCreatedPublisher, CompositeCommentCreatedPublisher>();
+builder.Services.AddSingleton(elasticsearchOptions);
+
+if (elasticsearchOptions.Enabled)
+{
+    builder.Services.AddHttpClient<ElasticsearchCommentCreatedChannel>(client =>
+    {
+        client.BaseAddress = new Uri(elasticsearchOptions.Uri);
+    });
+
+    builder.Services.AddHttpClient<ElasticsearchCommentSearchService>(client =>
+    {
+        client.BaseAddress = new Uri(elasticsearchOptions.Uri);
+    });
+
+    builder.Services.AddScoped<ICommentCreatedChannel>(sp => sp.GetRequiredService<ElasticsearchCommentCreatedChannel>());
+    builder.Services.AddScoped<ICommentSearchService>(sp => sp.GetRequiredService<ElasticsearchCommentSearchService>());
+}
+else
+{
+    builder.Services.AddScoped<ICommentSearchService, NoOpCommentSearchService>();
+}
 
 if (rabbitMqOptions.Enabled)
 {
