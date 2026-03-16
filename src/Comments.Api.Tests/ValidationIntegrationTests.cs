@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Comments.Application.DTOs;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
@@ -517,6 +518,96 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
         Assert.True(payload.Errors![0].Extensions!.ValidationErrors!.ContainsKey("PageSize"));
     }
 
+    [Fact]
+    public async Task GetThread_WithSortByUserNameAsc_ReturnsRepliesSortedAscending()
+    {
+        using var client = _factory.CreateClient();
+
+        var unique = Guid.NewGuid().ToString("N");
+        var root = await CreateCommentAsync(client, $"Root{unique}", $"root-{unique}@example.com", "Root");
+
+        await CreateCommentAsync(client, $"Zulu{unique}", $"zulu-{unique}@example.com", "Reply Z", root.Id);
+        await CreateCommentAsync(client, $"Alpha{unique}", $"alpha-{unique}@example.com", "Reply A", root.Id);
+
+        var threadResponse = await client.GetAsync($"/api/comments/{root.Id}/thread?sortBy=UserName&sortDirection=Asc");
+
+        Assert.Equal(HttpStatusCode.OK, threadResponse.StatusCode);
+
+        var thread = await threadResponse.Content.ReadFromJsonAsync<CommentDto>();
+        Assert.NotNull(thread);
+        Assert.Equal(2, thread!.Replies.Count);
+        Assert.Equal($"Alpha{unique}", thread.Replies[0].UserName);
+        Assert.Equal($"Zulu{unique}", thread.Replies[1].UserName);
+    }
+
+    [Fact]
+    public async Task GraphQlCommentTree_WithSortByEmailDesc_ReturnsRepliesSortedDescending()
+    {
+        using var client = _factory.CreateClient();
+
+        var unique = Guid.NewGuid().ToString("N");
+        var root = await CreateCommentAsync(client, $"Root{unique}", $"root-{unique}@example.com", "Root");
+
+        await CreateCommentAsync(client, $"UserA{unique}", $"alpha-{unique}@example.com", "Reply A", root.Id);
+        await CreateCommentAsync(client, $"UserB{unique}", $"zulu-{unique}@example.com", "Reply B", root.Id);
+
+        var body = new
+        {
+            query = @"query($rootCommentId: UUID!) {
+  commentTree(rootCommentId: $rootCommentId, sortBy: Email, sortDirection: Desc) {
+    replies {
+      email
+    }
+  }
+}",
+            variables = new { rootCommentId = root.Id }
+        };
+
+        var response = await client.PostAsJsonAsync("/graphql", body);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<GraphQlResponse>();
+        Assert.NotNull(payload);
+        Assert.Null(payload!.Errors);
+        Assert.True(payload.Data.HasValue);
+
+        var replies = payload.Data!.Value
+            .GetProperty("commentTree")
+            .GetProperty("replies")
+            .EnumerateArray()
+            .Select(x => x.GetProperty("email").GetString())
+            .ToArray();
+
+        Assert.Equal(new[] { $"zulu-{unique}@example.com", $"alpha-{unique}@example.com" }, replies);
+    }
+
+    private static async Task<CommentDto> CreateCommentAsync(
+        HttpClient client,
+        string userName,
+        string email,
+        string text,
+        Guid? parentId = null)
+    {
+        var response = await client.PostAsJsonAsync("/api/comments", new
+        {
+            userName,
+            email,
+            homePage = "https://example.com",
+            text,
+            parentId,
+            captchaToken = "1234",
+            attachment = (object?)null
+        });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<CommentDto>();
+        Assert.NotNull(payload);
+
+        return payload!;
+    }
+
     private sealed class ValidationProblemPayload
     {
         public int Status { get; set; }
@@ -536,7 +627,10 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
 
     private sealed class GraphQlExtensions
     {
+        [JsonPropertyName("code")]
         public string? Code { get; set; }
+
+        [JsonPropertyName("validationErrors")]
         public Dictionary<string, string[]>? ValidationErrors { get; set; }
     }
 }
