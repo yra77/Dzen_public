@@ -82,6 +82,23 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
     }
 
     [Fact]
+    public async Task Preview_WithBoundaryLength5000_ReturnsSanitizedHtml()
+    {
+        using var client = _factory.CreateClient();
+
+        var text = new string('a', 5000);
+        var response = await client.PostAsJsonAsync("/api/comments/preview", new
+        {
+            text
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<string>();
+        Assert.Equal(text, payload);
+    }
+
+    [Fact]
     public async Task CreateComment_WithInvalidCaptcha_ReturnsBadRequestValidationProblem()
     {
         using var client = _factory.CreateClient();
@@ -218,6 +235,37 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
         Assert.Equal(10, payload.PageSize);
         Assert.True(payload.TotalCount >= 0);
         Assert.NotNull(payload.Items);
+    }
+
+    [Fact]
+    public async Task Search_WithBoundaryPageSize100_ReturnsPagedShape()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/api/comments/search?q=hello&page=1&pageSize=100");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<PagedResult<CommentDto>>();
+        Assert.NotNull(payload);
+        Assert.Equal(1, payload!.Page);
+        Assert.Equal(100, payload.PageSize);
+        Assert.True(payload.TotalCount >= 0);
+    }
+
+    [Fact]
+    public async Task Search_WithPageSizeAboveLimit_ReturnsBadRequestValidationProblem()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/api/comments/search?q=hello&page=1&pageSize=101");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<ValidationProblemPayload>();
+        Assert.NotNull(payload);
+        Assert.Equal(400, payload!.Status);
+        Assert.True(payload.Errors.ContainsKey("PageSize"));
     }
 
     [Fact]
@@ -374,6 +422,30 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
     }
 
     [Fact]
+    public async Task GraphQlPreviewComment_WithBoundaryLength5000_ReturnsDataWithoutErrors()
+    {
+        using var client = _factory.CreateClient();
+
+        var text = new string('b', 5000);
+        var body = new
+        {
+            query = "query($text: String!) { previewComment(text: $text) }",
+            variables = new { text }
+        };
+
+        var response = await client.PostAsJsonAsync("/graphql", body);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<GraphQlResponse>();
+        Assert.NotNull(payload);
+        Assert.Null(payload!.Errors);
+        Assert.True(payload.Data.HasValue);
+
+        var preview = payload.Data!.Value.GetProperty("previewComment").GetString();
+        Assert.Equal(text, preview);
+    }
+
+    [Fact]
     public async Task GraphQlSearchComments_WithValidInput_ReturnsPagedShapeWithoutErrors()
     {
         using var client = _factory.CreateClient();
@@ -396,6 +468,53 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
         Assert.Equal(10, searchComments.GetProperty("pageSize").GetInt32());
         Assert.True(searchComments.GetProperty("totalCount").GetInt32() >= 0);
         Assert.Equal(JsonValueKind.Array, searchComments.GetProperty("items").ValueKind);
+    }
+
+    [Fact]
+    public async Task GraphQlSearchComments_WithBoundaryPageSize100_ReturnsPagedShapeWithoutErrors()
+    {
+        using var client = _factory.CreateClient();
+
+        var body = new
+        {
+            query = "query { searchComments(query: \"hello\", page: 1, pageSize: 100) { page pageSize totalCount items { id } } }"
+        };
+
+        var response = await client.PostAsJsonAsync("/graphql", body);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<GraphQlResponse>();
+        Assert.NotNull(payload);
+        Assert.Null(payload!.Errors);
+        Assert.True(payload.Data.HasValue);
+
+        var searchComments = payload.Data!.Value.GetProperty("searchComments");
+        Assert.Equal(1, searchComments.GetProperty("page").GetInt32());
+        Assert.Equal(100, searchComments.GetProperty("pageSize").GetInt32());
+        Assert.True(searchComments.GetProperty("totalCount").GetInt32() >= 0);
+    }
+
+    [Fact]
+    public async Task GraphQlSearchComments_WithPageSizeAboveLimit_ReturnsValidationErrorsExtension()
+    {
+        using var client = _factory.CreateClient();
+
+        var body = new
+        {
+            query = "query { searchComments(query: \"hello\", page: 1, pageSize: 101) { totalCount items { id } } }"
+        };
+
+        var response = await client.PostAsJsonAsync("/graphql", body);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<GraphQlResponse>();
+        Assert.NotNull(payload);
+        Assert.NotNull(payload!.Errors);
+        Assert.NotEmpty(payload.Errors!);
+        Assert.Equal("BAD_USER_INPUT", payload.Errors![0].Extensions?.Code);
+        Assert.NotNull(payload.Errors![0].Extensions?.ValidationErrors);
+        Assert.True(payload.Errors![0].Extensions!.ValidationErrors!.ContainsKey("PageSize"));
     }
 
     private sealed class ValidationProblemPayload

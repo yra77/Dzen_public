@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 36).
+Останнє оновлення: 2026-03-16 (ітерація 37).
 
 ## Підсумок
 
@@ -21,6 +21,34 @@
 
 
 
+
+## Оновлення ітерації 37
+
+### Внесені зміни в цій ітерації
+
+- ✅ Розширено `src/Comments.Api.Tests/ValidationIntegrationTests.cs` edge-case сценаріями для REST `preview/search`: додано boundary-перевірки (`text` довжиною 5000, `pageSize=100`) і negative-case для `pageSize=101` з очікуванням `400` + `ValidationProblem`.
+- ✅ Додано аналогічне edge-case покриття для GraphQL `previewComment/searchComments`: boundary (`text=5000`, `pageSize=100`) та валідаційний negative-path (`pageSize=101`) з перевіркою `BAD_USER_INPUT` і `extensions.validationErrors.PageSize`.
+- ✅ Backlog по CQRS + FluentValidation contract coverage звужено: для `preview/search` тепер покрито не тільки happy-path, а й ключові boundary/limit кейси у REST та GraphQL.
+
+### Що ще треба зробити у проєкті (актуально після ітерації 37)
+
+1. 🟨 **Angular LTS (довести до production-ready):**
+   - додати e2e smoke для ключових user-flow (`root create`, `thread reply`, `preview`, `attachments`, `realtime`);
+   - уніфікувати UX-відображення API/GraphQL validation помилок.
+2. 🟨 **CQRS + MediatR + FluentValidation (закриття edge-cases):**
+   - додати сценарії для `mixed sort/filter combos` у запитах списку/дерева (`comments page`, `commentTree`) та зафіксувати очікуваний контракт у тестах;
+   - формалізувати контракт `validationErrors` у GraphQL `extensions` в README/API docs.
+3. 🟨 **RabbitMQ production-hardening:**
+   - довести delayed retry + DLQ replay tooling;
+   - додати метрики consumer-обробки та базові alert-умови.
+4. 🔲 **Фінальний Middle+ load-test у цільовому контурі RabbitMQ + Elasticsearch:**
+   - виконати прогін `load-test/comments-middle.js`;
+   - заповнити `docs/load-test-middle-results.md` фактичними метриками та додати актуальний `docs/artifacts/k6-middle-summary.json`.
+5. 🔲 **Delivery-артефакт Demo:**
+   - додати секцію `Demo` у `README.md`;
+   - прикріпити посилання на 3–5 хв відео з ключовими сценаріями.
+
+---
 
 ## Оновлення ітерації 36
 
