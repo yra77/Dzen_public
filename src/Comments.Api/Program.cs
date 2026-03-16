@@ -74,6 +74,11 @@ if (rabbitMqOptions.Enabled)
 {
     builder.Services.AddSingleton(rabbitMqOptions);
     builder.Services.AddScoped<ICommentCreatedChannel, RabbitMqCommentCreatedPublisher>();
+
+    if (rabbitMqOptions.ConsumerEnabled)
+    {
+        builder.Services.AddHostedService<RabbitMqTaskQueuesConsumerHostedService>();
+    }
 }
 
 builder.Services.AddSingleton(signalrOptions);

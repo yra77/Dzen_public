@@ -3,6 +3,7 @@ namespace Comments.Api.Infrastructure;
 public sealed class RabbitMqOptions
 {
     public bool Enabled { get; init; }
+    public bool ConsumerEnabled { get; init; } = true;
     public string HostName { get; init; } = "localhost";
     public int Port { get; init; } = 5672;
     public string UserName { get; init; } = "guest";

@@ -114,9 +114,12 @@
 
 - ✅ RabbitMQ-публікацію розширено для задачних черг: додано `indexing` і `file-processing` (declare/bind/publish) з окремими routing keys; `file-processing` подія відправляється лише коли коментар має вкладення.
 
+- ✅ Додано базовий hosted worker `RabbitMqTaskQueuesConsumerHostedService` для черг `indexing` і `file-processing` (підписка, ack/nack, логування обробки повідомлень).
+- ✅ Додано конфіг `RabbitMq:ConsumerEnabled` для керування запуском consumer-воркерів.
+
 ## Що ще треба зробити у проєкті
 
 1. 🔲 **Angular SPA (LTS) замість vanilla JS** — критичний невиконаний пункт ТЗ.
 2. 🔲 **CQRS + MediatR + FluentValidation** — впровадити command/query pipeline та валідатори.
 3. 🟨 **Довільна глибина вкладеності коментарів** — прибрати/переглянути ліміт `MaxThreadDepth=10` або узгодити як технічне обмеження.
-4. 🟨 **RabbitMQ-консьюмери для `indexing`/`file-processing`** — черги і routing вже є, але відсутні окремі worker/consumer сервіси з retry/DLQ.
+4. 🟨 **Надійність RabbitMQ workers (`indexing`/`file-processing`)** — базові consumer-и вже додані, але ще потрібні retry policy, DLQ та ідемпотентна повторна обробка.
