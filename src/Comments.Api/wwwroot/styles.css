@@ -342,3 +342,18 @@ button:disabled {
   line-height: 1;
   padding: 0;
 }
+
+
+.validation-errors {
+  border: 1px solid #fecdca;
+  background: #fff6f5;
+  color: #b42318;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.validation-errors ul {
+  margin: 0;
+  padding-left: 18px;
+}
