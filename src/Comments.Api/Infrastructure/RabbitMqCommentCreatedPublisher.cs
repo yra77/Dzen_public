@@ -42,6 +42,12 @@ public sealed class RabbitMqCommentCreatedPublisher : ICommentCreatedChannel
 
         var properties = channel.CreateBasicProperties();
         properties.Persistent = true;
+        properties.ContentType = "application/json";
+        properties.MessageId = Guid.NewGuid().ToString("N");
+        properties.Headers = new Dictionary<string, object>
+        {
+            [_options.RetryHeaderName] = 0
+        };
 
         channel.BasicPublish(
             exchange: _options.ExchangeName,

@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 6).
+Останнє оновлення: 2026-03-16 (ітерація 7).
 
 ## Підсумок
 
@@ -99,7 +99,7 @@
 
 1. Реалізувати **Angular SPA** (заміна/доповнення vanilla JS).
 2. Перейти на **MediatR + FluentValidation** у Application-шарі.
-3. Розширити RabbitMQ-пайплайн до окремих задач `indexing`/`file-processing`.
+3. Додати production-hardening для RabbitMQ (персистентне сховище ідемпотентності, delayed retry/backoff, окремі retry-черги, алерти/метрики).
 4. Розширити load-test до вимог Middle+ і зафіксувати метрики.
 5. Додати відео-демо у README.
 
@@ -120,9 +120,13 @@
 - ✅ Додано базовий hosted worker `RabbitMqTaskQueuesConsumerHostedService` для черг `indexing` і `file-processing` (підписка, ack/nack, логування обробки повідомлень).
 - ✅ Додано конфіг `RabbitMq:ConsumerEnabled` для керування запуском consumer-воркерів.
 
+- ✅ Для RabbitMQ worker-ів додано надійність обробки: автоматичні повторні спроби з лічильником `x-retry-count`, обмеження `MaxRetryCount`, DLX/DLQ маршрутизація після вичерпання retry.
+- ✅ Додано базову ідемпотентність у consumer-ах: дублікати повідомлень з однаковим `MessageId` пропускаються з `ack`.
+- ✅ Publisher тепер заповнює `MessageId`, `ContentType` і службові headers для retry-пайплайну.
+
 ## Що ще треба зробити у проєкті
 
 1. 🔲 **Angular SPA (LTS) замість vanilla JS** — критичний невиконаний пункт ТЗ.
 2. 🔲 **CQRS + MediatR + FluentValidation** — впровадити command/query pipeline та валідатори.
-3. 🟨 **Надійність RabbitMQ workers (`indexing`/`file-processing`)** — базові consumer-и вже додані, але ще потрібні retry policy, DLQ та ідемпотентна повторна обробка.
+3. ✅ **Надійність RabbitMQ workers (`indexing`/`file-processing`)** — додано retry policy через `x-retry-count`, DLX/DLQ для задачних черг та базову ідемпотентність по `MessageId` у consumer-воркері.
 4. 🟨 **GraphQL nested-вибірка у SPA для дуже глибоких дерев** — через природу GraphQL потрібна керована стратегія пагінації/лінивого догрузу гілок замість фіксованої глибини selection set.

@@ -14,4 +14,8 @@ public sealed class RabbitMqOptions
     public string FileProcessingQueueName { get; init; } = "file-processing";
     public string IndexingRoutingKey { get; init; } = "comment.created.indexing";
     public string FileProcessingRoutingKey { get; init; } = "comment.created.file-processing";
+    public string DeadLetterExchangeName { get; init; } = "comments.events.dlx";
+    public string DeadLetterQueueSuffix { get; init; } = ".dlq";
+    public string RetryHeaderName { get; init; } = "x-retry-count";
+    public int MaxRetryCount { get; init; } = 3;
 }

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 using Comments.Application.DTOs;
@@ -11,6 +12,7 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
 {
     private readonly RabbitMqOptions _options;
     private readonly ILogger<RabbitMqTaskQueuesConsumerHostedService> _logger;
+    private readonly ConcurrentDictionary<string, byte> _processedMessageIds = new();
 
     private IConnection? _connection;
     private IModel? _channel;
@@ -39,12 +41,25 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
         _channel = _connection.CreateModel();
 
         _channel.ExchangeDeclare(_options.ExchangeName, ExchangeType.Topic, durable: true, autoDelete: false);
+        _channel.ExchangeDeclare(_options.DeadLetterExchangeName, ExchangeType.Direct, durable: true, autoDelete: false);
 
-        _channel.QueueDeclare(_options.IndexingQueueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
-        _channel.QueueDeclare(_options.FileProcessingQueueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
+        var indexingArguments = CreateQueueArguments(_options.IndexingQueueName);
+        var fileProcessingArguments = CreateQueueArguments(_options.FileProcessingQueueName);
+
+        _channel.QueueDeclare(_options.IndexingQueueName, durable: true, exclusive: false, autoDelete: false, arguments: indexingArguments);
+        _channel.QueueDeclare(_options.FileProcessingQueueName, durable: true, exclusive: false, autoDelete: false, arguments: fileProcessingArguments);
+
+        var indexingDlqName = BuildDeadLetterQueueName(_options.IndexingQueueName);
+        var fileProcessingDlqName = BuildDeadLetterQueueName(_options.FileProcessingQueueName);
+
+        _channel.QueueDeclare(indexingDlqName, durable: true, exclusive: false, autoDelete: false, arguments: null);
+        _channel.QueueDeclare(fileProcessingDlqName, durable: true, exclusive: false, autoDelete: false, arguments: null);
 
         _channel.QueueBind(_options.IndexingQueueName, _options.ExchangeName, _options.IndexingRoutingKey);
         _channel.QueueBind(_options.FileProcessingQueueName, _options.ExchangeName, _options.FileProcessingRoutingKey);
+
+        _channel.QueueBind(indexingDlqName, _options.DeadLetterExchangeName, indexingDlqName);
+        _channel.QueueBind(fileProcessingDlqName, _options.DeadLetterExchangeName, fileProcessingDlqName);
 
         _channel.BasicQos(prefetchSize: 0, prefetchCount: 10, global: false);
 
@@ -81,6 +96,18 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
         return Task.CompletedTask;
     }
 
+    private Dictionary<string, object> CreateQueueArguments(string queueName)
+    {
+        var deadLetterQueueName = BuildDeadLetterQueueName(queueName);
+        return new Dictionary<string, object>
+        {
+            ["x-dead-letter-exchange"] = _options.DeadLetterExchangeName,
+            ["x-dead-letter-routing-key"] = deadLetterQueueName
+        };
+    }
+
+    private string BuildDeadLetterQueueName(string queueName) => $"{queueName}{_options.DeadLetterQueueSuffix}";
+
     private void StartConsumer(string queueName, string workerName, Func<CommentDto, bool> processComment)
     {
         if (_channel is null)
@@ -103,6 +130,14 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
                     return;
                 }
 
+                var messageId = eventArgs.BasicProperties?.MessageId;
+                if (!string.IsNullOrWhiteSpace(messageId) && !_processedMessageIds.TryAdd(messageId, 0))
+                {
+                    _logger.LogInformation("[{Worker}] Skipping duplicate message {MessageId}", workerName, messageId);
+                    _channel.BasicAck(eventArgs.DeliveryTag, multiple: false);
+                    return;
+                }
+
                 var hasAttachment = processComment(comment);
                 if (workerName == "file-processing" && !hasAttachment)
                 {
@@ -114,11 +149,58 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[{Worker}] Failed to process message", workerName);
-                _channel.BasicNack(eventArgs.DeliveryTag, multiple: false, requeue: true);
+
+                var retryCount = ReadRetryCount(eventArgs.BasicProperties?.Headers);
+                if (retryCount >= _options.MaxRetryCount)
+                {
+                    _logger.LogWarning("[{Worker}] Retry limit reached ({MaxRetryCount}). Sending message to DLQ.", workerName, _options.MaxRetryCount);
+                    _channel.BasicNack(eventArgs.DeliveryTag, multiple: false, requeue: false);
+                    return;
+                }
+
+                var updatedProperties = _channel.CreateBasicProperties();
+                updatedProperties.Persistent = true;
+                updatedProperties.MessageId = eventArgs.BasicProperties?.MessageId ?? Guid.NewGuid().ToString("N");
+                updatedProperties.ContentType = eventArgs.BasicProperties?.ContentType;
+                updatedProperties.Headers = eventArgs.BasicProperties?.Headers is null
+                    ? new Dictionary<string, object>()
+                    : new Dictionary<string, object>(eventArgs.BasicProperties.Headers);
+
+                updatedProperties.Headers[_options.RetryHeaderName] = retryCount + 1;
+
+                _channel.BasicPublish(
+                    exchange: _options.ExchangeName,
+                    routingKey: eventArgs.RoutingKey,
+                    basicProperties: updatedProperties,
+                    body: eventArgs.Body);
+
+                _channel.BasicAck(eventArgs.DeliveryTag, multiple: false);
             }
         };
 
         _channel.BasicConsume(queue: queueName, autoAck: false, consumer: consumer);
+    }
+
+    private int ReadRetryCount(IDictionary<string, object>? headers)
+    {
+        if (headers is null || !headers.TryGetValue(_options.RetryHeaderName, out var value))
+        {
+            return 0;
+        }
+
+        return value switch
+        {
+            byte b => b,
+            sbyte sb => sb,
+            short s => s,
+            ushort us => us,
+            int i => i,
+            uint ui => (int)ui,
+            long l => (int)l,
+            ulong ul => (int)ul,
+            byte[] bytes when int.TryParse(Encoding.UTF8.GetString(bytes), out var parsed) => parsed,
+            _ => 0
+        };
     }
 
     public void Dispose()
