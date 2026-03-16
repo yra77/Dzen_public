@@ -23,6 +23,10 @@ public sealed class CommentsDbContext : DbContext
         comment.Property(x => x.HomePage).HasMaxLength(512);
         comment.Property(x => x.Text).IsRequired();
         comment.Property(x => x.CreatedAtUtc).IsRequired();
+        comment.Property(x => x.AttachmentFileName).HasMaxLength(260);
+        comment.Property(x => x.AttachmentContentType).HasMaxLength(128);
+        comment.Property(x => x.AttachmentStoragePath).HasMaxLength(512);
+        comment.Property(x => x.AttachmentSizeBytes);
 
         comment
             .HasMany(x => x.Replies)

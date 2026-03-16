@@ -9,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 var provider = builder.Configuration["Persistence:Provider"] ?? "InMemory";
 var rabbitMqOptions = builder.Configuration.GetSection("RabbitMq").Get<RabbitMqOptions>() ?? new RabbitMqOptions();
 var captchaOptions = builder.Configuration.GetSection("Captcha").Get<CaptchaOptions>() ?? new CaptchaOptions();
+var attachmentStorageOptions = builder.Configuration.GetSection("Attachments").Get<LocalAttachmentStorageOptions>() ?? new LocalAttachmentStorageOptions();
 
 builder.Services.AddDbContext<CommentsDbContext>(options =>
 {
@@ -28,6 +29,8 @@ builder.Services.AddScoped<ICommentRepository, EfCommentRepository>();
 builder.Services.AddSingleton<ITextSanitizer, BasicTextSanitizer>();
 builder.Services.AddSingleton(captchaOptions);
 builder.Services.AddScoped<ICaptchaValidator, BasicCaptchaValidator>();
+builder.Services.AddSingleton(attachmentStorageOptions);
+builder.Services.AddScoped<IAttachmentStorage, LocalAttachmentStorage>();
 
 if (rabbitMqOptions.Enabled)
 {

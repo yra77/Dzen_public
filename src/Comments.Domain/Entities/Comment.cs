@@ -15,7 +15,11 @@ public sealed class Comment
         string email,
         string? homePage,
         string text,
-        DateTime createdAtUtc)
+        DateTime createdAtUtc,
+        string? attachmentFileName,
+        string? attachmentContentType,
+        string? attachmentStoragePath,
+        long? attachmentSizeBytes)
     {
         Id = id;
         ParentId = parentId;
@@ -24,6 +28,10 @@ public sealed class Comment
         HomePage = homePage;
         Text = text;
         CreatedAtUtc = createdAtUtc;
+        AttachmentFileName = attachmentFileName;
+        AttachmentContentType = attachmentContentType;
+        AttachmentStoragePath = attachmentStoragePath;
+        AttachmentSizeBytes = attachmentSizeBytes;
     }
 
     public Guid Id { get; private set; }
@@ -33,6 +41,10 @@ public sealed class Comment
     public string? HomePage { get; private set; }
     public string Text { get; private set; } = string.Empty;
     public DateTime CreatedAtUtc { get; private set; }
+    public string? AttachmentFileName { get; private set; }
+    public string? AttachmentContentType { get; private set; }
+    public string? AttachmentStoragePath { get; private set; }
+    public long? AttachmentSizeBytes { get; private set; }
 
     public Comment? Parent { get; private set; }
     public IReadOnlyCollection<Comment> Replies => _replies.AsReadOnly();
