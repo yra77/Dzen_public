@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 9).
+Останнє оновлення: 2026-03-16 (ітерація 10).
 
 ## Підсумок
 
@@ -148,3 +148,34 @@
 3. 🔲 **Production-hardening RabbitMQ** — винести ідемпотентність у персистентне сховище, додати delayed retry/backoff policy, runtime-метрики та алерти.
 4. 🟨 **Load-test Middle+ (фіналізація)** — запустити `comments-middle.js` у середовищі з увімкненим RabbitMQ/Elasticsearch, зберегти результати (summary/JSON, p95/p99, error-rate) у `docs/` і додати посилання в README.
 5. 🔲 **Відео-демо в README** — записати і додати посилання/розділ «Demo».
+
+
+## Оновлення ітерації 10
+
+- ✅ Актуалізовано checklist після рев’ю репозиторію (`README`, `docs/`, `load-test/`): підтверджено, що критичні прогалини лишаються в Angular-міграції, CQRS-пайплайні та production-hardening RabbitMQ.
+- ✅ Додано пріоритизований план доробок у форматі **P0/P1/P2** з конкретними артефактами приймання, щоб наступні ітерації були вимірювані.
+- ✅ Уточнено очікувані deliverables для закриття Middle+ load-test (JSON summary + короткий звіт у `docs/` + посилання в README).
+
+### Що ще треба зробити після ітерації 10
+
+#### P0 — критично для відповідності ТЗ
+1. 🔲 **Angular SPA (LTS) замість vanilla JS**
+   - Мінімальний DoD: екран списку/таблиці, nested thread view, create/reply, preview, captcha, attachments preview, SignalR live-updates.
+   - Артефакти: код у `src/Comments.Web`, інструкція запуску в README, smoke e2e-сценарій.
+2. 🔲 **CQRS + MediatR + FluentValidation**
+   - Мінімальний DoD: `AddComment`, `AddReply`, `GetCommentsPage`, `GetCommentTree`, `PreviewComment` як command/query handlers + валідатори + pipeline behavior для валідації/логування.
+   - Артефакти: оновлений Application-шар, unit-тести для handlers/validators.
+
+#### P1 — стабільність і експлуатація
+3. 🔲 **Production-hardening RabbitMQ**
+   - Мінімальний DoD: персистентна ідемпотентність (не in-memory), retry/backoff policy (delayed), метрики обробки та помилок.
+   - Артефакти: конфіг політик, технічний опис у `docs/`, базові інтеграційні тести consumer-потоку.
+4. 🟨 **Load-test Middle+ (фіналізація)**
+   - Мінімальний DoD: прогін `load-test/comments-middle.js` у середовищі з RabbitMQ + Elasticsearch; збережений результат `summary.json` + короткий висновок (p95/p99/error-rate).
+   - Артефакти: `docs/load-test-middle-results.md` + файл(и) метрик + посилання у README.
+
+#### P2 — фіналізація поставки
+5. 🔲 **Відео-демо в README**
+   - Мінімальний DoD: 3–5 хв демонстрація ключових сценаріїв (create/reply, sort/page, attachments preview, realtime).
+   - Артефакти: посилання на відео + секція `Demo` в README.
+
