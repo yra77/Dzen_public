@@ -19,6 +19,14 @@ public sealed class EfCommentRepository : ICommentRepository
         return await _dbContext.Comments.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
+    public async Task<IReadOnlyCollection<Comment>> GetAllAsync(CancellationToken cancellationToken)
+    {
+        return await _dbContext.Comments
+            .AsNoTracking()
+            .OrderBy(x => x.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<(IReadOnlyCollection<Comment> Items, int TotalCount)> GetRootCommentsAsync(
         int page,
         int pageSize,

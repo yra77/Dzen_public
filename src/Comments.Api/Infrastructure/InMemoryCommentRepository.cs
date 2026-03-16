@@ -13,6 +13,11 @@ public sealed class InMemoryCommentRepository : ICommentRepository
         return Task.FromResult(_items.FirstOrDefault(c => c.Id == id));
     }
 
+    public Task<IReadOnlyCollection<Comment>> GetAllAsync(CancellationToken cancellationToken)
+    {
+        return Task.FromResult<IReadOnlyCollection<Comment>>(_items.ToArray());
+    }
+
     public Task<(IReadOnlyCollection<Comment> Items, int TotalCount)> GetRootCommentsAsync(
         int page,
         int pageSize,
