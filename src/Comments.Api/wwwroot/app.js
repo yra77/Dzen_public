@@ -5,6 +5,24 @@ const searchEl = document.getElementById('search');
 const sortByEl = document.getElementById('sortBy');
 const sortDirectionEl = document.getElementById('sortDirection');
 const reloadBtn = document.getElementById('reload');
+const attachmentInput = document.getElementById('attachment');
+const attachmentPreviewEl = document.getElementById('attachment-preview');
+
+const MAX_ATTACHMENT_SIZE = 1024 * 1024;
+const ALLOWED_ATTACHMENT_TYPES = new Set(['text/plain', 'image/png', 'image/jpeg', 'image/gif']);
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function isAllowedAttachment(file) {
+  return ALLOWED_ATTACHMENT_TYPES.has(file.type || '');
+}
 
 async function fileToAttachment(file) {
   const buffer = await file.arrayBuffer();
@@ -21,13 +39,31 @@ async function fileToAttachment(file) {
   };
 }
 
+function renderAttachment(attachment) {
+  if (!attachment) {
+    return '';
+  }
+
+  const fileName = escapeHtml(attachment.fileName);
+  const storagePath = `/${attachment.storagePath}`;
+
+  if (attachment.contentType?.startsWith('image/')) {
+    return `
+      <figure class="attachment-preview-inline">
+        <img src="${storagePath}" alt="${fileName}" loading="lazy" />
+        <figcaption>📎 <a href="${storagePath}" target="_blank">${fileName}</a></figcaption>
+      </figure>
+    `;
+  }
+
+  return `<div>📎 <a href="${storagePath}" target="_blank">${fileName}</a></div>`;
+}
+
 function renderComment(comment) {
-  const attachment = comment.attachment
-    ? `<div><a href="/${comment.attachment.storagePath}" target="_blank">📎 ${comment.attachment.fileName}</a></div>`
-    : '';
+  const attachment = renderAttachment(comment.attachment);
 
   const homepage = comment.homePage
-    ? ` · <a href="${comment.homePage}" target="_blank" rel="noreferrer">сайт</a>`
+    ? ` · <a href="${escapeHtml(comment.homePage)}" target="_blank" rel="noreferrer">сайт</a>`
     : '';
 
   const replies = comment.replies?.length
@@ -36,13 +72,57 @@ function renderComment(comment) {
 
   return `
     <article class="comment">
-      <div><strong>${comment.userName}</strong> (${comment.email})${homepage}</div>
-      <div class="meta">${new Date(comment.createdAtUtc).toLocaleString()} · ID: ${comment.id}</div>
-      <p>${comment.text}</p>
+      <div><strong>${escapeHtml(comment.userName)}</strong> (${escapeHtml(comment.email)})${homepage}</div>
+      <div class="meta">${new Date(comment.createdAtUtc).toLocaleString()} · ID: ${escapeHtml(comment.id)}</div>
+      <p>${escapeHtml(comment.text)}</p>
       ${attachment}
       ${replies}
     </article>
   `;
+}
+
+function showAttachmentPreview(file) {
+  attachmentPreviewEl.innerHTML = '';
+
+  if (!file) {
+    return true;
+  }
+
+  if (!isAllowedAttachment(file)) {
+    attachmentPreviewEl.innerHTML = '<p class="error">Недозволений тип вкладення.</p>';
+    return false;
+  }
+
+  if (file.size > MAX_ATTACHMENT_SIZE) {
+    attachmentPreviewEl.innerHTML = '<p class="error">Файл перевищує 1MB.</p>';
+    return false;
+  }
+
+  if (file.type.startsWith('image/')) {
+    const objectUrl = URL.createObjectURL(file);
+    attachmentPreviewEl.innerHTML = `
+      <figure class="attachment-preview-inline">
+        <img src="${objectUrl}" alt="Попередній перегляд" />
+        <figcaption>${escapeHtml(file.name)} (${Math.round(file.size / 1024)} KB)</figcaption>
+      </figure>
+    `;
+    const img = attachmentPreviewEl.querySelector('img');
+    img?.addEventListener('load', () => URL.revokeObjectURL(objectUrl), { once: true });
+    return true;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const text = String(reader.result || '').slice(0, 500);
+    attachmentPreviewEl.innerHTML = `
+      <div class="text-preview">
+        <div><strong>${escapeHtml(file.name)}</strong> (${Math.round(file.size / 1024)} KB)</div>
+        <pre>${escapeHtml(text)}</pre>
+      </div>
+    `;
+  };
+  reader.readAsText(file);
+  return true;
 }
 
 async function loadComments() {
@@ -62,6 +142,11 @@ async function loadComments() {
     : '<p>Коментарів ще немає.</p>';
 }
 
+attachmentInput.addEventListener('change', (e) => {
+  const file = e.target.files?.[0] ?? null;
+  showAttachmentPreview(file);
+});
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   statusEl.className = 'status';
@@ -70,7 +155,13 @@ form.addEventListener('submit', async (e) => {
   try {
     const formData = new FormData(form);
     const file = formData.get('attachment');
-    const attachment = file && file.size > 0 ? await fileToAttachment(file) : null;
+    const attachmentFile = file && file.size > 0 ? file : null;
+
+    if (attachmentFile && !showAttachmentPreview(attachmentFile)) {
+      throw new Error('Виправте помилки у вкладенні.');
+    }
+
+    const attachment = attachmentFile ? await fileToAttachment(attachmentFile) : null;
 
     const payload = {
       userName: formData.get('userName')?.toString().trim(),
@@ -93,6 +184,7 @@ form.addEventListener('submit', async (e) => {
     }
 
     form.reset();
+    attachmentPreviewEl.innerHTML = '';
     statusEl.classList.add('ok');
     statusEl.textContent = 'Коментар створено.';
     await loadComments();

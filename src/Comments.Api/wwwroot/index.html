@@ -24,8 +24,9 @@
           <textarea required name="text" rows="4" maxlength="5000"></textarea>
         </label>
         <label class="wide">Вкладення (txt/png/jpg/gif, до 1MB)
-          <input type="file" name="attachment" accept=".txt,image/png,image/jpeg,image/gif" />
+          <input id="attachment" type="file" name="attachment" accept=".txt,image/png,image/jpeg,image/gif,text/plain" />
         </label>
+        <div id="attachment-preview" class="attachment-preview"></div>
         <button type="submit">Опублікувати</button>
       </form>
       <p id="form-status" class="status"></p>
