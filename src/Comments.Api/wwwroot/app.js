@@ -32,7 +32,7 @@ const lightboxCloseBtn = document.getElementById('lightbox-close');
 const MAX_ATTACHMENT_SIZE = 1024 * 1024;
 const MAX_TEXT_ATTACHMENT_SIZE = 100 * 1024;
 const ALLOWED_ATTACHMENT_TYPES = new Set(['text/plain', 'image/png', 'image/jpeg', 'image/gif']);
-const MAX_GRAPHQL_THREAD_DEPTH = 10;
+const MAX_GRAPHQL_THREAD_DEPTH = 25;
 
 let previewRequestSeq = 0;
 

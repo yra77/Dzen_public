@@ -9,7 +9,6 @@ namespace Comments.Application.Services;
 public sealed class CommentService
 {
     private static readonly Regex UserNameRegex = new("^[a-zA-Z0-9]+$", RegexOptions.Compiled);
-    private const int MaxThreadDepth = 10;
     private const int MaxUserNameLength = 100;
     private const int MaxEmailLength = 200;
     private const int MaxHomePageLength = 2048;
@@ -65,12 +64,6 @@ public sealed class CommentService
             if (parent is null)
             {
                 throw new InvalidOperationException("Parent comment was not found.");
-            }
-
-            var parentDepth = await GetDepthAsync(parent, cancellationToken);
-            if (parentDepth >= MaxThreadDepth)
-            {
-                throw new ArgumentException($"Max comment thread depth ({MaxThreadDepth}) exceeded.");
             }
 
             parent.AddReply(comment);
@@ -229,29 +222,4 @@ public sealed class CommentService
         };
     }
 
-    private async Task<int> GetDepthAsync(Comment comment, CancellationToken cancellationToken)
-    {
-        var depth = 1;
-        var visited = new HashSet<Guid> { comment.Id };
-        var current = comment;
-
-        while (current.ParentId is not null)
-        {
-            var parent = await _repository.FindByIdAsync(current.ParentId.Value, cancellationToken);
-            if (parent is null)
-            {
-                break;
-            }
-
-            if (!visited.Add(parent.Id))
-            {
-                throw new InvalidOperationException("Comment hierarchy contains a cycle.");
-            }
-
-            depth++;
-            current = parent;
-        }
-
-        return depth;
-    }
 }
