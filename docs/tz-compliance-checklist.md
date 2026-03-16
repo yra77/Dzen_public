@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 26).
+Останнє оновлення: 2026-03-16 (ітерація 27).
 
 ## Підсумок
 
@@ -14,6 +14,27 @@
 
 
 
+
+
+
+## Оновлення ітерації 27
+
+### Внесені зміни в цій ітерації
+
+- ✅ У `src/Comments.Web` додано Angular LTS standalone scaffold (конфіг workspace + `main.ts` + `app.config.ts`).
+- ✅ Реалізовано базову маршрутизацію Angular: `/` (root-list) та `/thread/:id` (thread page scaffold).
+- ✅ Додано первинний `CommentsApiService` для завантаження root-коментарів через `GET /api/comments` і оновлено `src/Comments.Web/README.md` з інструкцією запуску.
+- ✅ Синхронізовано статус у кореневому `README.md`: Angular-міграція переведена зі стану "не почато" у "в процесі".
+
+### Що ще треба зробити у проєкті (актуально після ітерації 27)
+
+1. 🟨 Завершити **Angular LTS migration** у `src/Comments.Web`: перенести create/reply/preview, captcha challenge, attachment preview, SignalR live updates і додати e2e smoke.
+2. 🟨 Дозавершити **CQRS + MediatR + FluentValidation**: розширити success-path та edge-case integration покриття (REST + GraphQL), включно з shape `validationErrors` у GraphQL `extensions`.
+3. 🟨 Дозавершити **RabbitMQ production-hardening**: delayed retry/DLQ replay tooling, метрики consumer-обробки та алерти.
+4. 🟨 Виконати **фінальний Middle+ load-test** у середовищі RabbitMQ+Elasticsearch з оновленням `docs/load-test-middle-results.md` і `docs/artifacts/k6-middle-summary.json`.
+5. 🔲 Додати **Demo**-секцію в `README.md` з посиланням на 3–5 хв відео сценаріїв.
+
+---
 
 
 ## Оновлення ітерації 26
