@@ -27,6 +27,17 @@
         <label class="wide">Текст
           <textarea required name="text" rows="4" maxlength="5000"></textarea>
         </label>
+        <div class="wide text-toolbar" role="group" aria-label="Швидкі теги форматування">
+          <span class="text-toolbar-label">Швидкі теги:</span>
+          <button type="button" class="secondary-button quick-tag-btn" data-tag="i">[i]</button>
+          <button type="button" class="secondary-button quick-tag-btn" data-tag="strong">[strong]</button>
+          <button type="button" class="secondary-button quick-tag-btn" data-tag="code">[code]</button>
+          <button type="button" class="secondary-button quick-tag-btn" data-tag="a">[a]</button>
+        </div>
+        <div id="text-preview" class="text-content-preview wide" aria-live="polite">
+          <div class="text-preview-title">Preview повідомлення</div>
+          <div id="text-preview-content" class="text-preview-content">Попередній перегляд зʼявиться тут…</div>
+        </div>
         <label class="wide">Вкладення (txt/png/jpg/gif, до 1MB)
           <input id="attachment" type="file" name="attachment" accept=".txt,image/png,image/jpeg,image/gif,text/plain" />
         </label>
