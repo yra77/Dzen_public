@@ -95,6 +95,13 @@ k6 run --summary-export=docs/artifacts/k6-middle-summary.json load-test/comments
 - Для P1 зафіксовано технічний борг: production-hardening RabbitMQ (персистентна ідемпотентність, delayed retry/backoff, метрики/алерти).
 - Для P2 залишено delivery-артефакт: додати demo-відео та секцію `Demo` в README.
 
+
+## Продовження робіт (ітерація 17)
+
+- Додано execution plan: `docs/iteration-17-execution-plan.md` з поетапною декомпозицією P0/P1/P2 до рівня наступних комітів і артефактів приймання.
+- Уточнено найближчий фокус: **Angular LTS migration** + **CQRS/MediatR/FluentValidation** без зміни зовнішніх REST/GraphQL контрактів.
+- Зафіксовано порядок наступних комітів, щоб пришвидшити доведення проєкту до 100% відповідності ТЗ.
+
 ## Наступні кроки (по ТЗ)
 
 - ✅ Підключено EF Core + підтримку SQL Server (через `Persistence:Provider=SqlServer`).
