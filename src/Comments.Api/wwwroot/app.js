@@ -21,6 +21,7 @@ const clearReplyContextBtn = document.getElementById('clear-reply-context');
 
 const MAX_ATTACHMENT_SIZE = 1024 * 1024;
 const ALLOWED_ATTACHMENT_TYPES = new Set(['text/plain', 'image/png', 'image/jpeg', 'image/gif']);
+const MAX_GRAPHQL_THREAD_DEPTH = 10;
 
 const state = {
   page: 1,
@@ -229,6 +230,35 @@ async function fetchCommentsViaRest(q, page, pageSize) {
 }
 
 async function fetchCommentsViaGraphQl(q, page, pageSize) {
+  const buildRepliesSelection = (depth) => {
+    if (depth <= 0) {
+      return '';
+    }
+
+    return `
+      replies {
+        id
+        parentId
+        userName
+        email
+        homePage
+        text
+        createdAtUtc
+        attachment { fileName contentType storagePath sizeBytes }${buildRepliesSelection(depth - 1)}
+      }`;
+  };
+
+  const commentSelection = `
+      id
+      parentId
+      userName
+      email
+      homePage
+      text
+      createdAtUtc
+      attachment { fileName contentType storagePath sizeBytes }${buildRepliesSelection(MAX_GRAPHQL_THREAD_DEPTH)}
+  `;
+
   const document = q
     ? `query SearchComments($query: String!, $page: Int!, $pageSize: Int!) {
   searchComments(query: $query, page: $page, pageSize: $pageSize) {
@@ -237,23 +267,7 @@ async function fetchCommentsViaGraphQl(q, page, pageSize) {
     totalCount
     totalPages
     items {
-      id
-      parentId
-      userName
-      email
-      homePage
-      text
-      createdAtUtc
-      attachment { fileName contentType storagePath sizeBytes }
-      replies {
-        id parentId userName email homePage text createdAtUtc
-        attachment { fileName contentType storagePath sizeBytes }
-        replies {
-          id parentId userName email homePage text createdAtUtc
-          attachment { fileName contentType storagePath sizeBytes }
-          replies { id parentId userName email homePage text createdAtUtc attachment { fileName contentType storagePath sizeBytes } }
-        }
-      }
+${commentSelection}
     }
   }
 }`
@@ -264,23 +278,7 @@ async function fetchCommentsViaGraphQl(q, page, pageSize) {
     totalCount
     totalPages
     items {
-      id
-      parentId
-      userName
-      email
-      homePage
-      text
-      createdAtUtc
-      attachment { fileName contentType storagePath sizeBytes }
-      replies {
-        id parentId userName email homePage text createdAtUtc
-        attachment { fileName contentType storagePath sizeBytes }
-        replies {
-          id parentId userName email homePage text createdAtUtc
-          attachment { fileName contentType storagePath sizeBytes }
-          replies { id parentId userName email homePage text createdAtUtc attachment { fileName contentType storagePath sizeBytes } }
-        }
-      }
+${commentSelection}
     }
   }
 }`;
