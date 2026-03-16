@@ -53,6 +53,7 @@ if (elasticsearchOptions.Enabled)
 
     builder.Services.AddScoped<ICommentCreatedChannel>(sp => sp.GetRequiredService<ElasticsearchCommentCreatedChannel>());
     builder.Services.AddScoped<ICommentSearchService>(sp => sp.GetRequiredService<ElasticsearchCommentSearchService>());
+    builder.Services.AddHostedService<ElasticsearchBackfillHostedService>();
 }
 else
 {

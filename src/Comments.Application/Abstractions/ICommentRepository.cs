@@ -6,6 +6,7 @@ namespace Comments.Application.Abstractions;
 public interface ICommentRepository
 {
     Task<Comment?> FindByIdAsync(Guid id, CancellationToken cancellationToken);
+    Task<IReadOnlyCollection<Comment>> GetAllAsync(CancellationToken cancellationToken);
     Task<(IReadOnlyCollection<Comment> Items, int TotalCount)> GetRootCommentsAsync(
         int page,
         int pageSize,
