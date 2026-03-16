@@ -41,6 +41,7 @@ const state = {
   totalPages: 1,
   hasNextPage: false,
   isSearchMode: false,
+  currentItems: [],
   collapsedThreads: new Set(),
   visibleThreadIds: new Set()
 };
@@ -278,6 +279,14 @@ function buildReplyButton(commentId) {
   return `<button class="reply-btn" type="button" data-reply-id="${escapeHtml(commentId)}">↪ Відповісти</button>`;
 }
 
+function buildLoadThreadButton(commentId) {
+  if (apiModeEl.value !== 'graphql') {
+    return '';
+  }
+
+  return `<button class="secondary-button" type="button" data-load-thread-id="${escapeHtml(commentId)}">⤵ Довантажити гілку</button>`;
+}
+
 function openAttachmentLightbox(src, alt) {
   if (!(lightboxEl instanceof HTMLDialogElement) || !(lightboxImageEl instanceof HTMLImageElement)) {
     return;
@@ -335,7 +344,7 @@ function renderComment(comment) {
       <div><strong>${escapeHtml(comment.userName)}</strong> (${escapeHtml(comment.email)})${homepage}</div>
       <div class="meta">${new Date(comment.createdAtUtc).toLocaleString()} · ID: ${escapeHtml(comment.id)}</div>
       <p>${escapeHtml(comment.text)}</p>
-      <div class="comment-actions">${buildReplyButton(comment.id)} ${buildToggleThreadButton(comment)}</div>
+      <div class="comment-actions">${buildReplyButton(comment.id)} ${buildToggleThreadButton(comment)} ${buildLoadThreadButton(comment.id)}</div>
       ${attachment}
       ${replies}
     </article>
@@ -367,7 +376,7 @@ function renderRootCommentsTable(comments) {
         <td>${escapeHtml(comment.text)}</td>
         <td>
           ${renderAttachment(comment.attachment)}
-          <div class="comment-actions">${buildReplyButton(comment.id)} ${buildToggleThreadButton(comment)}</div>
+          <div class="comment-actions">${buildReplyButton(comment.id)} ${buildToggleThreadButton(comment)} ${buildLoadThreadButton(comment.id)}</div>
         </td>
       </tr>
       <tr class="root-comment-thread-row">
@@ -510,9 +519,9 @@ async function fetchCommentsViaRest(q, page, pageSize) {
   return response.json();
 }
 
-async function fetchCommentsViaGraphQl(q, page, pageSize) {
-  const buildRepliesSelection = (depth) => {
-    if (depth <= 0) {
+function buildGraphQlCommentSelection(depth) {
+  const buildRepliesSelection = (selectionDepth) => {
+    if (selectionDepth <= 0) {
       return '';
     }
 
@@ -525,11 +534,11 @@ async function fetchCommentsViaGraphQl(q, page, pageSize) {
         homePage
         text
         createdAtUtc
-        attachment { fileName contentType storagePath sizeBytes }${buildRepliesSelection(depth - 1)}
+        attachment { fileName contentType storagePath sizeBytes }${buildRepliesSelection(selectionDepth - 1)}
       }`;
   };
 
-  const commentSelection = `
+  return `
       id
       parentId
       userName
@@ -537,8 +546,12 @@ async function fetchCommentsViaGraphQl(q, page, pageSize) {
       homePage
       text
       createdAtUtc
-      attachment { fileName contentType storagePath sizeBytes }${buildRepliesSelection(MAX_GRAPHQL_THREAD_DEPTH)}
+      attachment { fileName contentType storagePath sizeBytes }${buildRepliesSelection(depth)}
   `;
+}
+
+async function fetchCommentsViaGraphQl(q, page, pageSize) {
+  const commentSelection = buildGraphQlCommentSelection(MAX_GRAPHQL_THREAD_DEPTH);
 
   const document = q
     ? `query SearchComments($query: String!, $page: Int!, $pageSize: Int!) {
@@ -572,6 +585,40 @@ ${commentSelection}
   return q ? data.searchComments : data.comments;
 }
 
+async function fetchCommentThreadViaGraphQl(rootCommentId) {
+  const commentSelection = buildGraphQlCommentSelection(MAX_GRAPHQL_THREAD_DEPTH);
+  const document = `query CommentTree($rootCommentId: UUID!, $sortBy: CommentSortField!, $sortDirection: CommentSortDirection!) {
+  commentTree(rootCommentId: $rootCommentId, sortBy: $sortBy, sortDirection: $sortDirection) {
+${commentSelection}
+  }
+}`;
+
+  const data = await fetchGraphQl(document, {
+    rootCommentId,
+    sortBy: sortByEl.value,
+    sortDirection: sortDirectionEl.value
+  });
+
+  return data.commentTree;
+}
+
+function replaceCommentInTree(comments, targetId, replacement) {
+  return (comments ?? []).map((comment) => {
+    if (String(comment.id) === String(targetId)) {
+      return replacement;
+    }
+
+    if (!comment.replies?.length) {
+      return comment;
+    }
+
+    return {
+      ...comment,
+      replies: replaceCommentInTree(comment.replies, targetId, replacement)
+    };
+  });
+}
+
 async function loadComments(page = state.page) {
   const q = searchEl.value.trim();
   const pageSize = Number(pageSizeEl.value || '25');
@@ -585,11 +632,12 @@ async function loadComments(page = state.page) {
   state.totalPages = Math.max(1, data.totalPages || 1);
   state.hasNextPage = data.page < data.totalPages;
   state.page = data.page;
+  state.currentItems = data.items;
   updatePaginationControls();
 
-  syncVisibleThreadIds(data.items);
+  syncVisibleThreadIds(state.currentItems);
 
-  commentsEl.innerHTML = renderRootCommentsTable(data.items);
+  commentsEl.innerHTML = renderRootCommentsTable(state.currentItems);
 }
 
 function clearReplyContext(showStatus = true) {
@@ -643,9 +691,39 @@ commentsEl.addEventListener('click', (e) => {
       state.collapsedThreads.add(commentId);
     }
 
-    loadComments(state.page).catch((error) => {
-      commentsEl.innerHTML = `<p>Помилка завантаження: ${error.message}</p>`;
-    });
+    commentsEl.innerHTML = renderRootCommentsTable(state.currentItems ?? []);
+    return;
+  }
+
+  const loadThreadTarget = e.target.closest('[data-load-thread-id]');
+  if (loadThreadTarget) {
+    if (apiModeEl.value !== 'graphql') {
+      return;
+    }
+
+    const commentId = loadThreadTarget.getAttribute('data-load-thread-id');
+    if (!commentId) {
+      return;
+    }
+
+    loadThreadTarget.disabled = true;
+    const initialText = loadThreadTarget.textContent;
+    loadThreadTarget.textContent = 'Завантаження…';
+
+    fetchCommentThreadViaGraphQl(commentId)
+      .then((thread) => {
+        state.currentItems = replaceCommentInTree(state.currentItems, commentId, thread);
+        syncVisibleThreadIds(state.currentItems);
+        commentsEl.innerHTML = renderRootCommentsTable(state.currentItems);
+      })
+      .catch((error) => {
+        statusEl.className = 'status error';
+        statusEl.textContent = `Не вдалося довантажити гілку: ${error.message}`;
+      })
+      .finally(() => {
+        loadThreadTarget.disabled = false;
+        loadThreadTarget.textContent = initialText;
+      });
     return;
   }
 
@@ -757,16 +835,12 @@ clearReplyContextBtn.addEventListener('click', () => {
 
 expandAllBtn.addEventListener('click', () => {
   state.collapsedThreads.clear();
-  loadComments(state.page).catch((error) => {
-    commentsEl.innerHTML = `<p>Помилка завантаження: ${error.message}</p>`;
-  });
+  commentsEl.innerHTML = renderRootCommentsTable(state.currentItems ?? []);
 });
 
 collapseAllBtn.addEventListener('click', () => {
   state.collapsedThreads = new Set(state.visibleThreadIds);
-  loadComments(state.page).catch((error) => {
-    commentsEl.innerHTML = `<p>Помилка завантаження: ${error.message}</p>`;
-  });
+  commentsEl.innerHTML = renderRootCommentsTable(state.currentItems ?? []);
 });
 
 textInput.addEventListener('input', () => {
