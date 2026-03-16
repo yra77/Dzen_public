@@ -29,6 +29,8 @@ builder.Services.AddDbContext<CommentsDbContext>(options =>
     options.UseInMemoryDatabase("CommentsDb");
 });
 
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<BasicCaptchaChallengeStore>();
 builder.Services.AddScoped<ICommentRepository, EfCommentRepository>();
 builder.Services.AddSingleton<ITextSanitizer, BasicTextSanitizer>();
 builder.Services.AddSingleton(captchaOptions);

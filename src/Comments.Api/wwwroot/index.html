@@ -18,7 +18,15 @@
         <label>Імʼя <input required name="userName" maxlength="100" /></label>
         <label>Email <input required type="email" name="email" maxlength="200" /></label>
         <label>Домашня сторінка <input type="url" name="homePage" placeholder="https://example.com" /></label>
-        <label>Captcha token <input name="captchaToken" placeholder="1234" /></label>
+        <div class="captcha-block">
+          <span>Captcha (введіть результат):</span>
+          <div class="captcha-row">
+            <img id="captcha-image" alt="captcha" class="captcha-image" />
+            <button id="reload-captcha" type="button" class="secondary-button">Оновити captcha</button>
+          </div>
+          <input name="captchaAnswer" placeholder="наприклад, 7" />
+          <input type="hidden" name="captchaChallengeId" />
+        </div>
         <label class="wide">Parent comment ID <input id="parent-id" name="parentId" placeholder="опціонально" /></label>
         <div id="reply-context" class="reply-context hidden" aria-live="polite">
           <span id="reply-context-text"></span>
