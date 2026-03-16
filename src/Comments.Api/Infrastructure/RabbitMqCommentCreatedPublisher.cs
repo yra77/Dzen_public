@@ -31,6 +31,12 @@ public sealed class RabbitMqCommentCreatedPublisher : ICommentCreatedChannel
 
         channel.ExchangeDeclare(_options.ExchangeName, ExchangeType.Topic, durable: true, autoDelete: false);
 
+        channel.QueueDeclare(_options.IndexingQueueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
+        channel.QueueDeclare(_options.FileProcessingQueueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
+
+        channel.QueueBind(_options.IndexingQueueName, _options.ExchangeName, _options.IndexingRoutingKey);
+        channel.QueueBind(_options.FileProcessingQueueName, _options.ExchangeName, _options.FileProcessingRoutingKey);
+
         var payload = JsonSerializer.Serialize(comment);
         var body = Encoding.UTF8.GetBytes(payload);
 
@@ -42,6 +48,21 @@ public sealed class RabbitMqCommentCreatedPublisher : ICommentCreatedChannel
             routingKey: _options.RoutingKey,
             basicProperties: properties,
             body: body);
+
+        channel.BasicPublish(
+            exchange: _options.ExchangeName,
+            routingKey: _options.IndexingRoutingKey,
+            basicProperties: properties,
+            body: body);
+
+        if (comment.Attachment is not null)
+        {
+            channel.BasicPublish(
+                exchange: _options.ExchangeName,
+                routingKey: _options.FileProcessingRoutingKey,
+                basicProperties: properties,
+                body: body);
+        }
 
         return Task.CompletedTask;
     }
