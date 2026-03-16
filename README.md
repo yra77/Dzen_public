@@ -122,6 +122,17 @@ k6 run --summary-export=docs/artifacts/k6-middle-summary.json load-test/comments
 
 > Актуальний операційний план продовження див. у `docs/iteration-19-continuation-plan.md`.
 
+## Продовження робіт (ітерація 20)
+
+- Додано оперативний аудит: `docs/iteration-20-tz-audit.md` (коротка відповідь на питання відповідності ТЗ + next steps).
+- Перевірено поточний статус відповідності: **100% виконання ТЗ ще не досягнуто** (залишається 3 невиконані та 2 частково виконані пункти).
+- Актуалізовано backlog у `docs/tz-compliance-checklist.md` і зафіксовано пріоритети:
+  1. Angular LTS migration у `src/Comments.Web`;
+  2. CQRS + MediatR + FluentValidation;
+  3. RabbitMQ hardening + фінальний Middle+ load-test + Demo-артефакт.
+
+> Деталі перевірки див. у `docs/iteration-20-tz-audit.md` і `docs/tz-compliance-checklist.md`.
+
 ## Наступні кроки (по ТЗ)
 
 - ✅ Підключено EF Core + підтримку SQL Server (через `Persistence:Provider=SqlServer`).
