@@ -135,6 +135,9 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
         Assert.NotNull(payload!.Errors);
         Assert.NotEmpty(payload.Errors!);
         Assert.Equal("BAD_USER_INPUT", payload.Errors![0].Extensions?.Code);
+        Assert.NotNull(payload.Errors![0].Extensions?.ValidationErrors);
+        Assert.True(payload.Errors![0].Extensions!.ValidationErrors!.ContainsKey("Page"));
+        Assert.True(payload.Errors![0].Extensions!.ValidationErrors!.ContainsKey("PageSize"));
     }
 
     [Fact]
@@ -166,6 +169,46 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
         Assert.NotNull(payload!.Errors);
         Assert.NotEmpty(payload.Errors!);
         Assert.Equal("BAD_USER_INPUT", payload.Errors![0].Extensions?.Code);
+        Assert.NotNull(payload.Errors![0].Extensions?.ValidationErrors);
+        Assert.True(payload.Errors![0].Extensions!.ValidationErrors!.ContainsKey("Request.CaptchaToken"));
+    }
+
+    [Fact]
+    public async Task GraphQlCreateComment_WithInvalidAttachmentContentType_ReturnsValidationErrorsExtension()
+    {
+        using var client = _factory.CreateClient();
+
+        var body = new
+        {
+            query = @"mutation {
+  addComment(input: {
+    userName: \"User123\",
+    email: \"user@example.com\",
+    homePage: \"https://example.com\",
+    text: \"Hello\",
+    captchaToken: \"1234\",
+    attachment: {
+      fileName: \"note.pdf\",
+      contentType: \"application/pdf\",
+      base64Content: \"SGVsbG8=\"
+    }
+  }) {
+    id
+  }
+}"
+        };
+
+        var response = await client.PostAsJsonAsync("/graphql", body);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<GraphQlResponse>();
+        Assert.NotNull(payload);
+        Assert.NotNull(payload!.Errors);
+        Assert.NotEmpty(payload.Errors!);
+        Assert.Equal("BAD_USER_INPUT", payload.Errors![0].Extensions?.Code);
+        Assert.NotNull(payload.Errors![0].Extensions?.ValidationErrors);
+        Assert.True(payload.Errors![0].Extensions!.ValidationErrors!.ContainsKey("Request.Attachment.ContentType"));
     }
 
     private sealed class ValidationProblemPayload
@@ -187,5 +230,6 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
     private sealed class GraphQlExtensions
     {
         public string? Code { get; set; }
+        public Dictionary<string, string[]>? ValidationErrors { get; set; }
     }
 }
