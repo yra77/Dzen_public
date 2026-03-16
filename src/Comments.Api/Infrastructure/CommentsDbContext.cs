@@ -10,6 +10,7 @@ public sealed class CommentsDbContext : DbContext
     }
 
     public DbSet<Comment> Comments => Set<Comment>();
+    public DbSet<ProcessedMessage> ProcessedMessages => Set<ProcessedMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,5 +34,11 @@ public sealed class CommentsDbContext : DbContext
             .WithOne(x => x.Parent)
             .HasForeignKey(x => x.ParentId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        var processedMessage = modelBuilder.Entity<ProcessedMessage>();
+        processedMessage.ToTable("ProcessedMessages");
+        processedMessage.HasKey(x => x.Id);
+        processedMessage.Property(x => x.Id).HasMaxLength(128).IsRequired();
+        processedMessage.Property(x => x.ProcessedAtUtc).IsRequired();
     }
 }
