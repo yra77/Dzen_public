@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 10).
+Останнє оновлення: 2026-03-16 (ітерація 11).
 
 ## Підсумок
 
@@ -8,7 +8,7 @@
 - **Частково виконано:** 2 пункти.
 - **Не виконано:** 3 пункти.
 
-> Висновок: поточний стан ще не покриває **всі** вимоги ТЗ на 100%, але розширено performance-напрям (Middle+ k6 профіль + thresholds), залишились переважно архітектурні пункти.
+> Висновок: поточний стан ще не покриває **всі** вимоги ТЗ на 100%, але закрито документаційний крок для Middle+ load-test (інструкції + шаблон звіту), залишились переважно архітектурні пункти (Angular, CQRS, production-hardening).
 
 ## 1) Форма додавання коментаря
 
@@ -173,6 +173,36 @@
 4. 🟨 **Load-test Middle+ (фіналізація)**
    - Мінімальний DoD: прогін `load-test/comments-middle.js` у середовищі з RabbitMQ + Elasticsearch; збережений результат `summary.json` + короткий висновок (p95/p99/error-rate).
    - Артефакти: `docs/load-test-middle-results.md` + файл(и) метрик + посилання у README.
+
+#### P2 — фіналізація поставки
+5. 🔲 **Відео-демо в README**
+   - Мінімальний DoD: 3–5 хв демонстрація ключових сценаріїв (create/reply, sort/page, attachments preview, realtime).
+   - Артефакти: посилання на відео + секція `Demo` в README.
+
+
+## Оновлення ітерації 11
+
+- ✅ README доповнено явною командою запуску Middle+-сценарію з експортом артефакту `--summary-export=docs/artifacts/k6-middle-summary.json`.
+- ✅ Додано шаблон результатів `docs/load-test-middle-results.md` для фіксації p95/p99/error-rate, середовища, конфігурації запуску та висновків.
+- 🟨 Пункт фіналізації Middle+ load-test лишається **частково виконаним**: артефакт-формат і місце збереження визначені, але потрібен фактичний прогін у цільовому середовищі з заповненням звіту реальними метриками.
+
+### Що ще треба зробити після ітерації 11
+
+#### P0 — критично для відповідності ТЗ
+1. 🔲 **Angular SPA (LTS) замість vanilla JS**
+   - Мінімальний DoD: екран списку/таблиці, nested thread view, create/reply, preview, captcha, attachments preview, SignalR live-updates.
+   - Артефакти: код у `src/Comments.Web`, інструкція запуску в README, smoke e2e-сценарій.
+2. 🔲 **CQRS + MediatR + FluentValidation**
+   - Мінімальний DoD: `AddComment`, `AddReply`, `GetCommentsPage`, `GetCommentTree`, `PreviewComment` як command/query handlers + валідатори + pipeline behavior для валідації/логування.
+   - Артефакти: оновлений Application-шар, unit-тести для handlers/validators.
+
+#### P1 — стабільність і експлуатація
+3. 🔲 **Production-hardening RabbitMQ**
+   - Мінімальний DoD: персистентна ідемпотентність (не in-memory), retry/backoff policy (delayed), метрики обробки та помилок.
+   - Артефакти: конфіг політик, технічний опис у `docs/`, базові інтеграційні тести consumer-потоку.
+4. 🟨 **Load-test Middle+ (фіналізація)**
+   - Мінімальний DoD: прогін `load-test/comments-middle.js` у середовищі з RabbitMQ + Elasticsearch; збережений результат `summary.json` + короткий висновок (p95/p99/error-rate).
+   - Артефакти: `docs/load-test-middle-results.md` + файл(и) метрик у `docs/artifacts/` + посилання у README.
 
 #### P2 — фіналізація поставки
 5. 🔲 **Відео-демо в README**

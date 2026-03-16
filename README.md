@@ -66,7 +66,14 @@ k6 run load-test/comments-middle.js
 
 # тільки GraphQL (за потреби передайте валідний CAPTCHA token)
 API_MODE=graphql CAPTCHA_TOKEN=test k6 run load-test/comments-middle.js
+
+# mixed-профіль + збереження машинно-читаного звіту
+k6 run --summary-export=docs/artifacts/k6-middle-summary.json load-test/comments-middle.js
 ```
+
+Після прогона зафіксуйте короткий висновок (p95/p99/error-rate) у
+`docs/load-test-middle-results.md` та оновіть посилання на актуальний
+`summary`-артефакт.
 
 ## Наступні кроки (по ТЗ)
 
