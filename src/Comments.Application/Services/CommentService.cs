@@ -9,20 +9,23 @@ public sealed class CommentService
     private readonly ICommentRepository _repository;
     private readonly ITextSanitizer _textSanitizer;
     private readonly ICommentCreatedPublisher _commentCreatedPublisher;
+    private readonly ICaptchaValidator _captchaValidator;
 
     public CommentService(
         ICommentRepository repository,
         ITextSanitizer textSanitizer,
-        ICommentCreatedPublisher commentCreatedPublisher)
+        ICommentCreatedPublisher commentCreatedPublisher,
+        ICaptchaValidator captchaValidator)
     {
         _repository = repository;
         _textSanitizer = textSanitizer;
         _commentCreatedPublisher = commentCreatedPublisher;
+        _captchaValidator = captchaValidator;
     }
 
     public async Task<CommentDto> CreateAsync(CreateCommentRequest request, CancellationToken cancellationToken)
     {
-        Validate(request);
+        await ValidateAsync(request, cancellationToken);
 
         var sanitizedText = _textSanitizer.Sanitize(request.Text);
         var comment = new Comment(
@@ -77,11 +80,17 @@ public sealed class CommentService
             comments.Select(Map).ToArray());
     }
 
-    private static void Validate(CreateCommentRequest request)
+    private async Task ValidateAsync(CreateCommentRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.UserName)) throw new ArgumentException("User name is required.");
         if (string.IsNullOrWhiteSpace(request.Email)) throw new ArgumentException("Email is required.");
         if (string.IsNullOrWhiteSpace(request.Text)) throw new ArgumentException("Text is required.");
+
+        var captchaIsValid = await _captchaValidator.ValidateAsync(request.CaptchaToken, cancellationToken);
+        if (!captchaIsValid)
+        {
+            throw new ArgumentException("Captcha validation failed.");
+        }
     }
 
     private static CommentDto Map(Comment comment)

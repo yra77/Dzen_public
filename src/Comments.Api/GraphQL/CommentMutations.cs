@@ -11,11 +11,12 @@ public sealed class CommentMutations
         CancellationToken cancellationToken)
     {
         var request = new CreateCommentRequest(
-            input.ParentId,
             input.UserName,
             input.Email,
             input.HomePage,
-            input.Text);
+            input.Text,
+            input.ParentId,
+            input.CaptchaToken);
 
         return commentService.CreateAsync(request, cancellationToken);
     }
