@@ -4,11 +4,11 @@
 
 ## Підсумок
 
-- **Повністю виконано:** 17 пунктів.
-- **Частково виконано:** 8 пунктів.
+- **Повністю виконано:** 19 пунктів.
+- **Частково виконано:** 6 пунктів.
 - **Не виконано:** 3 пункти.
 
-> Висновок: поточний стан не покриває **всі** вимоги ТЗ на 100%.
+> Висновок: поточний стан ще не покриває **всі** вимоги ТЗ на 100%, але закрито критичний блок валідації `Text`.
 
 ## 1) Форма додавання коментаря
 
@@ -18,18 +18,18 @@
 | `Email` обов'язковий і валідний | ✅ | Валідація `MailAddress.TryCreate`. |
 | `HomePage` необов'язковий, валідний URL | ✅ | Перевірка абсолютного `http/https` URL. |
 | CAPTCHA обов'язкова перевірка | ✅ | Є `BasicCaptchaValidator` + `RecaptchaCaptchaValidator`. |
-| CAPTCHA як зображення + кеш/сесія 5 хв | ✅ | Додано endpoint `GET /api/captcha/image`, challenge-кеш у `IMemoryCache`, TTL = 5 хв. |
-| Текст із whitelist HTML-тегів (`a`, `code`, `i`, `strong`) | ❌ | Наразі повний HTML-encode без whitelist. |
-| Перевірка валідного XHTML (закриття тегів) | ❌ | Спеціальної XHTML-валидації немає. |
-| Валідація і на клієнті, і на сервері | 🟨 | Базова клієнтська є, але без повного паритету правил з сервером. |
+| CAPTCHA як зображення + кеш/сесія 5 хв | ✅ | Є endpoint `GET /api/captcha/image`, challenge-кеш у `IMemoryCache`, TTL = 5 хв. |
+| Текст із whitelist HTML-тегів (`a`, `code`, `i`, `strong`) | ✅ | Додано строгий whitelist тегів, інші теги блокуються помилкою. |
+| Перевірка валідного XHTML (закриття тегів) | ✅ | Додано XML/XHTML-парсинг через `XDocument.Parse`; невалідна розмітка відхиляється. |
+| Валідація і на клієнті, і на сервері | 🟨 | Серверні правила посилені; у SPA ще немає повного паритету UX-помилок для всіх кейсів sanitizer/XHTML. |
 
 ## 2) Файли/вкладення
 
 | Вимога ТЗ | Статус | Примітка |
 |---|---|---|
 | Дозволені типи: JPG/GIF/PNG/TXT | ✅ | MIME-обмеження на API і SPA. |
-| TXT до 100KB | ✅ | Додано окрему серверну межу `Attachments:MaxTextSizeBytes=102400` + клієнтську перевірку у SPA. |
-| Зображення до 320x240, інакше пропорційний resize | ✅ | Додано серверний auto-resize у `LocalAttachmentStorage` (режим `ResizeMode.Max`, 320x240). |
+| TXT до 100KB | ✅ | Серверна межа `Attachments:MaxTextSizeBytes=102400` + клієнтська перевірка у SPA. |
+| Зображення до 320x240, інакше пропорційний resize | ✅ | Серверний auto-resize у `LocalAttachmentStorage` (`ResizeMode.Max`, 320x240). |
 | Прев'ю вкладень до відправки | ✅ | Є прев'ю image і txt в UI. |
 | Візуальні ефекти перегляду (Lightbox-подібно) | ❌ | Відкриття посиланням у новій вкладці, без modal/lightbox. |
 
@@ -44,17 +44,17 @@
 | Пагінація по 25 за замовчуванням | ✅ | `pageSize=25` за замовчуванням. |
 | Дефолтне сортування LIFO (CreatedAt DESC) | ✅ | Виконується у сервісі та GraphQL defaults. |
 | Кнопки швидких тегів `[i] [strong] [code] [a]` | ✅ | Додано toolbar у формі, вставка тегів у textarea. |
-| Preview повідомлення без перезавантаження | ✅ | Додано live preview у SPA через серверний preview API (REST/GraphQL) без reload сторінки. |
+| Preview повідомлення без перезавантаження | ✅ | Live preview через серверний preview API (REST/GraphQL), без reload. |
 
 ## 4) API / інтеграції
 
 | Вимога ТЗ | Статус | Примітка |
 |---|---|---|
 | REST API create/list | ✅ | Реалізовано. |
-| GraphQL як основний API | 🟨 | GraphQL є, але REST також перший клас; у UI перемикач режимів. |
-| GraphQL операції `commentsPage`, `commentTree`, `addComment`, `addReply`, `previewComment` | 🟨 | Додано `previewComment`; але `commentsPage`/`commentTree`/`addReply` ще не виділені окремими операціями. |
+| GraphQL як основний API | 🟨 | GraphQL є, але REST також first-class; у UI перемикач режимів. |
+| GraphQL операції `commentsPage`, `commentTree`, `addComment`, `addReply`, `previewComment` | 🟨 | Додано `previewComment`; `commentsPage`/`commentTree`/`addReply` ще не виділені окремими операціями. |
 | RabbitMQ подія `comment.created` | ✅ | Реалізовано опційно через конфіг. |
-| Черги `indexing` і `file-processing` | ❌ | Публікується в `comments` exchange routing key `comment.created`; окремих черг логікою застосунку немає. |
+| Черги `indexing` і `file-processing` | ❌ | Публікація в `comments` exchange (`comment.created`), без окремої прикладної логіки для 2 черг. |
 | Elasticsearch індексація/пошук | ✅ | Індексування при створенні + пошук + backfill. |
 | SignalR real-time події нових коментарів | ✅ | Hub `/hubs/comments`, подія `commentCreated`. |
 
@@ -65,8 +65,8 @@
 | ASP.NET Core 8/9 | ✅ | Проєкт на .NET 8. |
 | MSSQL + EF Core | ✅ | Є SqlServer конфіг + EF репозиторій. |
 | Clean Architecture / SOLID / OOP | 🟨 | Шари відокремлені, але CQRS+MediatR не впроваджено повністю. |
-| CQRS + MediatR + FluentValidation | ❌ | MediatR/FluentValidation пакети та пайплайни відсутні. |
-| Angular SPA (LTS) | ❌ | Angular клієнт не створений, лише vanilla JS SPA. |
+| CQRS + MediatR + FluentValidation | ❌ | MediatR/FluentValidation пакети та pipeline-и відсутні. |
+| Angular SPA (LTS) | ❌ | Angular-клієнт не створений, лише vanilla JS SPA. |
 | Docker Compose (app, db, rabbitmq, elasticsearch) | ✅ | Наявний `docker-compose.yml`. |
 | README + схема БД | ✅ | README і `db-schema.mwb` присутні. |
 | Відео-демо | ❌ | У репозиторії не знайдено. |
@@ -82,20 +82,17 @@
 
 ### Внесено в цій ітерації
 
-- ✅ API: додано серверний preview endpoint `POST /api/comments/preview` для санітизованого превʼю повідомлення.
-- ✅ GraphQL: додано query `previewComment(text: String!)` для превʼю на сервері.
-- ✅ SPA: live preview переведено на використання backend preview (REST/GraphQL) із оновленням без reload.
-- ✅ Вкладення: реалізовано окремий ліміт для TXT (**100KB**) на backend + frontend.
-- ✅ Вкладення: реалізовано серверний пропорційний resize зображень до **320x240** (без спотворення).
-- ✅ Оновлено UX-підказки у формі SPA щодо актуальних лімітів вкладень.
-- ✅ CAPTCHA: додано endpoint `GET /api/captcha/image` (SVG-капча з simple-math задачами), серверний challenge-store з TTL **5 хв**, інтеграцію у SPA (refresh captcha + передача `challengeId:answer`).
+- ✅ Санітизація `Text`: замінено повний HTML-encode на whitelist-підхід тільки для тегів `a`, `code`, `i`, `strong`.
+- ✅ XHTML-валидація: додано strict parsing (через `XDocument`) і відхилення невалідної/незакритої розмітки.
+- ✅ Безпека атрибутів: для `<a>` дозволено тільки `href`, причому лише абсолютні `http/https` URL; для інших тегів атрибути заборонені.
 
 ### Що ще треба зробити
 
 1. Реалізувати **Angular SPA** (заміна/доповнення vanilla JS).
-2. Додати **whitelist HTML sanitizer + XHTML validator** для `Text`.
-3. Розширити GraphQL до окремих операцій `commentsPage`, `commentTree`, `addComment`, `addReply` (зараз є тільки часткове покриття + `previewComment`).
-4. Перейти на **MediatR + FluentValidation** у Application шарі.
+2. Довести **паритет клієнтської валідації** з серверною для `Text` (UX-підказки та обробка всіх помилок sanitizer/XHTML до submit).
+3. Розширити GraphQL до окремих операцій `commentsPage`, `commentTree`, `addComment`, `addReply` (зараз є часткове покриття + `previewComment`).
+4. Перейти на **MediatR + FluentValidation** у Application-шарі.
 5. Розширити RabbitMQ-пайплайн до окремих задач `indexing`/`file-processing`.
-6. Розширити load-test до вимог Middle+ і зафіксувати метрики.
-7. Додати відео-демо у README.
+6. Додати Lightbox/modal для перегляду вкладень у SPA.
+7. Розширити load-test до вимог Middle+ і зафіксувати метрики.
+8. Додати відео-демо у README.
