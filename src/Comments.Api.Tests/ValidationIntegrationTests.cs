@@ -66,6 +66,22 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
     }
 
     [Fact]
+    public async Task Preview_WithValidText_ReturnsSanitizedHtml()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/comments/preview", new
+        {
+            text = "Hello <strong>World</strong>"
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<string>();
+        Assert.Equal("Hello <strong>World</strong>", payload);
+    }
+
+    [Fact]
     public async Task CreateComment_WithInvalidCaptcha_ReturnsBadRequestValidationProblem()
     {
         using var client = _factory.CreateClient();
@@ -185,6 +201,23 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
         Assert.Equal(root.Id, thread!.Id);
         Assert.Single(thread.Replies);
         Assert.Equal("ReplyUser", thread.Replies.Single().UserName);
+    }
+
+    [Fact]
+    public async Task Search_WithValidInput_ReturnsPagedShape()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/api/comments/search?q=hello&page=1&pageSize=10");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<PagedResult<CommentDto>>();
+        Assert.NotNull(payload);
+        Assert.Equal(1, payload!.Page);
+        Assert.Equal(10, payload.PageSize);
+        Assert.True(payload.TotalCount >= 0);
+        Assert.NotNull(payload.Items);
     }
 
     [Fact]
@@ -316,6 +349,53 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
         Assert.Equal("User123", addComment.GetProperty("userName").GetString());
         Assert.Equal("Hello from GraphQL", addComment.GetProperty("text").GetString());
         Assert.NotEqual(Guid.Empty, addComment.GetProperty("id").GetGuid());
+    }
+
+    [Fact]
+    public async Task GraphQlPreviewComment_WithValidInput_ReturnsSanitizedHtmlWithoutErrors()
+    {
+        using var client = _factory.CreateClient();
+
+        var body = new
+        {
+            query = "query { previewComment(text: \"Hello <strong>GraphQL</strong>\") }"
+        };
+
+        var response = await client.PostAsJsonAsync("/graphql", body);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<GraphQlResponse>();
+        Assert.NotNull(payload);
+        Assert.Null(payload!.Errors);
+        Assert.True(payload.Data.HasValue);
+
+        var preview = payload.Data!.Value.GetProperty("previewComment").GetString();
+        Assert.Equal("Hello <strong>GraphQL</strong>", preview);
+    }
+
+    [Fact]
+    public async Task GraphQlSearchComments_WithValidInput_ReturnsPagedShapeWithoutErrors()
+    {
+        using var client = _factory.CreateClient();
+
+        var body = new
+        {
+            query = "query { searchComments(query: \"hello\", page: 1, pageSize: 10) { page pageSize totalCount items { id } } }"
+        };
+
+        var response = await client.PostAsJsonAsync("/graphql", body);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<GraphQlResponse>();
+        Assert.NotNull(payload);
+        Assert.Null(payload!.Errors);
+        Assert.True(payload.Data.HasValue);
+
+        var searchComments = payload.Data!.Value.GetProperty("searchComments");
+        Assert.Equal(1, searchComments.GetProperty("page").GetInt32());
+        Assert.Equal(10, searchComments.GetProperty("pageSize").GetInt32());
+        Assert.True(searchComments.GetProperty("totalCount").GetInt32() >= 0);
+        Assert.Equal(JsonValueKind.Array, searchComments.GetProperty("items").ValueKind);
     }
 
     private sealed class ValidationProblemPayload
