@@ -77,9 +77,6 @@ public sealed class CommentService
         CommentSortDirection sortDirection,
         CancellationToken cancellationToken)
     {
-        if (page <= 0) throw new ArgumentOutOfRangeException(nameof(page));
-        if (pageSize <= 0) throw new ArgumentOutOfRangeException(nameof(pageSize));
-
         var (comments, totalCount) = await _repository.GetRootCommentsAsync(
             page,
             pageSize,
