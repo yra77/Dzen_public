@@ -28,8 +28,8 @@
 | Вимога ТЗ | Статус | Примітка |
 |---|---|---|
 | Дозволені типи: JPG/GIF/PNG/TXT | ✅ | MIME-обмеження на API і SPA. |
-| TXT до 100KB | ❌ | Використовується єдина межа 1MB. |
-| Зображення до 320x240, інакше пропорційний resize | ❌ | Resize/перевірка пікселів не реалізовані. |
+| TXT до 100KB | ✅ | Додано окрему серверну межу `Attachments:MaxTextSizeBytes=102400` + клієнтську перевірку у SPA. |
+| Зображення до 320x240, інакше пропорційний resize | ✅ | Додано серверний auto-resize у `LocalAttachmentStorage` (режим `ResizeMode.Max`, 320x240). |
 | Прев'ю вкладень до відправки | ✅ | Є прев'ю image і txt в UI. |
 | Візуальні ефекти перегляду (Lightbox-подібно) | ❌ | Відкриття посиланням у новій вкладці, без modal/lightbox. |
 
@@ -80,12 +80,19 @@
 
 ## Першочергові кроки до 100% відповідності
 
+### Внесено в цій ітерації
+
+- ✅ Вкладення: реалізовано окремий ліміт для TXT (**100KB**) на backend + frontend.
+- ✅ Вкладення: реалізовано серверний пропорційний resize зображень до **320x240** (без спотворення).
+- ✅ Оновлено UX-підказки у формі SPA щодо актуальних лімітів вкладень.
+
+### Що ще треба зробити
+
 1. Реалізувати **Angular SPA** (заміна/доповнення vanilla JS).
 2. Додати **whitelist HTML sanitizer + XHTML validator** для `Text`.
 3. Додати **captcha-image endpoint** (генерація + TTL 5 хв у кеші).
-4. Допрацювати вкладення: **TXT ≤ 100KB**, **resize до 320x240** для image.
-5. Додати **previewComment** API (GraphQL mutation/query), щоб preview був не лише клієнтський, а і серверний.
-6. Перейти на **MediatR + FluentValidation** у Application шарі.
-7. Розширити RabbitMQ-пайплайн до окремих задач `indexing`/`file-processing`.
-8. Розширити load-test до вимог Middle+ і зафіксувати метрики.
-9. Додати відео-демо у README.
+4. Додати **previewComment** API (GraphQL mutation/query), щоб preview був не лише клієнтський, а і серверний.
+5. Перейти на **MediatR + FluentValidation** у Application шарі.
+6. Розширити RabbitMQ-пайплайн до окремих задач `indexing`/`file-processing`.
+7. Розширити load-test до вимог Middle+ і зафіксувати метрики.
+8. Додати відео-демо у README.
