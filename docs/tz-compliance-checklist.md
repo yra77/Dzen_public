@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-16 (ітерація 14).
+Останнє оновлення: 2026-03-16 (ітерація 15).
 
 ## Підсумок
 
@@ -12,6 +12,40 @@
 
 ---
 
+## Оновлення ітерації 15
+
+- ✅ Додано `docs/rabbitmq-consumer-runbook.md` з операційною інструкцією по consumer-ланцюгу (`indexing` / `file-processing`), DLQ та retry-діагностиці.
+- ✅ Синхронізовано `README.md` та checklist: roadmap переведено на **ітерацію 15** з фокусом на відкриті P0/P1/P2 блоки.
+- ✅ Уточнено практичний next-step backlog у форматі «що робити наступними комітами» без повторного аудиту всього ТЗ.
+
+### Що ще треба зробити у проєкті (актуально після ітерації 15)
+
+#### P0 — must-have для закриття ТЗ
+1. 🔲 **Angular SPA (LTS) у `src/Comments.Web`**
+   - Підняти Angular shell + маршрути `/` (таблиця root) і `/thread/:id` (гілка).
+   - Перенести функціонал з поточного `wwwroot`: create/reply, preview, captcha image challenge, attachments preview, SignalR live updates.
+   - Артефакти приймання: e2e smoke (create + reply + realtime) + оновлений README (розділ запуску фронтенду).
+2. 🔲 **CQRS + MediatR + FluentValidation**
+   - Винести use-cases у handlers (`AddComment`, `AddReply`, `GetCommentsPage`, `GetCommentTree`, `PreviewComment`).
+   - Додати validators + pipeline behaviors (validation/logging/telemetry).
+   - Артефакти приймання: unit-тести handlers/validators, без зміни зовнішніх REST/GraphQL контрактів.
+
+#### P1 — production readiness
+3. 🟨 **RabbitMQ hardening**
+   - ✅ Додано runbook `docs/rabbitmq-consumer-runbook.md` (конфіг, запуск, перевірка черг/DLQ, базовий troubleshooting).
+   - 🔲 Перенести ідемпотентність з in-memory у персистентне сховище (SQL/Redis).
+   - 🔲 Додати/завести лічильники success/fail/retry + latency метрики для consumer-обробки.
+   - 🔲 Додати інтеграційний тестовий сценарій для consumer chain (retry → DLQ).
+4. 🟨 **Middle+ load-test (фіналізація)**
+   - Реально виконати `load-test/comments-middle.js` у середовищі з RabbitMQ + Elasticsearch.
+   - Заповнити `docs/load-test-middle-results.md` і додати артефакт `docs/artifacts/k6-middle-summary.json`.
+   - Синхронізувати README посиланням на конкретний згенерований summary-файл.
+
+#### P2 — поставка
+5. 🔲 **Demo у README**
+   - Додати `Demo`-секцію з посиланням на 3–5 хв відео основних сценаріїв (create/reply, search/sort/page, attachment preview, realtime).
+
+---
 
 ## Оновлення ітерації 14
 
