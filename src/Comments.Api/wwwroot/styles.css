@@ -46,12 +46,13 @@ button:disabled {
 }
 .toolbar {
   display: grid;
-  grid-template-columns: 1fr 1fr 150px 160px 130px 120px;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 8px;
   align-items: center;
 }
 .toolbar h2 {
   margin: 0;
+  grid-column: 1 / -1;
 }
 .pagination {
   margin-top: 10px;
