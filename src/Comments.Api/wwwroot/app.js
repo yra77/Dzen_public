@@ -23,6 +23,10 @@ const textPreviewContentEl = document.getElementById('text-preview-content');
 const captchaImageEl = document.getElementById('captcha-image');
 const reloadCaptchaBtn = document.getElementById('reload-captcha');
 const captchaChallengeIdInput = form.elements.namedItem('captchaChallengeId');
+const lightboxEl = document.getElementById('attachment-lightbox');
+const lightboxImageEl = document.getElementById('lightbox-image');
+const lightboxCloseBtn = document.getElementById('lightbox-close');
+
 
 const MAX_ATTACHMENT_SIZE = 1024 * 1024;
 const MAX_TEXT_ATTACHMENT_SIZE = 100 * 1024;
@@ -205,17 +209,43 @@ function renderAttachment(attachment) {
   if (attachment.contentType?.startsWith('image/')) {
     return `
       <figure class="attachment-preview-inline">
-        <img src="${storagePath}" alt="${fileName}" loading="lazy" />
-        <figcaption>📎 <a href="${storagePath}" target="_blank">${fileName}</a></figcaption>
+        <button class="attachment-image-button" type="button" data-lightbox-src="${storagePath}" data-lightbox-alt="${fileName}">
+          <img src="${storagePath}" alt="${fileName}" loading="lazy" />
+        </button>
+        <figcaption>📎 <a href="${storagePath}" target="_blank" rel="noreferrer">${fileName}</a> · <button class="link-like" type="button" data-lightbox-src="${storagePath}" data-lightbox-alt="${fileName}">Відкрити preview</button></figcaption>
       </figure>
     `;
   }
 
-  return `<div>📎 <a href="${storagePath}" target="_blank">${fileName}</a></div>`;
+  return `<div>📎 <a href="${storagePath}" target="_blank" rel="noreferrer">${fileName}</a></div>`;
 }
 
 function buildReplyButton(commentId) {
   return `<button class="reply-btn" type="button" data-reply-id="${escapeHtml(commentId)}">↪ Відповісти</button>`;
+}
+
+function openAttachmentLightbox(src, alt) {
+  if (!(lightboxEl instanceof HTMLDialogElement) || !(lightboxImageEl instanceof HTMLImageElement)) {
+    return;
+  }
+
+  lightboxImageEl.src = src;
+  lightboxImageEl.alt = alt || 'Збільшене вкладення';
+  if (!lightboxEl.open) {
+    lightboxEl.showModal();
+  }
+}
+
+function closeAttachmentLightbox() {
+  if (!(lightboxEl instanceof HTMLDialogElement) || !(lightboxImageEl instanceof HTMLImageElement)) {
+    return;
+  }
+
+  if (lightboxEl.open) {
+    lightboxEl.close();
+  }
+
+  lightboxImageEl.src = '';
 }
 
 function buildToggleThreadButton(comment) {
@@ -479,6 +509,17 @@ attachmentInput.addEventListener('change', (e) => {
 });
 
 commentsEl.addEventListener('click', (e) => {
+  const lightboxTarget = e.target.closest('[data-lightbox-src]');
+  if (lightboxTarget) {
+    const src = lightboxTarget.getAttribute('data-lightbox-src');
+    const alt = lightboxTarget.getAttribute('data-lightbox-alt') || 'Збільшене вкладення';
+    if (src) {
+      openAttachmentLightbox(src, alt);
+    }
+
+    return;
+  }
+
   const toggleTarget = e.target.closest('[data-toggle-thread-id]');
   if (toggleTarget) {
     const commentId = toggleTarget.getAttribute('data-toggle-thread-id');
@@ -649,6 +690,20 @@ reloadCaptchaBtn.addEventListener('click', () => {
     statusEl.classList.add('error');
     statusEl.textContent = `Помилка captcha: ${error.message}`;
   });
+});
+
+lightboxCloseBtn?.addEventListener('click', () => {
+  closeAttachmentLightbox();
+});
+
+lightboxEl?.addEventListener('click', (event) => {
+  if (event.target === lightboxEl) {
+    closeAttachmentLightbox();
+  }
+});
+
+lightboxEl?.addEventListener('close', () => {
+  closeAttachmentLightbox();
 });
 sortByEl.addEventListener('change', () => reloadBtn.click());
 sortDirectionEl.addEventListener('change', () => reloadBtn.click());
