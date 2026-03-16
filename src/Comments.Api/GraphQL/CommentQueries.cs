@@ -6,7 +6,7 @@ namespace Comments.Api.GraphQL;
 
 public sealed class CommentQueries
 {
-    public Task<PagedResult<CommentDto>> Comments(
+    public Task<PagedResult<CommentDto>> CommentsPage(
         [Service] CommentService commentService,
         int page = 1,
         int pageSize = 25,
@@ -15,6 +15,29 @@ public sealed class CommentQueries
         CancellationToken cancellationToken = default)
     {
         return commentService.GetPageAsync(page, pageSize, sortBy, sortDirection, cancellationToken);
+    }
+
+
+
+    public Task<PagedResult<CommentDto>> Comments(
+        [Service] CommentService commentService,
+        int page = 1,
+        int pageSize = 25,
+        CommentSortField sortBy = CommentSortField.CreatedAtUtc,
+        CommentSortDirection sortDirection = CommentSortDirection.Desc,
+        CancellationToken cancellationToken = default)
+    {
+        return CommentsPage(commentService, page, pageSize, sortBy, sortDirection, cancellationToken);
+    }
+
+    public Task<CommentDto> CommentTree(
+        [Service] CommentService commentService,
+        Guid rootCommentId,
+        CommentSortField sortBy = CommentSortField.CreatedAtUtc,
+        CommentSortDirection sortDirection = CommentSortDirection.Desc,
+        CancellationToken cancellationToken = default)
+    {
+        return commentService.GetThreadAsync(rootCommentId, sortBy, sortDirection, cancellationToken);
     }
 
     public Task<PagedResult<CommentDto>> SearchComments(

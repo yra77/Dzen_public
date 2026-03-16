@@ -108,6 +108,21 @@ public sealed class CommentService
             comments.Select(x => Map(x, sortField, sortDirection)).ToArray());
     }
 
+    public async Task<CommentDto> GetThreadAsync(
+        Guid rootCommentId,
+        CommentSortField sortField,
+        CommentSortDirection sortDirection,
+        CancellationToken cancellationToken)
+    {
+        var rootComment = await _repository.FindByIdAsync(rootCommentId, cancellationToken);
+        if (rootComment is null)
+        {
+            throw new InvalidOperationException("Comment was not found.");
+        }
+
+        return Map(rootComment, sortField, sortDirection);
+    }
+
     public string Preview(string text)
     {
         if (string.IsNullOrWhiteSpace(text))

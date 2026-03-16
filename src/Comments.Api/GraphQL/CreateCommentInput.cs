@@ -9,6 +9,15 @@ public sealed record CreateCommentInput(
     string? CaptchaToken,
     AttachmentInput? Attachment);
 
+public sealed record AddReplyInput(
+    Guid ParentId,
+    string UserName,
+    string Email,
+    string? HomePage,
+    string Text,
+    string? CaptchaToken,
+    AttachmentInput? Attachment);
+
 public sealed record AttachmentInput(
     string FileName,
     string ContentType,
