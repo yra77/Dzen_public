@@ -10,6 +10,10 @@ public sealed class CommentService
 {
     private static readonly Regex UserNameRegex = new("^[a-zA-Z0-9]+$", RegexOptions.Compiled);
     private const int MaxThreadDepth = 10;
+    private const int MaxUserNameLength = 100;
+    private const int MaxEmailLength = 200;
+    private const int MaxHomePageLength = 2048;
+    private const int MaxTextLength = 5000;
 
     private readonly ICommentRepository _repository;
     private readonly ITextSanitizer _textSanitizer;
@@ -113,6 +117,27 @@ public sealed class CommentService
         if (!UserNameRegex.IsMatch(request.UserName.Trim()))
         {
             throw new ArgumentException("User name must contain only latin letters and digits.");
+        }
+
+        if (request.UserName.Trim().Length > MaxUserNameLength)
+        {
+            throw new ArgumentException($"User name must be at most {MaxUserNameLength} characters.");
+        }
+
+        if (request.Email.Trim().Length > MaxEmailLength)
+        {
+            throw new ArgumentException($"Email must be at most {MaxEmailLength} characters.");
+        }
+
+        if (request.Text.Trim().Length > MaxTextLength)
+        {
+            throw new ArgumentException($"Text must be at most {MaxTextLength} characters.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.HomePage)
+            && request.HomePage.Trim().Length > MaxHomePageLength)
+        {
+            throw new ArgumentException($"Home page must be at most {MaxHomePageLength} characters.");
         }
 
         if (!MailAddress.TryCreate(request.Email.Trim(), out _))
