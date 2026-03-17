@@ -138,6 +138,8 @@ app.UseStaticFiles(new StaticFileOptions
 app.MapControllers();
 app.MapGraphQL("/graphql");
 app.MapHub<CommentsHub>("/hubs/comments");
+// Provides a lightweight readiness endpoint for local QA stand checks.
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 app.MapFallbackToFile("index.html");
 app.Run();
