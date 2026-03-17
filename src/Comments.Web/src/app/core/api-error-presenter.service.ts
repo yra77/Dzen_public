@@ -67,12 +67,14 @@ export class ApiErrorPresenterService {
     return statusCode === 408 || statusCode === 425 || statusCode === 429 || statusCode === 500 || statusCode === 502 || statusCode === 503 || statusCode === 504;
   }
 
+  /** Формує коротке повідомлення за першою validation-помилкою. */
   private buildValidationSummary(validationErrors: ReadonlyArray<UiValidationError>): string {
     const firstError = validationErrors[0];
     const firstMessage = firstError.messages[0];
     return `Помилка валідації: ${firstMessage}`;
   }
 
+  /** Витягує масив validation-помилок з REST або GraphQL payload. */
   private extractValidationErrors(errorBody: unknown): UiValidationError[] {
     if (!errorBody || typeof errorBody !== 'object') {
       return [];
@@ -86,6 +88,7 @@ export class ApiErrorPresenterService {
     return this.tryExtractGraphQlValidationErrors(errorBody as Record<string, unknown>);
   }
 
+  /** Парсить стандартний ASP.NET формат помилок валідації (errors[field] = string[]). */
   private tryExtractRestValidationErrors(errorBody: Record<string, unknown>): UiValidationError[] {
     const errorsCandidate = errorBody['errors'];
     if (!errorsCandidate || typeof errorsCandidate !== 'object' || Array.isArray(errorsCandidate)) {
@@ -106,6 +109,7 @@ export class ApiErrorPresenterService {
     });
   }
 
+  /** Парсить GraphQL формат validation-помилок з extensions.validationErrors. */
   private tryExtractGraphQlValidationErrors(errorBody: Record<string, unknown>): UiValidationError[] {
     const errorsCandidate = errorBody['errors'];
     if (!Array.isArray(errorsCandidate)) {
