@@ -127,7 +127,7 @@ if (app.Environment.IsDevelopment())
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-var attachmentsRootPath = Path.GetFullPath(attachmentStorageOptions.RootPath);
+var attachmentsRootPath = System.IO.Path.GetFullPath(attachmentStorageOptions.RootPath);
 Directory.CreateDirectory(attachmentsRootPath);
 app.UseStaticFiles(new StaticFileOptions
 {

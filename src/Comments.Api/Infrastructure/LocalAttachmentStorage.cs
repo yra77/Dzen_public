@@ -57,13 +57,13 @@ public sealed class LocalAttachmentStorage : IAttachmentStorage
 
         bytes = await NormalizeAttachmentAsync(attachment.ContentType, bytes, cancellationToken);
 
-        var originalName = Path.GetFileName(attachment.FileName.Trim());
-        var extension = Path.GetExtension(originalName);
+        var originalName = System.IO.Path.GetFileName(attachment.FileName.Trim());
+        var extension = System.IO.Path.GetExtension(originalName);
         var storedFileName = $"{Guid.NewGuid():N}{extension}";
-        var root = Path.GetFullPath(_options.RootPath);
+        var root = System.IO.Path.GetFullPath(_options.RootPath);
         Directory.CreateDirectory(root);
 
-        var fullPath = Path.Combine(root, storedFileName);
+        var fullPath = System.IO.Path.Combine(root, storedFileName);
         await File.WriteAllBytesAsync(fullPath, bytes, cancellationToken);
 
         var relativeRoot = _options.RootPath.TrimEnd('/', '\\');
@@ -91,7 +91,8 @@ public sealed class LocalAttachmentStorage : IAttachmentStorage
             return bytes;
         }
 
-        using var image = await Image.LoadAsync(bytes, cancellationToken);
+        await using var inputStream = new MemoryStream(bytes);
+        using var image = await Image.LoadAsync(inputStream, cancellationToken);
         if (image.Width <= _options.MaxImageWidth && image.Height <= _options.MaxImageHeight)
         {
             return bytes;
