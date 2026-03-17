@@ -1,12 +1,14 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 60).
+Останнє оновлення: 2026-03-17 (ітерація 61).
 
 ## Що перевірено в цій ітерації
 
-- Оновлено `README.md`: додано окрему секцію `Demo`, щоб закрити явний блокер з пункту №6 в статусі ТЗ.
-- Проведено швидкий reassessment статусу по ТЗ на основі наявних артефактів репозиторію (`README`, `docs`, наявні тести/скрипти).
-- Підготовлено прискорений execution-план у цьому файлі для найшвидшого виходу на стан "можна запускати повне тестування".
+- Розширено Angular smoke unit-тести для attachment-flow:
+  - `root-list`: перевірка, що `attachment` (txt) потрапляє у payload `POST /api/comments`.
+  - `thread-page`: перевірка, що reply із `attachment` (txt) коректно відправляється у create payload.
+- Оновлено статус browser e2e smoke: спроба встановити Playwright (`@playwright/test`) заблокована політикою доступу до npm registry (`403 Forbidden`), тому e2e лишається відкритим P0-пунктом.
+- Синхронізовано backlog у цьому чеклісті з урахуванням нових unit smoke покриттів та незакритого e2e-блоку.
 
 ## Підсумок відповідності
 
@@ -67,6 +69,7 @@
 
 1. **Frontend stabilization (Angular LTS):**
    - ✅ додано component smoke-тести для `root create`, `thread reply`, `preview fallback` та `realtime` UX-статусів;
+   - ✅ unit smoke для attachment-flow додано (root + thread);
    - лишається додати browser e2e smoke (Playwright/Cypress) для реального runtime-сценарію, включно з `attachments`.
 
 2. **Закриття edge-cases CQRS/Validation:**

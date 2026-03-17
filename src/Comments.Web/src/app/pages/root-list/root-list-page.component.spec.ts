@@ -139,6 +139,41 @@ describe('RootListPageComponent smoke', () => {
     expect(component.submitMessage).toContain('успішно створено');
   });
 
+  /** Перевіряє, що txt-вкладення коректно передається у create payload. */
+  it('додає txt-вкладення до payload створення root-коментаря', () => {
+    httpMock.expectOne('http://localhost:8080/api/comments').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
+    httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
+
+    component.attachment = {
+      fileName: 'note.txt',
+      contentType: 'text/plain',
+      base64Content: 'SGVsbG8='
+    };
+
+    component.createForm.setValue({
+      userName: 'Smoke User',
+      email: 'smoke@example.com',
+      homePage: '',
+      text: 'Root with attachment',
+      captchaAnswer: '4'
+    });
+
+    component.submitComment();
+
+    const createRequest = httpMock.expectOne('http://localhost:8080/api/comments');
+    expect(createRequest.request.body.attachment).toEqual({
+      fileName: 'note.txt',
+      contentType: 'text/plain',
+      base64Content: 'SGVsbG8='
+    });
+    createRequest.flush({ id: 'r-2' });
+
+    httpMock.expectOne('http://localhost:8080/api/comments').flush({ page: 1, pageSize: 25, totalCount: 1, items: [] });
+    httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-2', imageBase64: 'BBBB', mimeType: 'image/png', ttlSeconds: 60 });
+
+    expect(component.submitMessage).toContain('успішно створено');
+  });
+
   it('оновлює SignalR статуси reconnecting/reconnected/close', () => {
     httpMock.expectOne('http://localhost:8080/api/comments').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
     httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
