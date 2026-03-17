@@ -16,7 +16,7 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
   selector: 'app-thread-page',
   imports: [DatePipe, ReactiveFormsModule, RouterLink, NgTemplateOutlet],
   template: `
-    <section class="card">
+    <section class="panel">
       <h2>Гілка коментаря</h2>
       <a routerLink="/" data-testid="thread-back-link">← Назад до списку</a>
       @if (signalRStatusMessage) {
@@ -117,7 +117,7 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
         </ng-template>
 
         <h3>Додати відповідь</h3>
-        <form [formGroup]="replyForm" (ngSubmit)="submitReply()" data-testid="thread-reply-form">
+        <form class="form-grid" [formGroup]="replyForm" (ngSubmit)="submitReply()" data-testid="thread-reply-form">
           <label>
             Ім'я
             <input type="text" formControlName="userName" data-testid="thread-user-name-input" />
@@ -128,7 +128,7 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
             <input type="email" formControlName="email" data-testid="thread-email-input" />
           </label>
 
-          <label>
+          <label class="wide">
             Текст
             <textarea rows="5" formControlName="text" (input)="previewText()" data-testid="thread-text-input"></textarea>
           </label>
@@ -144,7 +144,7 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
             <p class="meta">{{ previewMessage }}</p>
           }
 
-          <label>
+          <label class="wide">
             Вкладення (png/jpg/gif/txt, до 1MB)
             <input type="file" (change)="onAttachmentSelected($event)" accept=".txt,image/png,image/jpeg,image/gif,text/plain" data-testid="thread-attachment-input" />
           </label>
@@ -165,7 +165,7 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
             <input type="text" formControlName="captchaAnswer" data-testid="thread-captcha-answer-input" />
           </label>
 
-          <div class="actions">
+          <div class="actions wide">
             <button type="button" (click)="reloadCaptcha()" data-testid="thread-captcha-reload-button">Оновити CAPTCHA</button>
             <button type="submit" [disabled]="replyForm.invalid || isSubmitting" data-testid="thread-submit-button">Надіслати reply</button>
           </div>
@@ -189,21 +189,18 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
   `,
   styles: [
     `
-      .error { color: #b32d2e; }
-      .meta { color: #5f6f85; }
-      .attachment-meta { color: #5f6f85; font-size: 0.9rem; }
+      .error { color: #b42318; }
+      .meta, .attachment-meta { color: #475467; }
       .attachment-inline { margin-top: 8px; }
-      .attachment-thumb { max-width: 220px; max-height: 140px; border: 1px solid #d9e0ec; border-radius: 6px; }
-      .attachment-text { white-space: pre-wrap; background: #f8fafc; border: 1px solid #d9e0ec; border-radius: 6px; padding: 8px; }
-      .thread-node { border: 1px solid #d9e0ec; border-radius: 8px; padding: 12px; margin-top: 8px; }
-      .tree { list-style: none; margin: 0; padding-left: 12px; }
-      form { display: grid; gap: 10px; }
-      label { display: grid; gap: 4px; }
-      .actions { display: flex; gap: 8px; }
+      .attachment-thumb { max-width: 260px; max-height: 180px; border: 1px solid #d0d7de; border-radius: 8px; }
+      .attachment-text { white-space: pre-wrap; background: #f8fafc; border: 1px solid #d9e0ec; border-radius: 8px; padding: 8px; }
+      .thread-node { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; margin-top: 10px; background: #fcfcfd; }
+      .tree { list-style: none; margin: 0; padding-left: 14px; }
       .captcha { width: 160px; height: 60px; border: 1px solid #d9e0ec; border-radius: 6px; }
-      .text-preview { border: 1px solid #d9e0ec; border-radius: 6px; padding: 8px; background: #f8fafc; }
-      .text-preview-title { color: #5f6f85; font-size: 0.85rem; margin-bottom: 6px; }
-      .error-list { color: #b32d2e; margin: 6px 0 0; }
+      .text-preview { border: 1px dashed #d0d5dd; border-radius: 8px; padding: 8px; background: #f8fafc; }
+      .text-preview-title { color: #344054; font-size: 14px; margin-bottom: 6px; font-weight: 600; }
+      .error-list { color: #b42318; margin: 6px 0 0; }
+      @media (max-width: 900px) { .actions { flex-direction: column; } }
     `
   ]
 })

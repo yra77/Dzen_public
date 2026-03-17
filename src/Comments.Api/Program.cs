@@ -98,6 +98,18 @@ builder.Services.AddScoped<CommentService>();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<CommentService>());
 builder.Services.AddValidatorsFromAssemblyContaining<CommentService>();
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+builder.Services.AddCors(options =>
+{
+    // Дозволяє Angular-dev-server взаємодіяти з API та SignalR під час локальної розробки.
+    options.AddPolicy("CommentsWebDevClient", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:4200", "http://127.0.0.1:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
 builder.Services
@@ -126,6 +138,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
+
+// Підключає CORS-політику для Angular SPA та SignalR в локальному dev-режимі.
+app.UseCors("CommentsWebDevClient");
 
 var attachmentsRootPath = System.IO.Path.GetFullPath(attachmentStorageOptions.RootPath);
 Directory.CreateDirectory(attachmentsRootPath);

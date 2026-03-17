@@ -1,30 +1,31 @@
 import { Component } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
-    <div class="page-shell">
-      <h1>Comments SPA</h1>
-      <nav>
-        <a routerLink="/">Головна</a>
-      </nav>
+    <main class="container">
+      <section class="panel">
+        <h1>SPA «Коментарі»</h1>
+        <nav class="app-nav">
+          <a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">Головна</a>
+        </nav>
+      </section>
+
       <router-outlet></router-outlet>
-    </div>
+    </main>
   `,
   styles: [
     `
-      h1 {
-        margin: 0 0 12px;
+      .app-nav a {
+        color: #175cd3;
+        text-decoration: none;
+        font-weight: 600;
       }
 
-      nav {
-        margin-bottom: 16px;
-      }
-
-      a {
-        color: #2255d8;
+      .app-nav a.is-active {
+        text-decoration: underline;
       }
     `
   ]

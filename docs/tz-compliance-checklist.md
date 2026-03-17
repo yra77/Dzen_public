@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 87).
+Останнє оновлення: 2026-03-17 (ітерація 88).
 
 ## Підсумок перевірки відповідності ТЗ
 
@@ -88,8 +88,15 @@
 - ✅ Розширено `scripts/go-no-go-check.sh`: додано опційний прапорець `--report-file <path>` для формування JSON-звіту smoke-прогону перед QA handoff.
 - ✅ Оновлено `README.md`: у QA handoff-документації зафіксовано нові команди з експортом звітів у `docs/artifacts/*.json`.
 
+
+## Оновлення в ітерації 88
+
+- ✅ Виправлено dev-з'єднання Angular SPA з API/SignalR: у `Comments.Api` додано CORS-політику `CommentsWebDevClient` для `http://localhost:4200` та `http://127.0.0.1:4200` з `AllowCredentials` для SignalR.
+- ✅ Усунено помилку повторної captcha-перевірки під час створення коментаря/відповіді: прибрано дублюючу валідацію з `CommentService`, залишено єдину валідацію у FluentValidation pipeline.
+- ✅ Оновлено базовий UI Angular (`Comments.Web`) до стилістики, наближеної до `Comments.Api/wwwroot`: контейнер/панелі, форми, картки коментарів, captcha/attachment preview.
 ## Що ще треба зробити у проєкті
 
+- 🔜 Провести ручну UX-перевірку Angular UI проти еталону `src/Comments.Api/wwwroot/index.html` (включно з mobile breakpoint), зафіксувати дрібні візуальні відхилення та пріоритезувати їх окремим backlog-списком.
 - 🔜 Запустити `./scripts/qa-stand-check.sh --report-file docs/artifacts/qa-stand-check.json` на цільовій машині, щоб підтвердити готовність локального стенду (API + RabbitMQ + Elasticsearch) та зберегти evidence-файл.
 - 🔜 Виконати ручний Go/No-Go прогін через `./scripts/go-no-go-check.sh --report-file docs/artifacts/go-no-go-check.json` на цільовій машині та зафіксувати commit/tag реліз-кандидата.
 - 🔜 Після підтвердження smoke — передати збірку в ручне тестування за ТЗ та зафіксувати статус `Go`.
