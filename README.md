@@ -48,6 +48,20 @@ dotnet run --project src/Comments.Api/Comments.Api.csproj
 
 3. Відкрити Swagger: `http://localhost:5000/swagger` (або порт, який покаже `dotnet run`).
 
+## QA handoff: перевірка стенду і Go/No-Go
+
+Перед передачею збірки у ручне тестування виконайте дві команди в корені репозиторію:
+
+```bash
+# 1) Підняти інфраструктуру й перевірити readiness критичних сервісів
+./scripts/qa-stand-check.sh
+
+# 2) Прогнати smoke-набір (backend tests + frontend unit + Playwright e2e)
+./scripts/go-no-go-check.sh
+```
+
+Рекомендовано зафіксувати commit/tag після успішного smoke-прогону, і саме цей артефакт передавати в QA.
+
 ## Load testing (k6)
 
 У репозиторії є два k6-сценарії:
