@@ -1,9 +1,12 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 49).
+Останнє оновлення: 2026-03-17 (ітерація 50).
 
 ## Що перевірено в цій ітерації
 
+- У шарі `Comments.Application` додано XML-коментарі до абстракцій (`IAttachmentStorage`, `ICaptchaValidator`, `ICommentCreatedPublisher`, `ICommentSearchService`, `IProcessedMessageRepository`, `ITextSanitizer`) і record-моделі `StoredAttachment`.
+- Додано XML-коментарі до DTO моделей пагінації та сортування (`PagedResult`, `CommentSortField`, `CommentSortDirection`) для явної фіксації контрактів API/запитів.
+- Додано XML-коментарі до CQRS preview-ланцюжка (`PreviewCommentQuery`, `PreviewCommentQueryHandler`, `PreviewCommentQueryValidator`) та уточнено, що в P0/P1/P2 залишаються попередні пріоритети (e2e smoke, RabbitMQ hardening, middle+ load-test, demo-пакет).
 - У доменних моделях `Comment` і `ProcessedMessage` додано XML-коментарі до класів, конструкторів, властивостей та публічних методів для кращої підтримки контрактів доменної логіки.
 - У GraphQL-шарі додано XML-коментарі до input-моделей (`CreateCommentInput`, `AddReplyInput`, `AttachmentInput`) та mutation/query-резолверів (`CommentQueries`, `CommentMutations`).
 - Актуалізовано цей checklist: зафіксовано виконані кроки з коментування класів/методів/моделей і підтверджено, що пріоритети P0/P1/P2 залишаються без змін.
