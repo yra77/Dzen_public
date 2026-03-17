@@ -1,13 +1,14 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 77).
+Останнє оновлення: 2026-03-17 (ітерація 78).
 
 ## Що перевірено в цій ітерації
 
-- Усунуто флейкову залежність Playwright smoke від seed/dev-даних у `src/Comments.Web/e2e/smoke.spec.ts`:
-  - `thread page renders reply form` більше не відкриває жорстко `/thread/1`, а спочатку створює root-коментар і переходить у створений thread;
-  - `thread form rejects unsupported attachment type before submit` також переведено на runtime thread, створений у тесті.
-- Оновлено чекліст і зафіксовано фокус поточної ітерації: стабілізація CI check `comments-web-e2e-smoke` після падінь на GitHub (`pull_request` + `push`).
+- Усунуто прогалини в unit-покритті `ValidationBehavior` (`src/Comments.Application.Tests/ValidationBehaviorTests.cs`):
+  - додано перевірку сценарію без зареєстрованих валідаторів (`Handle_WithNoValidators_CallsNext`);
+  - додано перевірку агрегації помилок з кількох валідаторів (`Handle_WithMultipleInvalidValidators_AggregatesFailures`);
+  - додано XML-коментарі для тестового класу, тест-кейсів та допоміжного тестового валідатора згідно вимоги про документування нових класів/методів.
+- Оновлено чекліст: зафіксовано виконану доробку і уточнено наступний крок — продовжити backend unit/integration coverage для CQRS edge-cases, які ще не закриті в delivery-пакеті.
 
 ## Підсумок відповідності
 
@@ -90,6 +91,8 @@
    - ✅ додано позитивні boundary integration-тести для `attachment == 1MB` (REST + GraphQL);
    - ✅ додано негативні attachment edge-case тести: REST (`invalid content-type`) та GraphQL (`invalid base64`);
    - ✅ додано e2e-smoke UI-фіксацію boundary-контрактів attachment на Angular-рівні (`>1MB`, `unsupported MIME`).
+   - наступний крок: додати інтеграційний тест на агрегацію множинних validation-помилок через API middleware/error-filter (REST + GraphQL), щоб фіналізувати end-to-end контракт помилок.
+
 
 ### P1
 
