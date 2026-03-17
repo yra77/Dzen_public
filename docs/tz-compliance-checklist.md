@@ -1,14 +1,15 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 72).
+Останнє оновлення: 2026-03-17 (ітерація 73).
 
 ## Що перевірено в цій ітерації
 
-- У `Comments.Web` розширено Playwright smoke до runtime-сценарію `create root -> reply`:
-  - додано helper-и для автоматичного розв'язання math captcha через парсинг SVG data-url;
-  - сценарій заповнює форму root-коментаря, додає txt-вкладення, проходить captcha, перевіряє success-message;
-  - далі переходить у thread створеного root-коментаря, створює reply з txt-вкладенням і перевіряє появу reply в дереві.
-- Оновлено цей чекліст актуальним статусом: browser smoke вже покриває реальний create/reply-flow; лишається e2e-перевірка realtime між 2 вкладками та запуск у CI/контурі з доступним npm registry mirror.
+- У `Comments.Web` додано новий Playwright runtime smoke-сценарій `thread realtime update in second tab`:
+  - винесено helper `createRootCommentAndOpenThread(...)` для повторного використання create root-flow у runtime-тестах;
+  - сценарій відкриває одну thread-сторінку у двох вкладках/контекстах браузера;
+  - у другій вкладці створює reply (з captcha), а в першій перевіряє появу нового reply через realtime-оновлення (SignalR).
+- Оновлено `src/Comments.Web/README.md`: блок `Наступні кроки міграції` синхронізовано з фактом, що create/reply та multi-tab realtime e2e вже реалізовано; відкритим лишається інтеграція smoke e2e у CI.
+- Оновлено цей чекліст актуальним статусом: browser smoke покриває runtime create/reply + базовий multi-tab realtime flow; далі потрібно запустити це стабільно в CI/контурі з доступним npm registry mirror.
 
 ## Підсумок відповідності
 
@@ -16,7 +17,7 @@
 - **Частково виконано:** 1 пункт.
 - **Не виконано:** 1 пункт.
 
-> Висновок: **100% відповідності ТЗ ще немає** (ключові блокери: middle+ load-test із фактами, demo-video URL; browser e2e додано на рівні smoke і потребує запуску в середовищі з доступним npm mirror).
+> Висновок: **100% відповідності ТЗ ще немає** (ключові блокери: middle+ load-test із фактами, demo-video URL; browser e2e smoke уже включає multi-tab realtime, лишається стабільний запуск у CI/середовищі з доступним npm mirror).
 
 ## Актуальний статус по ключових блоках ТЗ
 
@@ -25,7 +26,7 @@
 2. 🟨 **Архітектура (CQRS + MediatR + FluentValidation)** — частково:
    - основний каркас і обробники є, але лишаються edge-case доробки в тестах/контрактах та документації.
 3. 🟨 **Frontend Angular LTS** — частково:
-   - ключові user-flow реалізовані; уніфікацію validation UX для REST/GraphQL, transient/retry UX для load/captcha, preview fallback і SignalR reconnection-state виконано; додано test-target для `ng test`; Playwright smoke вже покриває runtime create/reply; лишається e2e-перевірка realtime між двома вкладками і частина boundary-документації.
+   - ключові user-flow реалізовані; уніфікацію validation UX для REST/GraphQL, transient/retry UX для load/captcha, preview fallback і SignalR reconnection-state виконано; додано test-target для `ng test`; Playwright smoke покриває runtime create/reply і multi-tab realtime; лишається інтеграція e2e у CI та частина boundary-документації.
 4. ✅ **RabbitMQ production-hardening** — виконано:
    - є retry/DLQ базис, базові consumer-метрики (`success/fail/retry/latency`) та persistent-ідемпотентність із cleanup-процедурою;
    - додано alert-пороги для `failure-rate/latency` та формалізований `DLQ replay-flow` у runbook.
@@ -47,6 +48,7 @@
 2. **Browser e2e smoke (P0, ~2–4 год):**
    - ✅ додано Playwright smoke-каркас + команду запуску в `src/Comments.Web/README.md`;
    - ✅ сценарій розширено до наскрізного `create root -> reply -> verify` з інтеракцією captcha;
+   - ✅ додано multi-tab realtime smoke (SignalR) між двома вкладками;
    - ✅ зафіксовано txt-attachment-flow в e2e; лишається image-attachment та додавання запуску в CI notes/pipeline.
 
 3. **Middle+ load-test фактами (P0, ~1–2 год за готового стенду):**
@@ -75,7 +77,8 @@
    - ✅ підключено test target + Karma/Jasmine конфігурацію (`angular.json`, `tsconfig.spec.json`, `src/test.ts`, `karma.conf.cjs`) для регулярного запуску `ng test`;
    - ✅ додано browser e2e smoke-каркас (Playwright) і стабільні `data-testid` селектори у root/thread шаблонах;
    - ✅ розширено smoke до runtime-сценарію `create/reply` з captcha та txt attachment;
-   - лишається e2e-перевірка realtime оновлень між двома вкладками (SignalR) та інтеграція e2e в CI;
+   - ✅ додано e2e-перевірку realtime оновлень між двома вкладками (SignalR);
+   - лишається інтеграція e2e в CI;
    - лишається розблокувати npm registry доступ у середовищі, щоб дотягнути `karma*` і `@playwright/test` пакети та виконувати `npm test`/`npm run e2e:smoke` у CI/локально без manual bootstrap.
 
 2. **Закриття edge-cases CQRS/Validation:**

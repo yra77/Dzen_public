@@ -42,6 +42,6 @@ npm run e2e:smoke
 
 ## Наступні кроки міграції
 
-1. Розширити e2e до create/reply з інтеракцією captcha і attachment-flow.
-2. Додати e2e-перевірку realtime refresh (SignalR) між двома вкладками.
+1. ✅ Розширено e2e до runtime create/reply з captcha і txt attachment-flow.
+2. ✅ Додано e2e-перевірку realtime refresh (SignalR) між двома вкладками.
 3. Додати e2e smoke у CI-пайплайн після запуску фронтенд/бекенд-контейнерів.
