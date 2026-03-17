@@ -15,6 +15,14 @@ public sealed class CommentService
     private readonly ICaptchaValidator _captchaValidator;
     private readonly IAttachmentStorage _attachmentStorage;
 
+    /// <summary>
+    /// Ініціалізує сервіс коментарів і його залежності інфраструктурного рівня.
+    /// </summary>
+    /// <param name="repository">Репозиторій для читання/запису коментарів.</param>
+    /// <param name="textSanitizer">Санітизатор користувацького тексту.</param>
+    /// <param name="commentCreatedPublisher">Паблішер події створення коментаря.</param>
+    /// <param name="captchaValidator">Валідатор captcha-токенів.</param>
+    /// <param name="attachmentStorage">Сховище вкладень.</param>
     public CommentService(
         ICommentRepository repository,
         ITextSanitizer textSanitizer,
@@ -132,6 +140,12 @@ public sealed class CommentService
         return _textSanitizer.Sanitize(text);
     }
 
+    /// <summary>
+    /// Виконує обов'язкові перевірки запиту перед створенням коментаря.
+    /// </summary>
+    /// <param name="request">Запит створення коментаря.</param>
+    /// <param name="cancellationToken">Токен скасування.</param>
+    /// <exception cref="ArgumentException">Кидається, якщо captcha не пройшла перевірку.</exception>
     private async Task ValidateAsync(CreateCommentRequest request, CancellationToken cancellationToken)
     {
         var captchaIsValid = await _captchaValidator.ValidateAsync(request.CaptchaToken, cancellationToken);
@@ -141,6 +155,13 @@ public sealed class CommentService
         }
     }
 
+    /// <summary>
+    /// Мапить доменну модель у DTO з рекурсивним сортуванням дочірніх відповідей.
+    /// </summary>
+    /// <param name="comment">Доменна сутність коментаря.</param>
+    /// <param name="sortField">Поле сортування дочірніх елементів.</param>
+    /// <param name="sortDirection">Напрям сортування дочірніх елементів.</param>
+    /// <returns>DTO коментаря з повним деревом відповідей.</returns>
     private static CommentDto Map(Comment comment, CommentSortField sortField, CommentSortDirection sortDirection)
     {
         var replies = Sort(comment.Replies, sortField, sortDirection)
@@ -165,6 +186,13 @@ public sealed class CommentService
             replies);
     }
 
+    /// <summary>
+    /// Сортує колекцію коментарів відповідно до параметрів запиту.
+    /// </summary>
+    /// <param name="comments">Набір коментарів для сортування.</param>
+    /// <param name="sortField">Поле сортування.</param>
+    /// <param name="sortDirection">Напрям сортування.</param>
+    /// <returns>Відсортована послідовність коментарів.</returns>
     private static IEnumerable<Comment> Sort(
         IEnumerable<Comment> comments,
         CommentSortField sortField,
