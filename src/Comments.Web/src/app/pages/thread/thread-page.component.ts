@@ -191,7 +191,6 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
                 </label>
 
                 <div class="actions wide">
-                  <button type="button" (click)="reloadCaptcha()" data-testid="thread-captcha-reload-button">Оновити CAPTCHA</button>
                   <button type="button" (click)="closeReplyModal()">Закрити</button>
                   <button type="submit" [disabled]="replyForm.invalid || isSubmitting" data-testid="thread-submit-button">Створити коментар</button>
                 </div>
