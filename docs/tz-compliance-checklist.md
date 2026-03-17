@@ -1,12 +1,12 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 53).
+Останнє оновлення: 2026-03-17 (ітерація 54).
 
 ## Що перевірено в цій ітерації
 
-- У `Comments.Api.Infrastructure` додано XML-коментарі до `BasicCaptchaChallengeStore`, `BasicCaptchaValidator`, `CommentsDbContext`, `EfCommentRepository` (класи, конструктори, публічні методи).
-- У `Comments.Api.Realtime` додано XML-коментар до `CommentsHub` для явного контракту realtime-підписки.
-- Checklist оновлено: зафіксовано прогрес документування класів/методів/моделей та підтверджено незмінність поточного P0/P1/P2 backlog.
+- У `Comments.Api.Infrastructure` додано XML-коментарі для каналів публікації подій створення коментарів: `ICommentCreatedChannel`, `CompositeCommentCreatedPublisher`, `SignalRCommentCreatedChannel`, `ElasticsearchCommentCreatedChannel`, `RabbitMqCommentCreatedPublisher`, `NoOpCommentCreatedPublisher`, `NoOpCommentSearchService` (класи/інтерфейси, конструктори, публічні методи).
+- Зафіксовано, що поточний backlog по ТЗ залишається незмінним: P0 — frontend stabilization + CQRS edge-cases, P1 — RabbitMQ hardening + middle load-test, P2 — Demo delivery-артефакт.
+- Checklist оновлено як єдине джерело актуального прогресу по відповідності ТЗ.
 
 ## Підсумок відповідності
 

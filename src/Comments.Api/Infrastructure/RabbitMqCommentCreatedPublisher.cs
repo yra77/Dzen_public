@@ -5,15 +5,27 @@ using RabbitMQ.Client;
 
 namespace Comments.Api.Infrastructure;
 
+/// <summary>
+/// Канал публікації події створення коментаря в RabbitMQ exchange/queues.
+/// </summary>
 public sealed class RabbitMqCommentCreatedPublisher : ICommentCreatedChannel
 {
     private readonly RabbitMqOptions _options;
 
+    /// <summary>
+    /// Ініціалізує RabbitMQ-паблішер із параметрами підключення та маршрутизації.
+    /// </summary>
+    /// <param name="options">Налаштування хоста, exchange, queue та routing key.</param>
     public RabbitMqCommentCreatedPublisher(RabbitMqOptions options)
     {
         _options = options;
     }
 
+    /// <summary>
+    /// Публікує повідомлення про створення коментаря в загальну та спеціалізовані черги обробки.
+    /// </summary>
+    /// <param name="comment">DTO створеного коментаря.</param>
+    /// <param name="cancellationToken">Токен скасування.</param>
     public Task PublishAsync(CommentDto comment, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
