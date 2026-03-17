@@ -84,4 +84,40 @@ public sealed class RabbitMqOptions
     /// Максимальна кількість retry перед переміщенням у DLQ.
     /// </summary>
     public int MaxRetryCount { get; init; } = 3;
+
+    /// <summary>
+    /// Параметри alert-порогів для оперативного моніторингу consumer-обробки.
+    /// </summary>
+    public RabbitMqConsumerAlertOptions Alerts { get; init; } = new();
+}
+
+/// <summary>
+/// Конфігурація warning/critical порогів для логування аномалій RabbitMQ consumer.
+/// </summary>
+public sealed class RabbitMqConsumerAlertOptions
+{
+    /// <summary>
+    /// Розмір ковзного вікна (кількість останніх повідомлень) для оцінки failure-rate та latency.
+    /// </summary>
+    public int WindowSize { get; init; } = 50;
+
+    /// <summary>
+    /// Поріг warning для відсотка failed-повідомлень у ковзному вікні.
+    /// </summary>
+    public double WarningFailureRatePercent { get; init; } = 5;
+
+    /// <summary>
+    /// Поріг critical для відсотка failed-повідомлень у ковзному вікні.
+    /// </summary>
+    public double CriticalFailureRatePercent { get; init; } = 15;
+
+    /// <summary>
+    /// Поріг warning для середньої latency обробки у ковзному вікні.
+    /// </summary>
+    public double WarningAverageLatencyMs { get; init; } = 250;
+
+    /// <summary>
+    /// Поріг critical для середньої latency обробки у ковзному вікні.
+    /// </summary>
+    public double CriticalAverageLatencyMs { get; init; } = 1000;
 }

@@ -40,6 +40,7 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
 
     private IConnection? _connection;
     private IModel? _channel;
+    private readonly Dictionary<string, WorkerAlertWindow> _alertWindows = new();
 
     public RabbitMqTaskQueuesConsumerHostedService(
         RabbitMqOptions options,
@@ -162,7 +163,8 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
                 if (comment is null)
                 {
                     _logger.LogWarning("[{Worker}] Received empty or invalid payload", workerName);
-                    RecordFailedProcessing(workerName, "invalid_payload", processingStartedAt);
+                    var failedLatencyMs = RecordFailedProcessing(workerName, "invalid_payload", processingStartedAt);
+                    EvaluateAndLogConsumerAlerts(workerName, wasSuccessful: false, failedLatencyMs);
                     _channel.BasicNack(eventArgs.DeliveryTag, multiple: false, requeue: false);
                     return;
                 }
@@ -176,7 +178,8 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
                     if (!marked)
                     {
                         _logger.LogInformation("[{Worker}] Skipping duplicate message {MessageId}", workerName, messageId);
-                        RecordSuccessProcessing(workerName, "duplicate", processingStartedAt);
+                        var duplicateLatencyMs = RecordSuccessProcessing(workerName, "duplicate", processingStartedAt);
+                        EvaluateAndLogConsumerAlerts(workerName, wasSuccessful: true, duplicateLatencyMs);
                         _channel.BasicAck(eventArgs.DeliveryTag, multiple: false);
                         return;
                     }
@@ -188,13 +191,15 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
                     _logger.LogInformation("[file-processing] skipped comment {CommentId} without attachment", comment.Id);
                 }
 
-                RecordSuccessProcessing(workerName, "processed", processingStartedAt);
+                var successLatencyMs = RecordSuccessProcessing(workerName, "processed", processingStartedAt);
+                EvaluateAndLogConsumerAlerts(workerName, wasSuccessful: true, successLatencyMs);
                 _channel.BasicAck(eventArgs.DeliveryTag, multiple: false);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[{Worker}] Failed to process message", workerName);
-                RecordFailedProcessing(workerName, "exception", processingStartedAt);
+                var exceptionLatencyMs = RecordFailedProcessing(workerName, "exception", processingStartedAt);
+                EvaluateAndLogConsumerAlerts(workerName, wasSuccessful: false, exceptionLatencyMs);
 
                 var retryCount = ReadRetryCount(eventArgs.BasicProperties?.Headers);
                 if (retryCount >= _options.MaxRetryCount)
@@ -256,33 +261,140 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
     /// <summary>
     /// Реєструє успішну обробку повідомлення та її latency.
     /// </summary>
-    private static void RecordSuccessProcessing(string workerName, string outcome, long startedAtTimestamp)
+    private static double RecordSuccessProcessing(string workerName, string outcome, long startedAtTimestamp)
     {
+        var elapsedMs = Stopwatch.GetElapsedTime(startedAtTimestamp).TotalMilliseconds;
+
         SuccessCounter.Add(
             1,
             new KeyValuePair<string, object?>("worker", workerName),
             new KeyValuePair<string, object?>("outcome", outcome));
 
         LatencyHistogram.Record(
-            Stopwatch.GetElapsedTime(startedAtTimestamp).TotalMilliseconds,
+            elapsedMs,
             new KeyValuePair<string, object?>("worker", workerName),
             new KeyValuePair<string, object?>("result", "success"));
+
+        return elapsedMs;
     }
 
     /// <summary>
     /// Реєструє помилку обробки повідомлення та її latency.
     /// </summary>
-    private static void RecordFailedProcessing(string workerName, string reason, long startedAtTimestamp)
+    private static double RecordFailedProcessing(string workerName, string reason, long startedAtTimestamp)
     {
+        var elapsedMs = Stopwatch.GetElapsedTime(startedAtTimestamp).TotalMilliseconds;
+
         FailedCounter.Add(
             1,
             new KeyValuePair<string, object?>("worker", workerName),
             new KeyValuePair<string, object?>("reason", reason));
 
         LatencyHistogram.Record(
-            Stopwatch.GetElapsedTime(startedAtTimestamp).TotalMilliseconds,
+            elapsedMs,
             new KeyValuePair<string, object?>("worker", workerName),
             new KeyValuePair<string, object?>("result", "failed"));
+
+        return elapsedMs;
+    }
+
+
+    /// <summary>
+    /// Оновлює ковзне вікно обробки для worker-а та логуює alert-події за порогами failure-rate/latency.
+    /// </summary>
+    private void EvaluateAndLogConsumerAlerts(string workerName, bool wasSuccessful, double latencyMs)
+    {
+        var windowSize = Math.Max(1, _options.Alerts.WindowSize);
+
+        if (!_alertWindows.TryGetValue(workerName, out var alertWindow))
+        {
+            alertWindow = new WorkerAlertWindow(windowSize);
+            _alertWindows[workerName] = alertWindow;
+        }
+
+        var stats = alertWindow.RegisterResult(wasSuccessful, latencyMs);
+        if (!stats.IsWindowFilled)
+        {
+            return;
+        }
+
+        if (stats.FailureRatePercent >= _options.Alerts.CriticalFailureRatePercent ||
+            stats.AverageLatencyMs >= _options.Alerts.CriticalAverageLatencyMs)
+        {
+            _logger.LogError(
+                "[{Worker}] RabbitMQ consumer CRITICAL threshold exceeded: failureRate={FailureRatePercent:F2}% (>= {CriticalFailureRatePercent:F2}%) avgLatency={AverageLatencyMs:F2}ms (>= {CriticalAverageLatencyMs:F2}ms) over last {WindowSize} messages",
+                workerName,
+                stats.FailureRatePercent,
+                _options.Alerts.CriticalFailureRatePercent,
+                stats.AverageLatencyMs,
+                _options.Alerts.CriticalAverageLatencyMs,
+                stats.WindowSize);
+            return;
+        }
+
+        if (stats.FailureRatePercent >= _options.Alerts.WarningFailureRatePercent ||
+            stats.AverageLatencyMs >= _options.Alerts.WarningAverageLatencyMs)
+        {
+            _logger.LogWarning(
+                "[{Worker}] RabbitMQ consumer WARNING threshold exceeded: failureRate={FailureRatePercent:F2}% (>= {WarningFailureRatePercent:F2}%) avgLatency={AverageLatencyMs:F2}ms (>= {WarningAverageLatencyMs:F2}ms) over last {WindowSize} messages",
+                workerName,
+                stats.FailureRatePercent,
+                _options.Alerts.WarningFailureRatePercent,
+                stats.AverageLatencyMs,
+                _options.Alerts.WarningAverageLatencyMs,
+                stats.WindowSize);
+        }
+    }
+
+    /// <summary>
+    /// Агреговані показники ковзного вікна обробки повідомлень worker-а.
+    /// </summary>
+    private readonly record struct WorkerAlertStats(bool IsWindowFilled, int WindowSize, double FailureRatePercent, double AverageLatencyMs);
+
+    /// <summary>
+    /// Потікобезпечне ковзне вікно останніх результатів обробки повідомлень конкретного worker-а.
+    /// </summary>
+    private sealed class WorkerAlertWindow
+    {
+        private readonly object _syncRoot = new();
+        private readonly Queue<bool> _successResults;
+        private readonly Queue<double> _latenciesMs;
+        private readonly int _windowSize;
+
+        /// <summary>
+        /// Ініціалізує вікно агрегації з фіксованим розміром.
+        /// </summary>
+        public WorkerAlertWindow(int windowSize)
+        {
+            _windowSize = windowSize;
+            _successResults = new Queue<bool>(windowSize);
+            _latenciesMs = new Queue<double>(windowSize);
+        }
+
+        /// <summary>
+        /// Додає новий результат обробки та повертає поточні агреговані метрики вікна.
+        /// </summary>
+        public WorkerAlertStats RegisterResult(bool wasSuccessful, double latencyMs)
+        {
+            lock (_syncRoot)
+            {
+                _successResults.Enqueue(wasSuccessful);
+                _latenciesMs.Enqueue(latencyMs);
+
+                if (_successResults.Count > _windowSize)
+                {
+                    _successResults.Dequeue();
+                    _latenciesMs.Dequeue();
+                }
+
+                var isWindowFilled = _successResults.Count == _windowSize;
+                var failures = _successResults.Count(result => !result);
+                var failureRatePercent = _successResults.Count == 0 ? 0 : failures * 100d / _successResults.Count;
+                var averageLatencyMs = _latenciesMs.Count == 0 ? 0 : _latenciesMs.Average();
+
+                return new WorkerAlertStats(isWindowFilled, _successResults.Count, failureRatePercent, averageLatencyMs);
+            }
+        }
     }
 
     public void Dispose()

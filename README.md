@@ -86,7 +86,7 @@ k6 run --summary-export=docs/artifacts/k6-middle-summary.json load-test/comments
   - міграція фронтенду на **Angular LTS** у `src/Comments.Web` (список/дерево, create/reply, preview, captcha, attachments, SignalR live updates);
   - впровадження **CQRS + MediatR + FluentValidation** (handlers, validators, pipeline behaviors).
 - **P1 (production-hardening):**
-  - RabbitMQ: додано базовий runbook `docs/rabbitmq-consumer-runbook.md`; відкриті задачі — персистентна ідемпотентність і метрики consumer-обробки;
+  - RabbitMQ: додано базовий runbook `docs/rabbitmq-consumer-runbook.md`; реалізовано персистентну ідемпотентність, cleanup старих `ProcessedMessages`, метрики consumer-обробки та alert-пороги;
   - фінальний прогін `load-test/comments-middle.js` у середовищі з RabbitMQ + Elasticsearch із фіксацією `docs/artifacts/k6-middle-summary.json` і метрик у `docs/load-test-middle-results.md`.
 - **P2 (delivery):**
   - додати `Demo`-секцію в README із посиланням на 3–5 хвилинне відео ключових сценаріїв.
