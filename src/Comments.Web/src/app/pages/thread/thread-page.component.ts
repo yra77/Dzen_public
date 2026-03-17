@@ -19,6 +19,9 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
     <section class="card">
       <h2>Гілка коментаря</h2>
       <a routerLink="/">← Назад до списку</a>
+      @if (signalRStatusMessage) {
+        <p class="meta">{{ signalRStatusMessage }}</p>
+      }
 
       @if (isLoading) {
         <p>Завантаження гілки...</p>
@@ -137,6 +140,10 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
             </div>
           }
 
+          @if (previewMessage) {
+            <p class="meta">{{ previewMessage }}</p>
+          }
+
           <label>
             Вкладення (png/jpg/gif/txt, до 1MB)
             <input type="file" (change)="onAttachmentSelected($event)" accept=".txt,image/png,image/jpeg,image/gif,text/plain" />
@@ -225,6 +232,10 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   /** Повідомлення про помилку завантаження CAPTCHA. */
   captchaMessage = '';
   textPreviewHtml = '';
+  /** Повідомлення про fallback-стан, коли preview тимчасово недоступний. */
+  previewMessage = '';
+  /** Поточний статус realtime-з'єднання SignalR. */
+  signalRStatusMessage = '';
   attachmentMessage = '';
   attachment: CreateCommentAttachmentRequest | null = null;
   attachmentTextPreviewByPath: Record<string, string> = {};
@@ -262,12 +273,18 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     const text = this.replyForm.controls.text.value;
     if (!text || !text.trim()) {
       this.textPreviewHtml = '';
+      this.previewMessage = '';
       return;
     }
 
     this.commentsApi.previewComment(text).subscribe({
       next: (preview) => {
         this.textPreviewHtml = preview;
+        this.previewMessage = '';
+      },
+      error: () => {
+        this.textPreviewHtml = '';
+        this.previewMessage = 'Preview тимчасово недоступний. Ви можете продовжити відправку відповіді без preview.';
       }
     });
   }
@@ -366,6 +383,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
           this.submitMessage = 'Відповідь додано.';
           this.replyForm.reset({ userName: raw.userName, email: raw.email, text: '', captchaAnswer: '' });
           this.textPreviewHtml = '';
+          this.previewMessage = '';
           this.attachment = null;
           this.attachmentMessage = '';
           this.loadThread();
@@ -425,7 +443,27 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
       this.loadThread();
     });
 
-    void this.signalRConnection.start();
+    this.signalRConnection.onreconnecting(() => {
+      this.signalRStatusMessage = "Realtime-з'єднання втрачено. Виконуємо перепідключення...";
+    });
+
+    this.signalRConnection.onreconnected(() => {
+      this.signalRStatusMessage = "Realtime-з'єднання відновлено.";
+      this.loadThread();
+    });
+
+    this.signalRConnection.onclose(() => {
+      this.signalRStatusMessage = 'Realtime недоступний. Дані можна оновити перезавантаженням сторінки.';
+    });
+
+    void this.signalRConnection
+      .start()
+      .then(() => {
+        this.signalRStatusMessage = '';
+      })
+      .catch(() => {
+        this.signalRStatusMessage = 'Realtime недоступний. Дані можна оновити перезавантаженням сторінки.';
+      });
   }
 
   /**
