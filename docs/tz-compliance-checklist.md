@@ -1,14 +1,14 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 78).
+Останнє оновлення: 2026-03-17 (ітерація 79).
 
 ## Що перевірено в цій ітерації
 
-- Усунуто прогалини в unit-покритті `ValidationBehavior` (`src/Comments.Application.Tests/ValidationBehaviorTests.cs`):
-  - додано перевірку сценарію без зареєстрованих валідаторів (`Handle_WithNoValidators_CallsNext`);
-  - додано перевірку агрегації помилок з кількох валідаторів (`Handle_WithMultipleInvalidValidators_AggregatesFailures`);
-  - додано XML-коментарі для тестового класу, тест-кейсів та допоміжного тестового валідатора згідно вимоги про документування нових класів/методів.
-- Оновлено чекліст: зафіксовано виконану доробку і уточнено наступний крок — продовжити backend unit/integration coverage для CQRS edge-cases, які ще не закриті в delivery-пакеті.
+- Закрито наступний інтеграційний edge-case для контракту валідації API middleware/error-filter (`src/Comments.Api.Tests/ValidationIntegrationTests.cs`):
+  - додано REST-тест `CreateComment_WithMultipleInvalidFields_ReturnsAggregatedValidationProblem`, який перевіряє агрегацію множинних помилок у `ValidationProblemDetails`;
+  - додано GraphQL-тест `GraphQlCreateComment_WithMultipleInvalidFields_ReturnsAggregatedValidationErrorsExtension`, який перевіряє агрегацію множинних помилок у `extensions.validationErrors` з кодом `BAD_USER_INPUT`.
+- Для нових тестових методів додано XML-коментарі згідно вимоги про документування нових/змінених класів і методів.
+- Оновлено чекліст: зафіксовано виконану доробку і уточнено наступний крок — завершити delivery-пакет підстановкою фактичного demo-video URL у `README.md`.
 
 ## Підсумок відповідності
 
@@ -91,7 +91,7 @@
    - ✅ додано позитивні boundary integration-тести для `attachment == 1MB` (REST + GraphQL);
    - ✅ додано негативні attachment edge-case тести: REST (`invalid content-type`) та GraphQL (`invalid base64`);
    - ✅ додано e2e-smoke UI-фіксацію boundary-контрактів attachment на Angular-рівні (`>1MB`, `unsupported MIME`).
-   - наступний крок: додати інтеграційний тест на агрегацію множинних validation-помилок через API middleware/error-filter (REST + GraphQL), щоб фіналізувати end-to-end контракт помилок.
+   - ✅ додано інтеграційні тести агрегації множинних validation-помилок через REST middleware та GraphQL error-filter.
 
 
 ### P1
