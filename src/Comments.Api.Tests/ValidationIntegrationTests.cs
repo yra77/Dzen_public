@@ -348,6 +348,38 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
         Assert.True(payload.Errors.ContainsKey("Request.CaptchaToken"));
     }
 
+    /// <summary>
+    /// Verifies REST middleware aggregates multiple field-level validation failures in one response.
+    /// </summary>
+    [Fact]
+    public async Task CreateComment_WithMultipleInvalidFields_ReturnsAggregatedValidationProblem()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/comments", new
+        {
+            userName = "invalid user",
+            email = "not-an-email",
+            homePage = "ftp://example.com",
+            text = string.Empty,
+            parentId = (Guid?)null,
+            captchaToken = "wrong-token",
+            attachment = (object?)null
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<ValidationProblemPayload>();
+        Assert.NotNull(payload);
+        Assert.Equal(400, payload!.Status);
+        Assert.True(payload.Errors.ContainsKey("Request.UserName"));
+        Assert.True(payload.Errors.ContainsKey("Request.Email"));
+        Assert.True(payload.Errors.ContainsKey("Request.HomePage"));
+        Assert.True(payload.Errors.ContainsKey("Request.Text"));
+        Assert.True(payload.Errors.ContainsKey("Request.CaptchaToken"));
+        Assert.True(payload.Errors.Count >= 5);
+    }
+
     [Fact]
     public async Task CreateComment_WithInvalidAttachmentBase64_ReturnsBadRequestValidationProblem()
     {
@@ -615,6 +647,49 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
         Assert.Equal("BAD_USER_INPUT", payload.Errors![0].Extensions?.Code);
         Assert.NotNull(payload.Errors![0].Extensions?.ValidationErrors);
         Assert.True(payload.Errors![0].Extensions!.ValidationErrors!.ContainsKey("Request.CaptchaToken"));
+    }
+
+    /// <summary>
+    /// Verifies GraphQL error filter aggregates multiple validation failures into validationErrors extension.
+    /// </summary>
+    [Fact]
+    public async Task GraphQlCreateComment_WithMultipleInvalidFields_ReturnsAggregatedValidationErrorsExtension()
+    {
+        using var client = _factory.CreateClient();
+
+        var body = new
+        {
+            query = @"mutation {
+  addComment(input: {
+    userName: \"invalid user\",
+    email: \"not-an-email\",
+    homePage: \"ftp://example.com\",
+    text: \"\",
+    captchaToken: \"wrong-token\"
+  }) {
+    id
+  }
+}"
+        };
+
+        var response = await client.PostAsJsonAsync("/graphql", body);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<GraphQlResponse>();
+        Assert.NotNull(payload);
+        Assert.NotNull(payload!.Errors);
+        Assert.NotEmpty(payload.Errors!);
+        Assert.Equal("BAD_USER_INPUT", payload.Errors![0].Extensions?.Code);
+        Assert.NotNull(payload.Errors![0].Extensions?.ValidationErrors);
+
+        var validationErrors = payload.Errors![0].Extensions!.ValidationErrors!;
+        Assert.True(validationErrors.ContainsKey("Request.UserName"));
+        Assert.True(validationErrors.ContainsKey("Request.Email"));
+        Assert.True(validationErrors.ContainsKey("Request.HomePage"));
+        Assert.True(validationErrors.ContainsKey("Request.Text"));
+        Assert.True(validationErrors.ContainsKey("Request.CaptchaToken"));
+        Assert.True(validationErrors.Count >= 5);
     }
 
     [Fact]
