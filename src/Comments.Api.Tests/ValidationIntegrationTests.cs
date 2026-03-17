@@ -8,6 +8,9 @@ using Xunit;
 
 namespace Comments.Api.Tests;
 
+/// <summary>
+/// End-to-end validation and contract tests for REST and GraphQL comment endpoints.
+/// </summary>
 public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
 {
     private readonly WebApplicationFactory<Program> _factory;
@@ -15,6 +18,142 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
     public ValidationIntegrationTests(WebApplicationFactory<Program> factory)
     {
         _factory = factory;
+    }
+
+    /// <summary>
+    /// Verifies REST validation rejects a filter value longer than supported limit.
+    /// </summary>
+    [Fact]
+    public async Task GetComments_WithFilterLongerThan200_ReturnsBadRequestValidationProblem()
+    {
+        using var client = _factory.CreateClient();
+
+        var tooLongFilter = new string('x', 201);
+        var response = await client.GetAsync($"/api/comments?page=1&pageSize=25&sortBy=CreatedAtUtc&sortDirection=Desc&filter={tooLongFilter}");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<ValidationProblemPayload>();
+        Assert.NotNull(payload);
+        Assert.Equal(400, payload!.Status);
+        Assert.True(payload.Errors.ContainsKey("Filter"));
+    }
+
+    /// <summary>
+    /// Verifies GraphQL validation exposes BAD_USER_INPUT and validationErrors for too-long filter.
+    /// </summary>
+    [Fact]
+    public async Task GraphQlComments_WithFilterLongerThan200_ReturnsBadUserInputError()
+    {
+        using var client = _factory.CreateClient();
+
+        var tooLongFilter = new string('x', 201);
+        var body = new
+        {
+            query = @"query($page: Int!, $pageSize: Int!, $sortBy: CommentSortField!, $sortDirection: CommentSortDirection!, $filter: String) {
+  comments(page: $page, pageSize: $pageSize, sortBy: $sortBy, sortDirection: $sortDirection, filter: $filter) {
+    totalCount
+  }
+}",
+            variables = new
+            {
+                page = 1,
+                pageSize = 10,
+                sortBy = "CreatedAtUtc",
+                sortDirection = "Desc",
+                filter = tooLongFilter
+            }
+        };
+
+        var response = await client.PostAsJsonAsync("/graphql", body);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<GraphQlResponse>();
+        Assert.NotNull(payload);
+        Assert.NotNull(payload!.Errors);
+        Assert.NotEmpty(payload.Errors!);
+        Assert.Equal("BAD_USER_INPUT", payload.Errors![0].Extensions?.Code);
+        Assert.NotNull(payload.Errors![0].Extensions?.ValidationErrors);
+        Assert.True(payload.Errors![0].Extensions!.ValidationErrors!.ContainsKey("Filter"));
+    }
+
+    /// <summary>
+    /// Verifies mixed sort/filter/pagination returns an empty second page when only one item matches.
+    /// </summary>
+    [Fact]
+    public async Task GetComments_WithSortPaginationAndFilter_EmptyPageReturnsNoItems()
+    {
+        using var client = _factory.CreateClient();
+
+        var unique = Guid.NewGuid().ToString("N");
+
+        await CreateCommentAsync(client, $"Alpha{unique}", $"alpha-{unique}@example.com", "Root Alpha");
+        await CreateCommentAsync(client, $"Bravo{unique}", $"bravo-{unique}@example.com", "Root Bravo");
+        await CreateCommentAsync(client, $"Delta{unique}", $"delta-{unique}@example.com", "Root Delta");
+
+        var response = await client.GetAsync($"/api/comments?page=2&pageSize=1&sortBy=UserName&sortDirection=Asc&filter=brav{unique}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<PagedResult<CommentDto>>();
+        Assert.NotNull(payload);
+        Assert.Equal(2, payload!.Page);
+        Assert.Equal(1, payload.PageSize);
+        Assert.Equal(1, payload.TotalCount);
+        Assert.Empty(payload.Items);
+    }
+
+    /// <summary>
+    /// Verifies GraphQL mixed sort/filter/pagination returns an empty second page when only one item matches.
+    /// </summary>
+    [Fact]
+    public async Task GraphQlComments_WithSortPaginationAndFilter_EmptyPageReturnsNoItems()
+    {
+        using var client = _factory.CreateClient();
+
+        var unique = Guid.NewGuid().ToString("N");
+
+        await CreateCommentAsync(client, $"Alpha{unique}", $"alpha-{unique}@example.com", "Root Alpha");
+        await CreateCommentAsync(client, $"Bravo{unique}", $"bravo-{unique}@example.com", "Root Bravo");
+        await CreateCommentAsync(client, $"Delta{unique}", $"delta-{unique}@example.com", "Root Delta");
+
+        var body = new
+        {
+            query = @"query($page: Int!, $pageSize: Int!, $sortBy: CommentSortField!, $sortDirection: CommentSortDirection!, $filter: String) {
+  comments(page: $page, pageSize: $pageSize, sortBy: $sortBy, sortDirection: $sortDirection, filter: $filter) {
+    page
+    pageSize
+    totalCount
+    items {
+      userName
+    }
+  }
+}",
+            variables = new
+            {
+                page = 2,
+                pageSize = 1,
+                sortBy = "UserName",
+                sortDirection = "Asc",
+                filter = $"brav{unique}"
+            }
+        };
+
+        var response = await client.PostAsJsonAsync("/graphql", body);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<GraphQlResponse>();
+        Assert.NotNull(payload);
+        Assert.Null(payload!.Errors);
+        Assert.True(payload.Data.HasValue);
+
+        var comments = payload.Data!.Value.GetProperty("comments");
+        Assert.Equal(2, comments.GetProperty("page").GetInt32());
+        Assert.Equal(1, comments.GetProperty("pageSize").GetInt32());
+        Assert.Equal(1, comments.GetProperty("totalCount").GetInt32());
+        Assert.Empty(comments.GetProperty("items").EnumerateArray());
     }
 
     [Fact]
@@ -772,28 +911,63 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
         return payload!;
     }
 
+    /// <summary>
+    /// Minimal REST validation problem payload contract used in integration assertions.
+    /// </summary>
     private sealed class ValidationProblemPayload
     {
+        /// <summary>
+        /// Gets or sets HTTP status code from the payload.
+        /// </summary>
         public int Status { get; set; }
+
+        /// <summary>
+        /// Gets or sets field validation errors keyed by property name.
+        /// </summary>
         public Dictionary<string, string[]> Errors { get; set; } = new();
     }
 
+    /// <summary>
+    /// Minimal GraphQL envelope contract used in integration assertions.
+    /// </summary>
     private sealed class GraphQlResponse
     {
+        /// <summary>
+        /// Gets or sets GraphQL errors array.
+        /// </summary>
         public List<GraphQlError>? Errors { get; set; }
+
+        /// <summary>
+        /// Gets or sets optional GraphQL data object.
+        /// </summary>
         public JsonElement? Data { get; set; }
     }
 
+    /// <summary>
+    /// Minimal GraphQL error contract that carries extension metadata.
+    /// </summary>
     private sealed class GraphQlError
     {
+        /// <summary>
+        /// Gets or sets extension payload with error code and validation details.
+        /// </summary>
         public GraphQlExtensions? Extensions { get; set; }
     }
 
+    /// <summary>
+    /// GraphQL error extensions contract used to verify validation behavior.
+    /// </summary>
     private sealed class GraphQlExtensions
     {
+        /// <summary>
+        /// Gets or sets GraphQL error code.
+        /// </summary>
         [JsonPropertyName("code")]
         public string? Code { get; set; }
 
+        /// <summary>
+        /// Gets or sets validation errors keyed by field path.
+        /// </summary>
         [JsonPropertyName("validationErrors")]
         public Dictionary<string, string[]>? ValidationErrors { get; set; }
     }
