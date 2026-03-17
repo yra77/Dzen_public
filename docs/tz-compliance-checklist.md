@@ -1,12 +1,12 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 52).
+Останнє оновлення: 2026-03-17 (ітерація 53).
 
 ## Що перевірено в цій ітерації
 
-- У `Comments.Application` додано XML-коментарі до CQRS pipeline/валідації: `ValidationBehavior`, `SearchCommentsQueryValidator`, `GetCommentThreadQueryValidator` (класи, конструктори, призначення правил).
-- У `Comments.Api.Infrastructure` документовано конфігураційні моделі: `RabbitMqOptions`, `CaptchaOptions`, `ElasticsearchOptions`, `SignalROptions`, `LocalAttachmentStorageOptions` (класи та всі публічні властивості).
-- Checklist оновлено: зафіксовано поточний прогрес по коментуванню класів/методів/моделей; беклог P0/P1/P2 уточнено без зміни загальних пріоритетів.
+- У `Comments.Api.Infrastructure` додано XML-коментарі до `BasicCaptchaChallengeStore`, `BasicCaptchaValidator`, `CommentsDbContext`, `EfCommentRepository` (класи, конструктори, публічні методи).
+- У `Comments.Api.Realtime` додано XML-коментар до `CommentsHub` для явного контракту realtime-підписки.
+- Checklist оновлено: зафіксовано прогрес документування класів/методів/моделей та підтверджено незмінність поточного P0/P1/P2 backlog.
 
 ## Підсумок відповідності
 

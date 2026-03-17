@@ -3,15 +3,33 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Comments.Api.Infrastructure;
 
+/// <summary>
+/// EF Core DbContext for comments data and processed message idempotency records.
+/// </summary>
 public sealed class CommentsDbContext : DbContext
 {
+    /// <summary>
+    /// Initializes DbContext with configured EF options.
+    /// </summary>
+    /// <param name="options">Database provider and behavior options.</param>
     public CommentsDbContext(DbContextOptions<CommentsDbContext> options) : base(options)
     {
     }
 
+    /// <summary>
+    /// Comment entities table set.
+    /// </summary>
     public DbSet<Comment> Comments => Set<Comment>();
+
+    /// <summary>
+    /// Processed message entities table set for consumer idempotency.
+    /// </summary>
     public DbSet<ProcessedMessage> ProcessedMessages => Set<ProcessedMessage>();
 
+    /// <summary>
+    /// Configures EF mapping for comment tree and processed message entities.
+    /// </summary>
+    /// <param name="modelBuilder">Model builder used to configure entity metadata.</param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         var comment = modelBuilder.Entity<Comment>();

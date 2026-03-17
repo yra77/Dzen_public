@@ -2,17 +2,31 @@ using Comments.Application.Abstractions;
 
 namespace Comments.Api.Infrastructure;
 
+/// <summary>
+/// Validates captcha token using either static expected token or dynamic challenge-response mode.
+/// </summary>
 public sealed class BasicCaptchaValidator : ICaptchaValidator
 {
     private readonly CaptchaOptions _options;
     private readonly BasicCaptchaChallengeStore _challengeStore;
 
+    /// <summary>
+    /// Initializes validator with captcha configuration and challenge store.
+    /// </summary>
+    /// <param name="options">Captcha feature options.</param>
+    /// <param name="challengeStore">Challenge store for math captcha flow.</param>
     public BasicCaptchaValidator(CaptchaOptions options, BasicCaptchaChallengeStore challengeStore)
     {
         _options = options;
         _challengeStore = challengeStore;
     }
 
+    /// <summary>
+    /// Validates incoming token according to active captcha mode.
+    /// </summary>
+    /// <param name="token">Captcha token from client.</param>
+    /// <param name="cancellationToken">Cancellation token (not used in sync validation).</param>
+    /// <returns><see langword="true"/> if captcha is valid; otherwise <see langword="false"/>.</returns>
     public Task<bool> ValidateAsync(string? token, CancellationToken cancellationToken)
     {
         if (!_options.Enabled)
