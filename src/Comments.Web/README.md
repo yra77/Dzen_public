@@ -17,6 +17,16 @@ npm start
 
 За замовчуванням API очікується на `http://localhost:5000` (див. `src/environments/environment.ts`).
 
+## Unit/Component тести
+
+```bash
+cd src/Comments.Web
+npm test -- --watch=false
+```
+
+> Якщо середовище обмежує доступ до `registry.npmjs.org`, спочатку потрібно налаштувати internal npm mirror/proxy, інакше `karma`/`jasmine` залежності не встановляться.
+
+
 ## Наступні кроки міграції
 
 1. Додати preview тексту перед submit (REST/GraphQL parity).
