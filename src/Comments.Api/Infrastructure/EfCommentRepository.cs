@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Comments.Api.Infrastructure;
 
+/// <summary>
+/// EF Core repository implementation for comments and thread loading.
+/// </summary>
 public sealed class EfCommentRepository : ICommentRepository
 {
     private readonly CommentsDbContext _dbContext;
@@ -32,9 +35,19 @@ public sealed class EfCommentRepository : ICommentRepository
         int pageSize,
         CommentSortField sortField,
         CommentSortDirection sortDirection,
+        string? filter,
         CancellationToken cancellationToken)
     {
         var rootsQuery = _dbContext.Comments.Where(x => x.ParentId == null);
+
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            var normalizedFilter = filter.Trim();
+            rootsQuery = rootsQuery.Where(x =>
+                EF.Functions.Like(x.UserName, $"%{normalizedFilter}%") ||
+                EF.Functions.Like(x.Email, $"%{normalizedFilter}%") ||
+                EF.Functions.Like(x.Text, $"%{normalizedFilter}%"));
+        }
         var totalCount = await rootsQuery.CountAsync(cancellationToken);
 
         var sortedRoots = ApplySort(rootsQuery, sortField, sortDirection);

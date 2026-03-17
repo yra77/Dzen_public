@@ -4,6 +4,9 @@ using Comments.Domain.Entities;
 
 namespace Comments.Api.Infrastructure;
 
+/// <summary>
+/// In-memory repository implementation used by tests/local runs.
+/// </summary>
 public sealed class InMemoryCommentRepository : ICommentRepository
 {
     private readonly List<Comment> _items = new();
@@ -23,9 +26,19 @@ public sealed class InMemoryCommentRepository : ICommentRepository
         int pageSize,
         CommentSortField sortField,
         CommentSortDirection sortDirection,
+        string? filter,
         CancellationToken cancellationToken)
     {
         var query = _items.Where(x => x.ParentId is null);
+
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            var normalizedFilter = filter.Trim();
+            query = query.Where(x =>
+                x.UserName.Contains(normalizedFilter, StringComparison.OrdinalIgnoreCase) ||
+                x.Email.Contains(normalizedFilter, StringComparison.OrdinalIgnoreCase) ||
+                x.Text.Contains(normalizedFilter, StringComparison.OrdinalIgnoreCase));
+        }
         var totalCount = query.Count();
 
         var sorted = ApplySort(query, sortField, sortDirection);
