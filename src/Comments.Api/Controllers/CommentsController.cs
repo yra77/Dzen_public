@@ -19,15 +19,26 @@ public sealed class CommentsController : ControllerBase
     /// <summary>
     /// Preview payload for comment text sanitization endpoint.
     /// </summary>
+    /// <param name="Text">Вхідний текст, що має бути санітизований для preview.</param>
     public sealed record PreviewRequest(string Text);
 
     private readonly IMediator _mediator;
 
+    /// <summary>
+    /// Ініціалізує контролер коментарів.
+    /// </summary>
+    /// <param name="mediator">MediatR-шина для dispatch CQRS запитів і команд.</param>
     public CommentsController(IMediator mediator)
     {
         _mediator = mediator;
     }
 
+    /// <summary>
+    /// Створює новий root-коментар або reply-коментар.
+    /// </summary>
+    /// <param name="request">Тіло запиту створення коментаря.</param>
+    /// <param name="cancellationToken">Токен скасування HTTP-запиту.</param>
+    /// <returns>HTTP 201 зі створеним коментарем.</returns>
     [HttpPost]
     [ProducesResponseType(typeof(CommentDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromBody] CreateCommentRequest request, CancellationToken cancellationToken)
@@ -36,6 +47,16 @@ public sealed class CommentsController : ControllerBase
         return CreatedAtAction(nameof(GetPage), new { page = 1, pageSize = 25 }, created);
     }
 
+    /// <summary>
+    /// Повертає сторінку root-коментарів із сортуванням та опційним фільтром.
+    /// </summary>
+    /// <param name="page">Номер сторінки (починаючи з 1).</param>
+    /// <param name="pageSize">Розмір сторінки.</param>
+    /// <param name="sortBy">Поле сортування.</param>
+    /// <param name="sortDirection">Напрям сортування.</param>
+    /// <param name="filter">Опціональний текстовий фільтр.</param>
+    /// <param name="cancellationToken">Токен скасування HTTP-запиту.</param>
+    /// <returns>HTTP 200 із пагінованим результатом.</returns>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResult<CommentDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPage(
@@ -50,6 +71,14 @@ public sealed class CommentsController : ControllerBase
         return Ok(comments);
     }
 
+    /// <summary>
+    /// Повертає дерево коментарів відносно конкретного root-коментаря.
+    /// </summary>
+    /// <param name="rootCommentId">Ідентифікатор кореневого коментаря.</param>
+    /// <param name="sortBy">Поле сортування відповідей.</param>
+    /// <param name="sortDirection">Напрям сортування відповідей.</param>
+    /// <param name="cancellationToken">Токен скасування HTTP-запиту.</param>
+    /// <returns>HTTP 200 із деревом коментарів.</returns>
     [HttpGet("{rootCommentId:guid}/thread")]
     [ProducesResponseType(typeof(CommentDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetThread(
@@ -62,6 +91,12 @@ public sealed class CommentsController : ControllerBase
         return Ok(thread);
     }
 
+    /// <summary>
+    /// Генерує санітизований HTML-preview для переданого тексту.
+    /// </summary>
+    /// <param name="request">Запит із вхідним текстом для preview.</param>
+    /// <param name="cancellationToken">Токен скасування HTTP-запиту.</param>
+    /// <returns>HTTP 200 із санітизованим preview.</returns>
     [HttpPost("preview")]
     [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
     public async Task<IActionResult> Preview([FromBody] PreviewRequest request, CancellationToken cancellationToken)
@@ -70,6 +105,14 @@ public sealed class CommentsController : ControllerBase
         return Ok(preview);
     }
 
+    /// <summary>
+    /// Виконує пошук коментарів за повнотекстовим запитом.
+    /// </summary>
+    /// <param name="q">Рядок пошуку.</param>
+    /// <param name="page">Номер сторінки.</param>
+    /// <param name="pageSize">Розмір сторінки.</param>
+    /// <param name="cancellationToken">Токен скасування HTTP-запиту.</param>
+    /// <returns>HTTP 200 із результатами пошуку або HTTP 400 при порожньому запиті.</returns>
     [HttpGet("search")]
     [ProducesResponseType(typeof(PagedResult<CommentDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Search(
