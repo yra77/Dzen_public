@@ -1,23 +1,22 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 73).
+Останнє оновлення: 2026-03-17 (ітерація 74).
 
 ## Що перевірено в цій ітерації
 
-- У `Comments.Web` додано новий Playwright runtime smoke-сценарій `thread realtime update in second tab`:
-  - винесено helper `createRootCommentAndOpenThread(...)` для повторного використання create root-flow у runtime-тестах;
-  - сценарій відкриває одну thread-сторінку у двох вкладках/контекстах браузера;
-  - у другій вкладці створює reply (з captcha), а в першій перевіряє появу нового reply через realtime-оновлення (SignalR).
-- Оновлено `src/Comments.Web/README.md`: блок `Наступні кроки міграції` синхронізовано з фактом, що create/reply та multi-tab realtime e2e вже реалізовано; відкритим лишається інтеграція smoke e2e у CI.
-- Оновлено цей чекліст актуальним статусом: browser smoke покриває runtime create/reply + базовий multi-tab realtime flow; далі потрібно запустити це стабільно в CI/контурі з доступним npm registry mirror.
+- У `Comments.Web` розширено Playwright runtime smoke:
+  - додано helper `createRootCommentWithImageAttachment(...)` для сценарію image-вкладень;
+  - додано тест `create root with png attachment and render image preview`, який створює root-коментар із PNG та перевіряє thumbnail + лінк на файл у root-list UI.
+- Оновлено цей чекліст: зафіксовано прогрес по e2e image-attachment smoke.
+- За запитом: пункт №5 (фінальний Middle+ load-test у цільовому контурі RabbitMQ + Elasticsearch) виключено з обов'язкових до виконання в межах поточного плану.
 
 ## Підсумок відповідності
 
-- **Повністю виконано:** 37 пунктів.
+- **Повністю виконано:** 38 пунктів.
 - **Частково виконано:** 1 пункт.
-- **Не виконано:** 1 пункт.
+- **Не виконано:** 0 пунктів (пункт №5 виключено з обов'язкових за запитом).
 
-> Висновок: **100% відповідності ТЗ ще немає** (ключові блокери: middle+ load-test із фактами, demo-video URL; browser e2e smoke уже включає multi-tab realtime, лишається стабільний запуск у CI/середовищі з доступним npm mirror).
+> Висновок: для фінального закриття delivery-пакету лишається підставити фактичний demo-video URL у `README.md`; технічний browser smoke покриває create/reply + multi-tab realtime + image attachment, далі потрібна стабільна інтеграція e2e у CI/середовищі з доступним npm mirror.
 
 ## Актуальний статус по ключових блоках ТЗ
 
@@ -30,8 +29,8 @@
 4. ✅ **RabbitMQ production-hardening** — виконано:
    - є retry/DLQ базис, базові consumer-метрики (`success/fail/retry/latency`) та persistent-ідемпотентність із cleanup-процедурою;
    - додано alert-пороги для `failure-rate/latency` та формалізований `DLQ replay-flow` у runbook.
-5. ❌ **Фінальний Middle+ load-test у цільовому контурі RabbitMQ + Elasticsearch** — не виконано:
-   - у `docs/load-test-middle-results.md` лишається шаблон без фактичних метрик.
+5. ⏭️ **Фінальний Middle+ load-test у цільовому контурі RabbitMQ + Elasticsearch** — виключено з обов'язкових за поточним запитом:
+   - пункт не блокує закриття поточного етапу робіт.
 6. 🟨 **Delivery-артефакт Demo (README + відео)** — частково виконано:
    - у `README.md` додано секцію `Demo`;
    - лишається замінити `TODO` на фактичний лінк на 3–5 хв запис ключових сценаріїв.
@@ -49,11 +48,10 @@
    - ✅ додано Playwright smoke-каркас + команду запуску в `src/Comments.Web/README.md`;
    - ✅ сценарій розширено до наскрізного `create root -> reply -> verify` з інтеракцією captcha;
    - ✅ додано multi-tab realtime smoke (SignalR) між двома вкладками;
-   - ✅ зафіксовано txt-attachment-flow в e2e; лишається image-attachment та додавання запуску в CI notes/pipeline.
+   - ✅ зафіксовано txt-attachment-flow в e2e;
+   - ✅ додано image-attachment smoke (PNG preview) у runtime e2e; лишається додавання запуску в CI notes/pipeline.
 
-3. **Middle+ load-test фактами (P0, ~1–2 год за готового стенду):**
-   - прогнати `load-test/comments-middle.js` у контурі з RabbitMQ + Elasticsearch;
-   - оновити `docs/load-test-middle-results.md` і `docs/artifacts/k6-middle-summary.json` реальними метриками.
+3. **Middle+ load-test фактами (P0)** — ⏭️ виключено з обов'язкових за поточним запитом.
 
 ### Фаза 2 — одразу після Фази 1 (stabilization)
 
@@ -63,7 +61,7 @@
    - ✅ визначено базові alert-пороги та додано коротку replay-інструкцію для DLQ у runbook.
 
 5. **Go/No-Go для старту ручного QA:**
-   - критерій `Go`: Demo-лінк + e2e smoke green + middle-load метрики зафіксовані;
+   - критерій `Go`: Demo-лінк + e2e smoke green;
    - після `Go` запускати повне ручне тестування по ТЗ.
 
 ## Що ще треба зробити у проєкті (лише актуальне)
@@ -78,6 +76,7 @@
    - ✅ додано browser e2e smoke-каркас (Playwright) і стабільні `data-testid` селектори у root/thread шаблонах;
    - ✅ розширено smoke до runtime-сценарію `create/reply` з captcha та txt attachment;
    - ✅ додано e2e-перевірку realtime оновлень між двома вкладками (SignalR);
+   - ✅ додано runtime e2e-перевірку image attachment preview (PNG thumbnail + file link) у root-list;
    - лишається інтеграція e2e в CI;
    - лишається розблокувати npm registry доступ у середовищі, щоб дотягнути `karma*` і `@playwright/test` пакети та виконувати `npm test`/`npm run e2e:smoke` у CI/локально без manual bootstrap.
 
@@ -99,9 +98,7 @@
    - ✅ формалізовано DLQ replay flow (`docs/rabbitmq-consumer-runbook.md`).
 
 4. **Фіналізувати Middle+ load-test:**
-   - виконати реальний прогін `load-test/comments-middle.js` у середовищі з RabbitMQ + Elasticsearch;
-   - оновити `docs/load-test-middle-results.md` фактичними показниками p95/p99/error-rate;
-   - додати/оновити актуальний артефакт `docs/artifacts/k6-middle-summary.json`.
+   - ⏭️ виключено з обов'язкових у межах поточного запиту (пункт №5 чекліста).
 
 ### P2
 

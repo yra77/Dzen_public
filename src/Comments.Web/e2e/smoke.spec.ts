@@ -1,6 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /**
+ * 1x1 PNG для smoke-сценаріїв перевірки image-вкладень.
+ */
+const tinyPngBuffer = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Z9S8AAAAASUVORK5CYII=',
+  'base64'
+);
+
+/**
  * Витягує captcha-вираз із SVG data-url та повертає обчислену суму.
  */
 function resolveCaptchaAnswerFromDataUrl(captchaDataUrl: string): string {
@@ -67,6 +75,28 @@ async function createRootCommentAndOpenThread(page: Page, seed: number): Promise
   }
 
   return new URL(threadPath, page.url()).toString();
+}
+
+/**
+ * Створює root-коментар із PNG-вкладенням та повертає унікальний текст коментаря.
+ */
+async function createRootCommentWithImageAttachment(page: Page, seed: number): Promise<string> {
+  const rootText = `PW root image ${seed}`;
+
+  await page.goto('/');
+  await page.getByTestId('root-user-name-input').fill('Playwright Root Image');
+  await page.getByTestId('root-email-input').fill('playwright-root-image@example.com');
+  await page.getByTestId('root-text-input').fill(rootText);
+  await page.getByTestId('root-attachment-input').setInputFiles({
+    name: `root-image-${seed}.png`,
+    mimeType: 'image/png',
+    buffer: tinyPngBuffer
+  });
+
+  await solveCaptcha(page, 'root');
+  await page.getByTestId('root-submit-button').click();
+  await expect(page.getByTestId('root-submit-message')).toContainText('Коментар успішно створено.');
+  return rootText;
 }
 
 /**
@@ -151,4 +181,19 @@ test('thread realtime update is visible in second tab after reply submit', async
     await contextA.close();
     await contextB.close();
   }
+});
+
+/**
+ * Runtime smoke: перевіряє, що root-коментар з PNG-вкладенням рендерить image-preview у списку.
+ */
+test('create root with png attachment and render image preview', async ({ page }) => {
+  const seed = Date.now();
+  const rootText = await createRootCommentWithImageAttachment(page, seed);
+
+  const createdRootItem = page.locator('li', {
+    has: page.getByRole('link', { name: new RegExp(rootText) })
+  });
+
+  await expect(createdRootItem.locator('img.attachment-thumb')).toBeVisible();
+  await expect(createdRootItem.getByRole('link', { name: new RegExp(`root-image-${seed}\\.png`) })).toBeVisible();
 });
