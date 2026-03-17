@@ -24,6 +24,9 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
         <p>Завантаження гілки...</p>
       } @else if (errorMessage) {
         <p class="error">{{ errorMessage }}</p>
+        @if (loadCanRetry) {
+          <p class="meta">Спробуйте оновити гілку повторно через кілька секунд.</p>
+        }
       } @else if (thread) {
         <div class="thread-node">
           <p class="meta"><strong>{{ thread.userName }}</strong> · {{ thread.createdAtUtc | date: 'short' }}</p>
@@ -146,6 +149,10 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
             <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" />
           }
 
+          @if (captchaMessage) {
+            <p class="error">{{ captchaMessage }}</p>
+          }
+
           <label>
             CAPTCHA (сума чисел)
             <input type="text" formControlName="captchaAnswer" />
@@ -208,11 +215,15 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   isLoading = true;
   isSubmitting = false;
   errorMessage = '';
+  /** Прапорець для показу підказки щодо повторної спроби завантаження. */
+  loadCanRetry = false;
   submitMessage = '';
   submitValidationErrors: ReadonlyArray<UiValidationError> = [];
   showRetryHint = false;
   captchaChallengeId = '';
   captchaImageDataUrl = '';
+  /** Повідомлення про помилку завантаження CAPTCHA. */
+  captchaMessage = '';
   textPreviewHtml = '';
   attachmentMessage = '';
   attachment: CreateCommentAttachmentRequest | null = null;
@@ -310,10 +321,17 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
    * Перезавантажує CAPTCHA для форми відповіді.
    */
   reloadCaptcha(): void {
+    this.captchaMessage = '';
+
     this.commentsApi.getCaptcha().subscribe({
       next: (response) => {
         this.captchaChallengeId = response.challengeId;
         this.captchaImageDataUrl = `data:${response.mimeType};base64,${response.imageBase64}`;
+        this.captchaMessage = '';
+      },
+      error: (error) => {
+        const uiError = this.apiErrorPresenter.present(error, 'Не вдалося завантажити CAPTCHA.');
+        this.captchaMessage = uiError.summary;
       }
     });
   }
@@ -417,20 +435,24 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     const commentId = this.route.snapshot.paramMap.get('id');
     if (!commentId) {
       this.errorMessage = 'Некоректний id коментаря.';
+      this.loadCanRetry = false;
       this.isLoading = false;
       return;
     }
 
     this.isLoading = true;
     this.errorMessage = '';
+    this.loadCanRetry = false;
 
     this.commentsApi.getThread(commentId).subscribe({
       next: (response) => {
         this.thread = response;
         this.isLoading = false;
       },
-      error: () => {
-        this.errorMessage = 'Не вдалося завантажити гілку.';
+      error: (error) => {
+        const uiError = this.apiErrorPresenter.present(error, 'Не вдалося завантажити гілку.');
+        this.errorMessage = uiError.summary;
+        this.loadCanRetry = uiError.canRetry;
         this.isLoading = false;
       }
     });
