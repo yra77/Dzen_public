@@ -111,6 +111,44 @@ k6 run --summary-export=docs/artifacts/k6-middle-summary.json load-test/comments
 
 > Деталі перевірки див. у `docs/iteration-20-tz-audit.md` і `docs/tz-compliance-checklist.md`.
 
+## GraphQL validation contract (`validationErrors`)
+
+Для помилок валідації GraphQL повертає `errors[0].extensions` з уніфікованою формою:
+
+```json
+{
+  "errors": [
+    {
+      "message": "Validation failed",
+      "extensions": {
+        "code": "BAD_USER_INPUT",
+        "validationErrors": {
+          "Filter": [
+            "'Filter' must be 200 characters or fewer."
+          ]
+        }
+      }
+    }
+  ]
+}
+```
+
+Приклад для REST того ж кейсу (`GET /api/comments?...&filter=<201 chars>`) повертає `400` із `ValidationProblemDetails`:
+
+```json
+{
+  "status": 400,
+  "errors": {
+    "Filter": [
+      "'Filter' must be 200 characters or fewer."
+    ]
+  }
+}
+```
+
+Таким чином, для UI можна уніфікувати відображення повідомлень через мапу `field -> messages[]` як для REST (`errors`), так і для GraphQL (`extensions.validationErrors`).
+
+
 ## Наступні кроки (по ТЗ)
 
 - ✅ Підключено EF Core + підтримку SQL Server (через `Persistence:Provider=SqlServer`).

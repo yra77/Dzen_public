@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 41).
+Останнє оновлення: 2026-03-17 (ітерація 42).
 
 ## Підсумок
 
@@ -22,6 +22,34 @@
 
 
 
+
+
+## Оновлення ітерації 42
+
+### Внесені зміни в цій ітерації
+
+- ✅ Формалізовано GraphQL validation-контракт у `README.md`: додано окрему секцію `GraphQL validation contract (validationErrors)` з прикладом `BAD_USER_INPUT` + `extensions.validationErrors`.
+- ✅ Додано паралельний REST-приклад для того самого `Filter` boundary кейсу (`filter` > 200 символів), щоб закрити документаційний gap по уніфікації помилок REST/GraphQL.
+- ✅ У `src/Comments.Api/GraphQL/ValidationExceptionErrorFilter.cs` додано XML-коментарі до класу і методу `OnError`, щоб дотримати вимогу коментування класів/методів/моделей.
+
+### Що ще треба зробити у проєкті (актуально після ітерації 42)
+
+1. 🟨 **Angular LTS (довести до production-ready):**
+   - додати e2e smoke для ключових user-flow (`root create`, `thread reply`, `preview`, `attachments`, `realtime`);
+   - уніфікувати UX-відображення API/GraphQL validation помилок прямо в Angular UI (single presenter/adapter).
+2. 🟨 **CQRS + MediatR + FluentValidation (закриття edge-cases):**
+   - додати docs-приклади для інших boundary-помилок (`Page/PageSize`, `CaptchaToken`, attachment) у REST + GraphQL стилі;
+   - розширити integration coverage для `commentTree` mixed sort/filter edge-поведінки, де релевантно для контракту.
+3. 🟨 **RabbitMQ production-hardening:**
+   - довести delayed retry + DLQ replay tooling;
+   - додати метрики consumer-обробки та базові alert-умови.
+4. 🔲 **Фінальний Middle+ load-test у цільовому контурі RabbitMQ + Elasticsearch:**
+   - виконати прогін `load-test/comments-middle.js`;
+   - заповнити `docs/load-test-middle-results.md` фактичними метриками та додати актуальний `docs/artifacts/k6-middle-summary.json`.
+5. 👤 **Delivery-артефакт Demo:**
+   - пункт делеговано власнику репозиторію (секція `Demo` у `README.md` + посилання на відео) — у цій ітерації не змінювався.
+
+---
 
 ## Оновлення ітерації 41
 
