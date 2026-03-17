@@ -16,7 +16,7 @@ import { environment } from '../../../environments/environment';
   selector: 'app-root-list-page',
   imports: [DatePipe, ReactiveFormsModule, RouterLink],
   template: `
-    <section class="card">
+    <section class="panel">
       <h2>Останні кореневі коментарі</h2>
       <button type="button" (click)="load()" [disabled]="isLoading" data-testid="root-refresh-button">Оновити</button>
       @if (signalRStatusMessage) {
@@ -24,7 +24,7 @@ import { environment } from '../../../environments/environment';
       }
 
       <h3>Додати кореневий коментар</h3>
-      <form [formGroup]="createForm" (ngSubmit)="submitComment()" data-testid="root-create-form">
+      <form class="form-grid" [formGroup]="createForm" (ngSubmit)="submitComment()" data-testid="root-create-form">
         <label>
           Ім'я
           <input type="text" formControlName="userName" data-testid="root-user-name-input" />
@@ -40,7 +40,7 @@ import { environment } from '../../../environments/environment';
           <input type="url" formControlName="homePage" placeholder="https://example.com" data-testid="root-home-page-input" />
         </label>
 
-        <label>
+        <label class="wide">
           Текст
           <textarea rows="5" formControlName="text" (input)="previewText()" data-testid="root-text-input"></textarea>
         </label>
@@ -56,7 +56,7 @@ import { environment } from '../../../environments/environment';
           <p class="meta">{{ previewMessage }}</p>
         }
 
-        <label>
+        <label class="wide">
           Вкладення (png/jpg/gif/txt, до 1MB)
           <input type="file" (change)="onAttachmentSelected($event)" accept=".txt,image/png,image/jpeg,image/gif,text/plain" data-testid="root-attachment-input" />
         </label>
@@ -77,7 +77,7 @@ import { environment } from '../../../environments/environment';
           <input type="text" formControlName="captchaAnswer" data-testid="root-captcha-answer-input" />
         </label>
 
-        <div class="actions">
+        <div class="actions wide">
           <button type="button" (click)="reloadCaptcha()" data-testid="root-captcha-reload-button">Оновити CAPTCHA</button>
           <button type="submit" [disabled]="createForm.invalid || isSubmitting" data-testid="root-submit-button">Створити коментар</button>
         </div>
@@ -107,9 +107,9 @@ import { environment } from '../../../environments/environment';
       } @else if (comments.length === 0) {
         <p>Поки що коментарів немає.</p>
       } @else {
-        <ul data-testid="root-comments-list">
+        <ul class="comments-list" data-testid="root-comments-list">
           @for (comment of comments; track comment.id) {
-            <li>
+            <li class="comment">
               <a [routerLink]="['/thread', comment.id]">#{{ comment.id }} {{ comment.userName }}</a>
               <small>{{ comment.createdAtUtc | date: 'short' }}</small>
               <p>{{ comment.text }}</p>
@@ -150,52 +150,16 @@ import { environment } from '../../../environments/environment';
   `,
   styles: [
     `
-      .error {
-        color: #b32d2e;
-      }
-
-      ul {
-        padding: 0;
-        list-style: none;
-        display: grid;
-        gap: 12px;
-      }
-
-      li {
-        border: 1px solid #d9e0ec;
-        border-radius: 8px;
-        padding: 12px;
-      }
-
-      small {
-        display: inline-block;
-        margin-top: 8px;
-        color: #5f6f85;
-      }
-
-      .attachment-inline {
-        margin-top: 8px;
-      }
-
-      .attachment-thumb {
-        max-width: 220px;
-        max-height: 140px;
-        border: 1px solid #d9e0ec;
-        border-radius: 6px;
-      }
-
-      .attachment-text {
-        white-space: pre-wrap;
-        background: #f8fafc;
-        border: 1px solid #d9e0ec;
-        border-radius: 6px;
-        padding: 8px;
-      }
-
-      .error-list {
-        color: #b32d2e;
-        margin: 6px 0 0;
-      }
+      .error { color: #b42318; }
+      .meta { color: #475467; }
+      .comments-list { padding: 0; list-style: none; display: grid; gap: 10px; }
+      .comment { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; background: #fcfcfd; }
+      .attachment-inline { margin-top: 8px; }
+      .attachment-thumb { max-width: 260px; max-height: 180px; border: 1px solid #d0d7de; border-radius: 8px; }
+      .attachment-text { white-space: pre-wrap; background: #f8fafc; border: 1px solid #d9e0ec; border-radius: 8px; padding: 8px; }
+      .error-list { color: #b42318; margin: 6px 0 0; }
+      .captcha { width: 160px; height: 60px; border: 1px solid #d9e0ec; border-radius: 6px; }
+      @media (max-width: 900px) { .actions { flex-direction: column; } }
     `
   ]
 })

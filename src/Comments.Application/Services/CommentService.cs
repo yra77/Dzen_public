@@ -12,7 +12,6 @@ public sealed class CommentService
     private readonly ICommentRepository _repository;
     private readonly ITextSanitizer _textSanitizer;
     private readonly ICommentCreatedPublisher _commentCreatedPublisher;
-    private readonly ICaptchaValidator _captchaValidator;
     private readonly IAttachmentStorage _attachmentStorage;
 
     /// <summary>
@@ -21,19 +20,16 @@ public sealed class CommentService
     /// <param name="repository">Репозиторій для читання/запису коментарів.</param>
     /// <param name="textSanitizer">Санітизатор користувацького тексту.</param>
     /// <param name="commentCreatedPublisher">Паблішер події створення коментаря.</param>
-    /// <param name="captchaValidator">Валідатор captcha-токенів.</param>
     /// <param name="attachmentStorage">Сховище вкладень.</param>
     public CommentService(
         ICommentRepository repository,
         ITextSanitizer textSanitizer,
         ICommentCreatedPublisher commentCreatedPublisher,
-        ICaptchaValidator captchaValidator,
         IAttachmentStorage attachmentStorage)
     {
         _repository = repository;
         _textSanitizer = textSanitizer;
         _commentCreatedPublisher = commentCreatedPublisher;
-        _captchaValidator = captchaValidator;
         _attachmentStorage = attachmentStorage;
     }
 
@@ -42,8 +38,6 @@ public sealed class CommentService
     /// </summary>
     public async Task<CommentDto> CreateAsync(CreateCommentRequest request, CancellationToken cancellationToken)
     {
-        await ValidateAsync(request, cancellationToken);
-
         StoredAttachment? storedAttachment = null;
         if (request.Attachment is not null)
         {
@@ -138,21 +132,6 @@ public sealed class CommentService
         }
 
         return _textSanitizer.Sanitize(text);
-    }
-
-    /// <summary>
-    /// Виконує обов'язкові перевірки запиту перед створенням коментаря.
-    /// </summary>
-    /// <param name="request">Запит створення коментаря.</param>
-    /// <param name="cancellationToken">Токен скасування.</param>
-    /// <exception cref="ArgumentException">Кидається, якщо captcha не пройшла перевірку.</exception>
-    private async Task ValidateAsync(CreateCommentRequest request, CancellationToken cancellationToken)
-    {
-        var captchaIsValid = await _captchaValidator.ValidateAsync(request.CaptchaToken, cancellationToken);
-        if (!captchaIsValid)
-        {
-            throw new ArgumentException("Captcha validation failed.");
-        }
     }
 
     /// <summary>
