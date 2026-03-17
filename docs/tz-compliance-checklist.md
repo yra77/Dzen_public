@@ -1,14 +1,16 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 68).
+Останнє оновлення: 2026-03-17 (ітерація 69).
 
 ## Що перевірено в цій ітерації
 
-- Розширено integration coverage для attachment validation edge-cases у REST/GraphQL:
-  - додано REST-тест `CreateComment_WithInvalidAttachmentContentType_ReturnsBadRequestValidationProblem` (перевірка помилки `Request.Attachment.ContentType` для `application/pdf`);
-  - додано GraphQL-тест `GraphQlCreateComment_WithInvalidAttachmentBase64_ReturnsValidationErrorsExtension` (перевірка `BAD_USER_INPUT` + `validationErrors["Request.Attachment"]` для malformed base64).
-- Зафіксовано технічне обмеження середовища: локально недоступний `dotnet` CLI, тому прогін `dotnet test` у цій ітерації не виконано (потрібна валідація в CI/на dev-машині з SDK).
-- Актуалізовано беклог: browser e2e smoke (Playwright/Cypress) лишається відкритим P0; middle+ load-test та demo-video link також залишаються обов'язковими до фінального Go/No-Go.
+- Додано окремий unit test-suite для `ApiErrorPresenterService` (Angular), щоб закрити критичні UX-контракти обробки помилок:
+  - REST ValidationProblemDetails -> мапінг у `validationErrors[]`;
+  - GraphQL `errors[].extensions.validationErrors` -> уніфікований UI-контракт;
+  - transient `503` -> `canRetry=true` + retry-friendly summary;
+  - fallback для non-HTTP помилок.
+- Це знижує ризик регресій у сценаріях `load/create/captcha`, де компоненти залежать від `canRetry` та нормалізованого формату validation-помилок.
+- Технічний статус середовища: `dotnet` CLI локально недоступний; додатково в `Comments.Web` зараз відсутній налаштований `test` target в `angular.json`, тому нові unit-spec потребують окремого підключення test builder перед регулярним прогоном `ng test`.
 
 ## Підсумок відповідності
 
@@ -75,6 +77,7 @@
    - лишається додати browser e2e smoke (Playwright/Cypress) для реального runtime-сценарію, включно з `attachments`.
 
 2. **Закриття edge-cases CQRS/Validation:**
+   - ✅ додано unit coverage для `ApiErrorPresenterService` (REST/GraphQL validation mapping + transient retry + unknown fallback);
    - ✅ додано mixed REST/GraphQL boundary-тести для sort/filter/pagination;
    - ✅ API/README доповнено прикладами boundary-помилок (`Page/PageSize`, `CaptchaToken`, attachment);
    - ✅ додано backend boundary-валідацію і integration coverage для `attachment > 1MB` (REST + GraphQL);
