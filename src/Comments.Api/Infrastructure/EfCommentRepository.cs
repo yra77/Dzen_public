@@ -12,16 +12,26 @@ public sealed class EfCommentRepository : ICommentRepository
 {
     private readonly CommentsDbContext _dbContext;
 
+    /// <summary>
+    /// Initializes repository with EF DbContext.
+    /// </summary>
+    /// <param name="dbContext">DbContext instance for comments persistence.</param>
     public EfCommentRepository(CommentsDbContext dbContext)
     {
         _dbContext = dbContext;
     }
 
+    /// <summary>
+    /// Returns comment by identifier or <see langword="null"/> when not found.
+    /// </summary>
     public async Task<Comment?> FindByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         return await _dbContext.Comments.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
+    /// <summary>
+    /// Returns all comments ordered by creation time.
+    /// </summary>
     public async Task<IReadOnlyCollection<Comment>> GetAllAsync(CancellationToken cancellationToken)
     {
         return await _dbContext.Comments
@@ -30,6 +40,9 @@ public sealed class EfCommentRepository : ICommentRepository
             .ToListAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Returns paged root comments and rebuilds reply tree for selected roots.
+    /// </summary>
     public async Task<(IReadOnlyCollection<Comment> Items, int TotalCount)> GetRootCommentsAsync(
         int page,
         int pageSize,
@@ -48,6 +61,7 @@ public sealed class EfCommentRepository : ICommentRepository
                 EF.Functions.Like(x.Email, $"%{normalizedFilter}%") ||
                 EF.Functions.Like(x.Text, $"%{normalizedFilter}%"));
         }
+
         var totalCount = await rootsQuery.CountAsync(cancellationToken);
 
         var sortedRoots = ApplySort(rootsQuery, sortField, sortDirection);
@@ -83,12 +97,18 @@ public sealed class EfCommentRepository : ICommentRepository
         return (pageRoots, totalCount);
     }
 
+    /// <summary>
+    /// Adds comment and commits transaction to database.
+    /// </summary>
     public async Task AddAsync(Comment comment, CancellationToken cancellationToken)
     {
         await _dbContext.Comments.AddAsync(comment, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Applies sorting to root comments query by requested field and direction.
+    /// </summary>
     private static IOrderedQueryable<Comment> ApplySort(
         IQueryable<Comment> query,
         CommentSortField sortField,
