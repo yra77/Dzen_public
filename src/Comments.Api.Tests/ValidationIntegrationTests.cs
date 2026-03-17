@@ -582,6 +582,87 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
         Assert.Equal(new[] { $"zulu-{unique}@example.com", $"alpha-{unique}@example.com" }, replies);
     }
 
+
+    [Fact]
+    public async Task GetComments_WithSortPaginationAndFilter_ReturnsFilteredPageSlice()
+    {
+        using var client = _factory.CreateClient();
+
+        var unique = Guid.NewGuid().ToString("N");
+
+        await CreateCommentAsync(client, $"Alpha{unique}", $"alpha-{unique}@example.com", "Root Alpha");
+        await CreateCommentAsync(client, $"Atlas{unique}", $"atlas-{unique}@example.com", "Root Atlas");
+        await CreateCommentAsync(client, $"Delta{unique}", $"delta-{unique}@example.com", "Root Delta");
+
+        var response = await client.GetAsync($"/api/comments?page=1&pageSize=1&sortBy=UserName&sortDirection=Asc&filter=at{unique}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<PagedResult<CommentDto>>();
+        Assert.NotNull(payload);
+        Assert.Equal(1, payload!.Page);
+        Assert.Equal(1, payload.PageSize);
+        Assert.Equal(1, payload.TotalCount);
+        Assert.Single(payload.Items);
+        Assert.Equal($"Atlas{unique}", payload.Items[0].UserName);
+    }
+
+    [Fact]
+    public async Task GraphQlComments_WithSortPaginationAndFilter_ReturnsFilteredOrderingWithoutErrors()
+    {
+        using var client = _factory.CreateClient();
+
+        var unique = Guid.NewGuid().ToString("N");
+
+        await CreateCommentAsync(client, $"Alpha{unique}", $"alpha-{unique}@example.com", "Root Alpha");
+        await CreateCommentAsync(client, $"Alpine{unique}", $"alpine-{unique}@example.com", "Root Alpine");
+        await CreateCommentAsync(client, $"Bravo{unique}", $"bravo-{unique}@example.com", "Root Bravo");
+
+        var body = new
+        {
+            query = @"query($page: Int!, $pageSize: Int!, $sortBy: CommentSortField!, $sortDirection: CommentSortDirection!, $filter: String) {
+  comments(page: $page, pageSize: $pageSize, sortBy: $sortBy, sortDirection: $sortDirection, filter: $filter) {
+    page
+    pageSize
+    totalCount
+    items {
+      userName
+    }
+  }
+}",
+            variables = new
+            {
+                page = 1,
+                pageSize = 100,
+                sortBy = "UserName",
+                sortDirection = "Desc",
+                filter = $"alp{unique}"
+            }
+        };
+
+        var response = await client.PostAsJsonAsync("/graphql", body);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<GraphQlResponse>();
+        Assert.NotNull(payload);
+        Assert.Null(payload!.Errors);
+        Assert.True(payload.Data.HasValue);
+
+        var comments = payload.Data!.Value.GetProperty("comments");
+        Assert.Equal(2, comments.GetProperty("totalCount").GetInt32());
+
+        var uniqueNames = comments
+            .GetProperty("items")
+            .EnumerateArray()
+            .Select(x => x.GetProperty("userName").GetString())
+            .Where(x => x is not null && x.Contains(unique, StringComparison.Ordinal))
+            .Cast<string>()
+            .ToArray();
+
+        Assert.Equal(new[] { $"Alpine{unique}", $"Alpha{unique}" }, uniqueNames);
+    }
+
     [Fact]
     public async Task GetComments_WithSortAndPagination_ReturnsExpectedPageSlice()
     {

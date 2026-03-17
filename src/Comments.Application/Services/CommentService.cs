@@ -4,9 +4,11 @@ using Comments.Domain.Entities;
 
 namespace Comments.Application.Services;
 
+/// <summary>
+/// Application service that encapsulates comment business workflows and mapping.
+/// </summary>
 public sealed class CommentService
 {
-
     private readonly ICommentRepository _repository;
     private readonly ITextSanitizer _textSanitizer;
     private readonly ICommentCreatedPublisher _commentCreatedPublisher;
@@ -27,6 +29,9 @@ public sealed class CommentService
         _attachmentStorage = attachmentStorage;
     }
 
+    /// <summary>
+    /// Creates a new root or reply comment after validation and sanitization.
+    /// </summary>
     public async Task<CommentDto> CreateAsync(CreateCommentRequest request, CancellationToken cancellationToken)
     {
         await ValidateAsync(request, cancellationToken);
@@ -70,11 +75,15 @@ public sealed class CommentService
         return createdComment;
     }
 
+    /// <summary>
+    /// Returns a paged list of root comments with sorting and optional filter.
+    /// </summary>
     public async Task<PagedResult<CommentDto>> GetPageAsync(
         int page,
         int pageSize,
         CommentSortField sortField,
         CommentSortDirection sortDirection,
+        string? filter,
         CancellationToken cancellationToken)
     {
         var (comments, totalCount) = await _repository.GetRootCommentsAsync(
@@ -82,6 +91,7 @@ public sealed class CommentService
             pageSize,
             sortField,
             sortDirection,
+            filter,
             cancellationToken);
 
         return new PagedResult<CommentDto>(
@@ -91,6 +101,9 @@ public sealed class CommentService
             comments.Select(x => Map(x, sortField, sortDirection)).ToArray());
     }
 
+    /// <summary>
+    /// Returns a root comment with recursively sorted replies.
+    /// </summary>
     public async Task<CommentDto> GetThreadAsync(
         Guid rootCommentId,
         CommentSortField sortField,
@@ -106,6 +119,9 @@ public sealed class CommentService
         return Map(rootComment, sortField, sortDirection);
     }
 
+    /// <summary>
+    /// Produces sanitized preview HTML for provided plain text/markup input.
+    /// </summary>
     public string Preview(string text)
     {
         if (string.IsNullOrWhiteSpace(text))

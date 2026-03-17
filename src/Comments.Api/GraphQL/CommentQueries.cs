@@ -7,6 +7,9 @@ using MediatR;
 
 namespace Comments.Api.GraphQL;
 
+/// <summary>
+/// GraphQL query resolvers for listing, threading, searching and previewing comments.
+/// </summary>
 public sealed class CommentQueries
 {
     public Task<PagedResult<CommentDto>> CommentsPage(
@@ -15,9 +18,10 @@ public sealed class CommentQueries
         int pageSize = 25,
         CommentSortField sortBy = CommentSortField.CreatedAtUtc,
         CommentSortDirection sortDirection = CommentSortDirection.Desc,
+        string? filter = null,
         CancellationToken cancellationToken = default)
     {
-        return mediator.Send(new GetCommentsPageQuery(page, pageSize, sortBy, sortDirection), cancellationToken);
+        return mediator.Send(new GetCommentsPageQuery(page, pageSize, sortBy, sortDirection, filter), cancellationToken);
     }
 
     public Task<PagedResult<CommentDto>> Comments(
@@ -26,9 +30,10 @@ public sealed class CommentQueries
         int pageSize = 25,
         CommentSortField sortBy = CommentSortField.CreatedAtUtc,
         CommentSortDirection sortDirection = CommentSortDirection.Desc,
+        string? filter = null,
         CancellationToken cancellationToken = default)
     {
-        return CommentsPage(mediator, page, pageSize, sortBy, sortDirection, cancellationToken);
+        return CommentsPage(mediator, page, pageSize, sortBy, sortDirection, filter, cancellationToken);
     }
 
     public Task<CommentDto> CommentTree(

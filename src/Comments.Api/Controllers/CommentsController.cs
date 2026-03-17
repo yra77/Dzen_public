@@ -11,8 +11,14 @@ namespace Comments.Api.Controllers;
 
 [ApiController]
 [Route("api/comments")]
+/// <summary>
+/// REST endpoints for comment creation, listing, threading and preview operations.
+/// </summary>
 public sealed class CommentsController : ControllerBase
 {
+    /// <summary>
+    /// Preview payload for comment text sanitization endpoint.
+    /// </summary>
     public sealed record PreviewRequest(string Text);
 
     private readonly IMediator _mediator;
@@ -37,9 +43,10 @@ public sealed class CommentsController : ControllerBase
         [FromQuery] int pageSize = 25,
         [FromQuery] CommentSortField sortBy = CommentSortField.CreatedAtUtc,
         [FromQuery] CommentSortDirection sortDirection = CommentSortDirection.Desc,
+        [FromQuery] string? filter = null,
         CancellationToken cancellationToken = default)
     {
-        var comments = await _mediator.Send(new GetCommentsPageQuery(page, pageSize, sortBy, sortDirection), cancellationToken);
+        var comments = await _mediator.Send(new GetCommentsPageQuery(page, pageSize, sortBy, sortDirection, filter), cancellationToken);
         return Ok(comments);
     }
 

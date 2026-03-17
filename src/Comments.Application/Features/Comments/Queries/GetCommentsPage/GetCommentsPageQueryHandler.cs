@@ -4,6 +4,9 @@ using MediatR;
 
 namespace Comments.Application.Features.Comments.Queries.GetCommentsPage;
 
+/// <summary>
+/// Handles paged root comment queries.
+/// </summary>
 public sealed class GetCommentsPageQueryHandler : IRequestHandler<GetCommentsPageQuery, PagedResult<CommentDto>>
 {
     private readonly CommentService _commentService;
@@ -20,6 +23,7 @@ public sealed class GetCommentsPageQueryHandler : IRequestHandler<GetCommentsPag
             request.PageSize,
             request.SortBy,
             request.SortDirection,
+            request.Filter,
             cancellationToken);
     }
 }
