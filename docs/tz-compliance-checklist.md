@@ -1,21 +1,23 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 81).
+Останнє оновлення: 2026-03-17 (ітерація 82).
 
 ## Що перевірено в цій ітерації
 
-- Посилено CQRS/Validation quality-gate для MediatR pipeline (`src/Comments.Application.Tests/ValidationBehaviorTests.cs`):
-  - додано unit-тест `Handle_WithCanceledToken_ThrowsOperationCanceledExceptionAndDoesNotCallNext`;
-  - зафіксовано контракт, що при вже скасованому `CancellationToken` валідація переривається `OperationCanceledException`, а `next`-handler не викликається.
-- Оновлено цей чекліст: зафіксовано прогрес по стабілізації CQRS edge-case, у фінальному delivery-пакеті все ще лишається підставити фактичний demo-video URL у `README.md`.
+- Закрито ще один CQRS/Validation edge-case у MediatR pipeline (`src/Comments.Application/Common/Behaviors/ValidationBehavior.cs`):
+  - додано явну перевірку `cancellationToken.ThrowIfCancellationRequested()` на вході в `Handle`;
+  - зафіксовано контракт раннього зупинення виконання без запуску валідаторів/handler при вже скасованому токені.
+- Підтверджено тестове покриття цього контракту (`src/Comments.Application.Tests/ValidationBehaviorTests.cs`):
+  - `Handle_WithCanceledToken_ThrowsOperationCanceledExceptionAndDoesNotCallNext` залишається green та валідує, що `next` не викликається.
+- Оновлено цей чекліст: архітектурний блок CQRS + MediatR + FluentValidation переведено у статус «виконано», для фінального delivery-пакету все ще лишається підставити фактичний demo-video URL у `README.md`.
 
 ## Підсумок відповідності
 
-- **Повністю виконано:** 39 пунктів.
+- **Повністю виконано:** 40 пунктів.
 - **Частково виконано:** 1 пункт.
 - **Не виконано:** 0 пунктів (пункт №5 виключено з обов'язкових за запитом).
 
-> Висновок: browser smoke уже інтегрований у CI (GitHub Actions) та покриває create/reply + multi-tab realtime + image attachment, а локальний npm bootstrap закриває запуск у restricted-середовищах; для фінального закриття delivery-пакету лишається підставити фактичний demo-video URL у `README.md`.
+> Висновок: backend/frontend/архітектурні вимоги ТЗ закриті, browser smoke інтегрований у CI (GitHub Actions) та покриває create/reply + multi-tab realtime + image attachment, а локальний npm bootstrap закриває запуск у restricted-середовищах; для фінального закриття delivery-пакету лишається підставити фактичний demo-video URL у `README.md`.
 
 > Додатково: для середовищ з обмеженим доступом до зовнішнього npm додано локальний bootstrap `.npmrc` через internal mirror (`src/Comments.Web/scripts/bootstrap-npm-auth.sh`), що знімає потребу в ручній конфігурації перед запуском unit/e2e.
 
@@ -23,8 +25,8 @@
 
 1. ✅ **Backend / API** — виконано:
    - REST + GraphQL API, валідація, preview, captcha, вкладення, SignalR, Elasticsearch інтеграція, базовий RabbitMQ pipeline.
-2. 🟨 **Архітектура (CQRS + MediatR + FluentValidation)** — частково:
-   - основний каркас і обробники є, але лишаються edge-case доробки в тестах/контрактах та документації.
+2. ✅ **Архітектура (CQRS + MediatR + FluentValidation)** — виконано:
+   - каркас CQRS, обробники, validation-pipeline і edge-case контракти (включно з cancellation) закриті unit/integration-перевірками.
 3. ✅ **Frontend Angular LTS** — виконано:
    - ключові user-flow реалізовані; уніфікацію validation UX для REST/GraphQL, transient/retry UX для load/captcha, preview fallback і SignalR reconnection-state виконано; додано test-target для `ng test`; Playwright smoke покриває runtime create/reply, multi-tab realtime, image attachment та UI-boundary attachment-validation; інтеграцію e2e у CI виконано; додано internal npm mirror bootstrap для стабільного запуску тестів у restricted-середовищах.
 4. ✅ **RabbitMQ production-hardening** — виконано:
@@ -83,6 +85,7 @@
    - ✅ додано bootstrap internal npm mirror (`scripts/bootstrap-npm-auth.sh` + `.npmrc.internal-mirror.example`) для запуску `npm test`/`npm run e2e:smoke` у закритих середовищах.
 
 2. **Закриття edge-cases CQRS/Validation:**
+   - ✅ додано ранню перевірку скасування токена в `ValidationBehavior` (`ThrowIfCancellationRequested`) для детермінованого cancel-contract у пайплайні;
    - ✅ додано unit coverage для `ApiErrorPresenterService` (REST/GraphQL validation mapping + transient retry + unknown fallback);
    - ✅ додано mixed REST/GraphQL boundary-тести для sort/filter/pagination;
    - ✅ API/README доповнено прикладами boundary-помилок (`Page/PageSize`, `CaptchaToken`, attachment);
