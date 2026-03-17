@@ -1,16 +1,15 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 69).
+Останнє оновлення: 2026-03-17 (ітерація 70).
 
 ## Що перевірено в цій ітерації
 
-- Додано окремий unit test-suite для `ApiErrorPresenterService` (Angular), щоб закрити критичні UX-контракти обробки помилок:
-  - REST ValidationProblemDetails -> мапінг у `validationErrors[]`;
-  - GraphQL `errors[].extensions.validationErrors` -> уніфікований UI-контракт;
-  - transient `503` -> `canRetry=true` + retry-friendly summary;
-  - fallback для non-HTTP помилок.
-- Це знижує ризик регресій у сценаріях `load/create/captcha`, де компоненти залежать від `canRetry` та нормалізованого формату validation-помилок.
-- Технічний статус середовища: `dotnet` CLI локально недоступний; додатково в `Comments.Web` зараз відсутній налаштований `test` target в `angular.json`, тому нові unit-spec потребують окремого підключення test builder перед регулярним прогоном `ng test`.
+- У `Comments.Web` підключено повноцінний Angular test pipeline для unit/component spec:
+  - додано `test` target в `angular.json` (`@angular-devkit/build-angular:karma`);
+  - додано `tsconfig.spec.json`, `src/test.ts`, `karma.conf.cjs`;
+  - оновлено `package.json` dev-залежностями під `ng test`.
+- Перевірено, що `ng build` проходить успішно після підключення test-конфігурації.
+- Технічний статус середовища: `dotnet` CLI локально недоступний; `npm install` блокується політикою доступу до registry (`403 Forbidden`), тому `npm test` поки падає через відсутній локально пакет `karma`.
 
 ## Підсумок відповідності
 
@@ -27,7 +26,7 @@
 2. 🟨 **Архітектура (CQRS + MediatR + FluentValidation)** — частково:
    - основний каркас і обробники є, але лишаються edge-case доробки в тестах/контрактах та документації.
 3. 🟨 **Frontend Angular LTS** — частково:
-   - ключові user-flow реалізовані; уніфікацію validation UX для REST/GraphQL, transient/retry UX для load/captcha, preview fallback і SignalR reconnection-state виконано; лишається e2e smoke та частина boundary-документації.
+   - ключові user-flow реалізовані; уніфікацію validation UX для REST/GraphQL, transient/retry UX для load/captcha, preview fallback і SignalR reconnection-state виконано; додано test-target і конфігурацію для `ng test`; лишається e2e smoke та частина boundary-документації.
 4. ✅ **RabbitMQ production-hardening** — виконано:
    - є retry/DLQ базис, базові consumer-метрики (`success/fail/retry/latency`) та persistent-ідемпотентність із cleanup-процедурою;
    - додано alert-пороги для `failure-rate/latency` та формалізований `DLQ replay-flow` у runbook.
@@ -74,7 +73,9 @@
    - ✅ додано component smoke-тести для `root create`, `thread reply`, `preview fallback` та `realtime` UX-статусів;
    - ✅ unit smoke для attachment-flow додано (root + thread);
    - ✅ додано додаткові smoke/unit тести на boundary attachment (size/type) для root і thread сценаріїв;
-   - лишається додати browser e2e smoke (Playwright/Cypress) для реального runtime-сценарію, включно з `attachments`.
+   - ✅ підключено test target + Karma/Jasmine конфігурацію (`angular.json`, `tsconfig.spec.json`, `src/test.ts`, `karma.conf.cjs`) для регулярного запуску `ng test`;
+   - лишається додати browser e2e smoke (Playwright/Cypress) для реального runtime-сценарію, включно з `attachments`;
+   - лишається розблокувати npm registry доступ у середовищі, щоб дотягнути `karma*` пакети та виконувати `npm test` у CI/локально без manual bootstrap.
 
 2. **Закриття edge-cases CQRS/Validation:**
    - ✅ додано unit coverage для `ApiErrorPresenterService` (REST/GraphQL validation mapping + transient retry + unknown fallback);
