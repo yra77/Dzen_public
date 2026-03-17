@@ -62,6 +62,9 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
               <p class="attachment-meta">📎 <a [href]="getAttachmentUrl(thread.attachment.storagePath)" target="_blank" rel="noreferrer">{{ thread.attachment.fileName }}</a> ({{ thread.attachment.contentType }})</p>
             </div>
           }
+          <div class="thread-actions">
+            <button type="button" (click)="openReplyModal(thread)">Відповісти</button>
+          </div>
         </div>
 
         <h3>Відповіді</h3>
@@ -106,6 +109,9 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
                       <p class="attachment-meta">📎 <a [href]="getAttachmentUrl(reply.attachment.storagePath)" target="_blank" rel="noreferrer">{{ reply.attachment.fileName }}</a> ({{ reply.attachment.contentType }})</p>
                     </div>
                   }
+                  <div class="thread-actions">
+                    <button type="button" (click)="openReplyModal(reply)">Відповісти</button>
+                  </div>
                 </article>
 
                 @if (reply.replies.length > 0) {
@@ -116,88 +122,97 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
           </ul>
         </ng-template>
 
-        <h3>Додати відповідь</h3>
-        <form class="form-grid" [formGroup]="replyForm" (ngSubmit)="submitReply()" data-testid="thread-reply-form">
-          <label>
-            Ім'я
-            <input type="text" formControlName="userName" data-testid="thread-user-name-input" />
-          </label>
+        @if (isReplyModalOpen && activeReplyTarget) {
+          <div class="reply-modal-backdrop" (click)="closeReplyModal()">
+            <div class="reply-modal" (click)="$event.stopPropagation()">
+              <h3>Нова відповідь</h3>
+              <p class="meta">Відповідь на: <strong>{{ activeReplyTarget.userName }}</strong> · #{{ activeReplyTarget.id }}</p>
 
-          <label>
-            Email
-            <input type="email" formControlName="email" data-testid="thread-email-input" />
-          </label>
+              <form class="form-grid" [formGroup]="replyForm" (ngSubmit)="submitReply()" data-testid="thread-reply-form">
+                <label>
+                  Ім'я
+                  <input type="text" formControlName="userName" data-testid="thread-user-name-input" />
+                </label>
 
-          <label class="wide">
-            Текст
-            <textarea #threadTextArea rows="5" formControlName="text" (input)="previewText()" data-testid="thread-text-input"></textarea>
-          </label>
+                <label>
+                  Email
+                  <input type="email" formControlName="email" data-testid="thread-email-input" />
+                </label>
 
-          <div class="wide text-toolbar" role="group" aria-label="Швидкі теги форматування" data-testid="thread-quick-tags">
-            <span class="text-toolbar-label">Швидкі теги:</span>
-            <button type="button" (click)="insertQuickTag('i', threadTextArea)">[i]</button>
-            <button type="button" (click)="insertQuickTag('strong', threadTextArea)">[strong]</button>
-            <button type="button" (click)="insertQuickTag('code', threadTextArea)">[code]</button>
-            <button type="button" (click)="insertQuickTag('a', threadTextArea)">[a]</button>
-          </div>
+                <label class="wide">
+                  Текст
+                  <textarea #threadTextArea rows="5" formControlName="text" (input)="previewText()" data-testid="thread-text-input"></textarea>
+                </label>
 
-          @if (textPreviewHtml) {
-            <div class="text-preview" data-testid="thread-preview-container">
-              <div class="text-preview-title">Preview повідомлення</div>
-              <div [innerHTML]="textPreviewHtml"></div>
-            </div>
-          }
+                <div class="wide text-toolbar" role="group" aria-label="Швидкі теги форматування" data-testid="thread-quick-tags">
+                  <span class="text-toolbar-label">Швидкі теги:</span>
+                  <button type="button" (click)="insertQuickTag('i', threadTextArea)">[i]</button>
+                  <button type="button" (click)="insertQuickTag('strong', threadTextArea)">[strong]</button>
+                  <button type="button" (click)="insertQuickTag('code', threadTextArea)">[code]</button>
+                  <button type="button" (click)="insertQuickTag('a', threadTextArea)">[a]</button>
+                </div>
 
-          @if (previewMessage) {
-            <p class="meta">{{ previewMessage }}</p>
-          }
-
-          <label class="wide">
-            Вкладення (png/jpg/gif/txt, до 1MB)
-            <input type="file" (change)="onAttachmentSelected($event)" accept=".txt,image/png,image/jpeg,image/gif,text/plain" data-testid="thread-attachment-input" />
-          </label>
-          @if (attachmentMessage) {
-            <p class="meta">{{ attachmentMessage }}</p>
-          }
-          @if (attachmentImagePreviewDataUrl) {
-            <figure class="attachment-selection-preview" data-testid="thread-selected-image-preview">
-              <img [src]="attachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
-              <figcaption class="meta">Preview вибраного зображення</figcaption>
-            </figure>
-          }
-
-          @if (captchaImageDataUrl) {
-            <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" data-testid="thread-captcha-image" />
-          }
-
-          @if (captchaMessage) {
-            <p class="error">{{ captchaMessage }}</p>
-          }
-
-          <label>
-            CAPTCHA (сума чисел)
-            <input type="text" formControlName="captchaAnswer" data-testid="thread-captcha-answer-input" />
-          </label>
-
-          <div class="actions wide">
-            <button type="button" (click)="reloadCaptcha()" data-testid="thread-captcha-reload-button">Оновити CAPTCHA</button>
-            <button type="submit" [disabled]="replyForm.invalid || isSubmitting" data-testid="thread-submit-button">Надіслати reply</button>
-          </div>
-
-          @if (submitMessage) {
-              <p data-testid="thread-submit-message">{{ submitMessage }}</p>
-            @if (showRetryHint) {
-              <p class="meta">Можна повторити запит без зміни даних форми.</p>
-            }
-            @if (submitValidationErrors.length > 0) {
-              <ul class="error-list">
-                @for (validationError of submitValidationErrors; track validationError.field) {
-                  <li><strong>{{ validationError.field }}</strong>: {{ validationError.messages.join('; ') }}</li>
+                @if (textPreviewHtml) {
+                  <div class="text-preview" data-testid="thread-preview-container">
+                    <div class="text-preview-title">Preview повідомлення</div>
+                    <div [innerHTML]="textPreviewHtml"></div>
+                  </div>
                 }
-              </ul>
-            }
-          }
-        </form>
+
+                @if (previewMessage) {
+                  <p class="meta">{{ previewMessage }}</p>
+                }
+
+                <label class="wide">
+                  Вкладення (png/jpg/gif/txt, до 1MB)
+                  <input type="file" (change)="onAttachmentSelected($event)" accept=".txt,image/png,image/jpeg,image/gif,text/plain" data-testid="thread-attachment-input" />
+                </label>
+                @if (attachmentMessage) {
+                  <p class="meta">{{ attachmentMessage }}</p>
+                }
+                @if (attachmentImagePreviewDataUrl) {
+                  <figure class="attachment-selection-preview" data-testid="thread-selected-image-preview">
+                    <img [src]="attachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
+                    <figcaption class="meta">Preview вибраного зображення</figcaption>
+                  </figure>
+                }
+
+                @if (captchaImageDataUrl) {
+                  <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" data-testid="thread-captcha-image" />
+                }
+
+                @if (captchaMessage) {
+                  <p class="error">{{ captchaMessage }}</p>
+                }
+
+                <label>
+                  CAPTCHA (сума чисел)
+                  <input type="text" formControlName="captchaAnswer" data-testid="thread-captcha-answer-input" />
+                </label>
+
+                <div class="actions wide">
+                  <button type="button" (click)="reloadCaptcha()" data-testid="thread-captcha-reload-button">Оновити CAPTCHA</button>
+                  <button type="button" (click)="closeReplyModal()">Закрити</button>
+                  <button type="submit" [disabled]="replyForm.invalid || isSubmitting" data-testid="thread-submit-button">Створити коментар</button>
+                </div>
+
+                @if (submitMessage) {
+                  <p data-testid="thread-submit-message">{{ submitMessage }}</p>
+                  @if (showRetryHint) {
+                    <p class="meta">Можна повторити запит без зміни даних форми.</p>
+                  }
+                  @if (submitValidationErrors.length > 0) {
+                    <ul class="error-list">
+                      @for (validationError of submitValidationErrors; track validationError.field) {
+                        <li><strong>{{ validationError.field }}</strong>: {{ validationError.messages.join('; ') }}</li>
+                      }
+                    </ul>
+                  }
+                }
+              </form>
+            </div>
+          </div>
+        }
       }
     </section>
   `,
@@ -210,8 +225,11 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
       .attachment-text { white-space: pre-wrap; background: #f8fafc; border: 1px solid #d9e0ec; border-radius: 8px; padding: 8px; }
       .attachment-selection-preview { margin: 0; }
       .thread-node { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; margin-top: 10px; background: #fcfcfd; }
+      .thread-actions { margin-top: 8px; display: flex; justify-content: flex-end; }
       .tree { list-style: none; margin: 0; padding-left: 14px; }
       .captcha { width: 160px; height: 60px; border: 1px solid #d9e0ec; border-radius: 6px; }
+      .reply-modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
+      .reply-modal { width: min(760px, 100%); max-height: 92vh; overflow-y: auto; background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25); }
       .text-preview { border: 1px dashed #d0d5dd; border-radius: 8px; padding: 8px; background: #f8fafc; }
       .text-preview-title { color: #344054; font-size: 14px; margin-bottom: 6px; font-weight: 600; }
       .text-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -250,6 +268,10 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   previewMessage = '';
   /** Поточний статус realtime-з'єднання SignalR. */
   signalRStatusMessage = '';
+  /** Поточний коментар, на який користувач відповідає у модальному вікні. */
+  activeReplyTarget: CommentNode | null = null;
+  /** Прапорець видимості модального вікна створення відповіді. */
+  isReplyModalOpen = false;
   attachmentMessage = '';
   attachment: CreateCommentAttachmentRequest | null = null;
   /** Data URL для preview вибраного зображення перед submit. */
@@ -408,7 +430,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
    * Надсилає нову відповідь у поточну гілку.
    */
   submitReply(): void {
-    if (!this.thread || this.replyForm.invalid || !this.captchaChallengeId) {
+    if (!this.activeReplyTarget || this.replyForm.invalid || !this.captchaChallengeId) {
       return;
     }
 
@@ -425,7 +447,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
         email: raw.email,
         homePage: null,
         text: raw.text,
-        parentId: this.thread.id,
+        parentId: this.activeReplyTarget.id,
         captchaToken: `${this.captchaChallengeId}:${raw.captchaAnswer}`,
         attachment: this.attachment
       })
@@ -438,6 +460,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
           this.attachment = null;
           this.attachmentMessage = '';
           this.attachmentImagePreviewDataUrl = '';
+          this.closeReplyModal();
           this.loadThread();
           this.reloadCaptcha();
           this.isSubmitting = false;
@@ -451,6 +474,33 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
           this.isSubmitting = false;
         }
       });
+  }
+
+  /**
+   * Відкриває модальне вікно створення відповіді для вибраного коментаря.
+   */
+  openReplyModal(comment: CommentNode): void {
+    this.activeReplyTarget = comment;
+    this.isReplyModalOpen = true;
+    this.submitMessage = '';
+    this.submitValidationErrors = [];
+    this.showRetryHint = false;
+    this.reloadCaptcha();
+  }
+
+  /**
+   * Закриває модальне вікно відповіді та очищає тимчасові стани форми.
+   */
+  closeReplyModal(): void {
+    this.isReplyModalOpen = false;
+    this.activeReplyTarget = null;
+    this.replyForm.controls.text.reset('');
+    this.replyForm.controls.captchaAnswer.reset('');
+    this.textPreviewHtml = '';
+    this.previewMessage = '';
+    this.attachment = null;
+    this.attachmentMessage = '';
+    this.attachmentImagePreviewDataUrl = '';
   }
 
   /**

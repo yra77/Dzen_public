@@ -134,6 +134,17 @@ describe('ThreadPageComponent smoke', () => {
       text: 'Reply text',
       captchaAnswer: '7'
     });
+    component.activeReplyTarget = {
+      id: 'root-100',
+      parentId: null,
+      userName: 'Root',
+      email: 'root@example.com',
+      homePage: null,
+      text: 'Root text',
+      createdAtUtc: '2026-03-17T10:00:00Z',
+      attachment: null,
+      replies: []
+    };
 
     component.submitReply();
 
@@ -197,6 +208,17 @@ describe('ThreadPageComponent smoke', () => {
       text: 'Reply with attachment',
       captchaAnswer: '7'
     });
+    component.activeReplyTarget = {
+      id: 'root-100',
+      parentId: null,
+      userName: 'Root',
+      email: 'root@example.com',
+      homePage: null,
+      text: 'Root text',
+      createdAtUtc: '2026-03-17T10:00:00Z',
+      attachment: null,
+      replies: []
+    };
 
     component.submitReply();
 
