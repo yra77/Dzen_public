@@ -1,19 +1,20 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 57).
+Останнє оновлення: 2026-03-17 (ітерація 58).
 
 ## Що перевірено в цій ітерації
 
-- Для P0-напряму **"edge-cases CQRS/Validation"** додано нові інтеграційні boundary-тести для `commentTree`:
-  - **REST recursion-sort boundary:** `GetThread_WithNestedReplies_SortsRecursivelyByUserNameAsc` перевіряє, що сортування `sortBy=UserName&sortDirection=Asc` застосовується рекурсивно (не лише до першого рівня, а й до вкладених replies).
-  - **GraphQL recursion-sort boundary:** `GraphQlCommentTree_WithNestedReplies_SortsRecursivelyByUserNameAsc` фіксує той самий контракт для `commentTree(rootCommentId, sortBy: UserName, sortDirection: Asc)`.
+- Для P0-напряму **"edge-cases CQRS/Validation"** додано нові інтеграційні mixed boundary-тести для `comments` (REST + GraphQL):
+  - **REST trim + filter + sort boundary:** `GetComments_WithTrimmedFilterAndEmailSort_ReturnsEmailMatchedItemsInOrder` перевіряє trim фільтра (`%20marker%20`), фільтрацію по тексту та сортування за `Email Desc`.
+  - **GraphQL mixed pagination boundary:** `GraphQlComments_WithTextFilterAndSecondPage_ReturnsSingleExpectedItem` фіксує контракт для `comments(page:2,pageSize:2,sortBy:UserName,sortDirection:Asc,filter:<token>)` з очікуваним single-item slice на другій сторінці.
 - Дотримано вимогу документування: нові тестові методи додані з XML-коментарями.
-- Checklist синхронізовано з фактичним станом: блок mixed `commentTree` sort/filter boundary посилено, але лишається доповнення API/README прикладами boundary-помилок та e2e smoke.
+- Доповнено `README.md` прикладами boundary-помилок для `Page/PageSize`, `CaptchaToken` та `Attachment` (REST/GraphQL), як і вимагалось у backlog P0.
+- Checklist синхронізовано з фактичним станом: по edge-cases лишається e2e smoke (frontend/realtime) та production-блоки RabbitMQ/load-test/Demo.
 
 ## Підсумок відповідності
 
-- **Повністю виконано:** 32 пункти.
-- **Частково виконано:** 2 пункти.
+- **Повністю виконано:** 33 пункти.
+- **Частково виконано:** 1 пункт.
 - **Не виконано:** 3 пункти.
 
 > Висновок: **100% відповідності ТЗ ще немає**.
@@ -42,8 +43,9 @@
    - додати smoke-перевірку UX-статусів realtime reconnect (щоб зафіксувати новий fallback у автоперевірках).
 
 2. **Закриття edge-cases CQRS/Validation:**
-   - завершити інтеграційні кейси для mixed `commentTree` sort/filter boundary-сценаріїв (рекурсивний sort вже покрито, лишаються розширені filter-комбінації);
-   - доповнити API/README прикладами boundary-помилок (`Page/PageSize`, `CaptchaToken`, attachment).
+   - ✅ додано mixed REST/GraphQL boundary-тести для sort/filter/pagination;
+   - ✅ API/README доповнено прикладами boundary-помилок (`Page/PageSize`, `CaptchaToken`, attachment);
+   - лишається невеликий e2e-smoke шар для фіксації цих контрактів на рівні UI (Angular).
 
 ### P1
 
