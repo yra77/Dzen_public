@@ -1,5 +1,7 @@
 using System.Text;
 using System.Text.Json;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using Comments.Application.Abstractions;
 using Comments.Application.DTOs;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,8 +11,29 @@ using RabbitMQ.Client.Events;
 
 namespace Comments.Api.Infrastructure;
 
+/// <summary>
+/// Фоновий consumer RabbitMQ для черг індексації та обробки вкладень.
+/// </summary>
 public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, IDisposable
 {
+    private static readonly Meter ConsumerMeter = new("Comments.Api.RabbitMqConsumer");
+    private static readonly Counter<long> SuccessCounter = ConsumerMeter.CreateCounter<long>(
+        "comments_rabbitmq_consumer_success_total",
+        unit: "messages",
+        description: "Кількість успішно оброблених повідомлень consumer-ом RabbitMQ.");
+    private static readonly Counter<long> FailedCounter = ConsumerMeter.CreateCounter<long>(
+        "comments_rabbitmq_consumer_failed_total",
+        unit: "messages",
+        description: "Кількість помилок обробки повідомлень consumer-ом RabbitMQ.");
+    private static readonly Counter<long> RetryCounter = ConsumerMeter.CreateCounter<long>(
+        "comments_rabbitmq_consumer_retry_total",
+        unit: "messages",
+        description: "Кількість повторних публікацій повідомлень після помилки обробки.");
+    private static readonly Histogram<double> LatencyHistogram = ConsumerMeter.CreateHistogram<double>(
+        "comments_rabbitmq_consumer_latency_ms",
+        unit: "ms",
+        description: "Час обробки одного повідомлення consumer-ом RabbitMQ.");
+
     private readonly RabbitMqOptions _options;
     private readonly ILogger<RabbitMqTaskQueuesConsumerHostedService> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
@@ -99,6 +122,9 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Формує стандартні аргументи queue з налаштуванням dead-letter маршрутизації.
+    /// </summary>
     private Dictionary<string, object> CreateQueueArguments(string queueName)
     {
         var deadLetterQueueName = BuildDeadLetterQueueName(queueName);
@@ -109,8 +135,14 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
         };
     }
 
+    /// <summary>
+    /// Генерує ім'я DLQ для основної queue.
+    /// </summary>
     private string BuildDeadLetterQueueName(string queueName) => $"{queueName}{_options.DeadLetterQueueSuffix}";
 
+    /// <summary>
+    /// Підписує RabbitMQ consumer на queue та виконує обробку повідомлень із retry/DLQ політикою.
+    /// </summary>
     private void StartConsumer(string queueName, string workerName, Func<CommentDto, bool> processComment)
     {
         if (_channel is null)
@@ -121,6 +153,7 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
         var consumer = new AsyncEventingBasicConsumer(_channel);
         consumer.Received += async (_, eventArgs) =>
         {
+            var processingStartedAt = Stopwatch.GetTimestamp();
             try
             {
                 var payload = Encoding.UTF8.GetString(eventArgs.Body.ToArray());
@@ -129,6 +162,7 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
                 if (comment is null)
                 {
                     _logger.LogWarning("[{Worker}] Received empty or invalid payload", workerName);
+                    RecordFailedProcessing(workerName, "invalid_payload", processingStartedAt);
                     _channel.BasicNack(eventArgs.DeliveryTag, multiple: false, requeue: false);
                     return;
                 }
@@ -142,6 +176,7 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
                     if (!marked)
                     {
                         _logger.LogInformation("[{Worker}] Skipping duplicate message {MessageId}", workerName, messageId);
+                        RecordSuccessProcessing(workerName, "duplicate", processingStartedAt);
                         _channel.BasicAck(eventArgs.DeliveryTag, multiple: false);
                         return;
                     }
@@ -153,11 +188,13 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
                     _logger.LogInformation("[file-processing] skipped comment {CommentId} without attachment", comment.Id);
                 }
 
+                RecordSuccessProcessing(workerName, "processed", processingStartedAt);
                 _channel.BasicAck(eventArgs.DeliveryTag, multiple: false);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[{Worker}] Failed to process message", workerName);
+                RecordFailedProcessing(workerName, "exception", processingStartedAt);
 
                 var retryCount = ReadRetryCount(eventArgs.BasicProperties?.Headers);
                 if (retryCount >= _options.MaxRetryCount)
@@ -176,6 +213,7 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
                     : new Dictionary<string, object>(eventArgs.BasicProperties.Headers);
 
                 updatedProperties.Headers[_options.RetryHeaderName] = retryCount + 1;
+                RetryCounter.Add(1, new KeyValuePair<string, object?>("worker", workerName));
 
                 _channel.BasicPublish(
                     exchange: _options.ExchangeName,
@@ -190,6 +228,9 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
         _channel.BasicConsume(queue: queueName, autoAck: false, consumer: consumer);
     }
 
+    /// <summary>
+    /// Зчитує поточний retry-лічильник із headers повідомлення.
+    /// </summary>
     private int ReadRetryCount(IDictionary<string, object>? headers)
     {
         if (headers is null || !headers.TryGetValue(_options.RetryHeaderName, out var value))
@@ -210,6 +251,38 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
             byte[] bytes when int.TryParse(Encoding.UTF8.GetString(bytes), out var parsed) => parsed,
             _ => 0
         };
+    }
+
+    /// <summary>
+    /// Реєструє успішну обробку повідомлення та її latency.
+    /// </summary>
+    private static void RecordSuccessProcessing(string workerName, string outcome, long startedAtTimestamp)
+    {
+        SuccessCounter.Add(
+            1,
+            new KeyValuePair<string, object?>("worker", workerName),
+            new KeyValuePair<string, object?>("outcome", outcome));
+
+        LatencyHistogram.Record(
+            Stopwatch.GetElapsedTime(startedAtTimestamp).TotalMilliseconds,
+            new KeyValuePair<string, object?>("worker", workerName),
+            new KeyValuePair<string, object?>("result", "success"));
+    }
+
+    /// <summary>
+    /// Реєструє помилку обробки повідомлення та її latency.
+    /// </summary>
+    private static void RecordFailedProcessing(string workerName, string reason, long startedAtTimestamp)
+    {
+        FailedCounter.Add(
+            1,
+            new KeyValuePair<string, object?>("worker", workerName),
+            new KeyValuePair<string, object?>("reason", reason));
+
+        LatencyHistogram.Record(
+            Stopwatch.GetElapsedTime(startedAtTimestamp).TotalMilliseconds,
+            new KeyValuePair<string, object?>("worker", workerName),
+            new KeyValuePair<string, object?>("result", "failed"));
     }
 
     public void Dispose()
