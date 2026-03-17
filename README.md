@@ -149,6 +149,93 @@ k6 run --summary-export=docs/artifacts/k6-middle-summary.json load-test/comments
 Таким чином, для UI можна уніфікувати відображення повідомлень через мапу `field -> messages[]` як для REST (`errors`), так і для GraphQL (`extensions.validationErrors`).
 
 
+
+## Boundary-приклади валідації (REST/GraphQL)
+
+### REST: невалідні `page/pageSize`
+
+Запит:
+
+```http
+GET /api/comments?page=0&pageSize=0
+```
+
+Відповідь (`400 Bad Request`):
+
+```json
+{
+  "status": 400,
+  "errors": {
+    "Page": ["'Page' must be greater than '0'."],
+    "PageSize": ["'Page Size' must be between 1 and 100. You entered 0."]
+  }
+}
+```
+
+### REST: невалідний `captchaToken` у create
+
+Запит:
+
+```http
+POST /api/comments
+Content-Type: application/json
+```
+
+```json
+{
+  "userName": "User123",
+  "email": "user@example.com",
+  "text": "Hello",
+  "captchaToken": "wrong-token"
+}
+```
+
+Відповідь (`400 Bad Request`):
+
+```json
+{
+  "status": 400,
+  "errors": {
+    "Request.CaptchaToken": ["Captcha validation failed."]
+  }
+}
+```
+
+### GraphQL: невалідне вкладення
+
+Запит:
+
+```graphql
+mutation {
+  addComment(input: {
+    userName: "User123",
+    email: "user@example.com",
+    text: "Hello",
+    captchaToken: "1234",
+    attachment: {
+      fileName: "note.pdf",
+      contentType: "application/pdf",
+      base64Content: "SGVsbG8="
+    }
+  }) {
+    id
+  }
+}
+```
+
+Відповідь (`errors[0].extensions`):
+
+```json
+{
+  "code": "BAD_USER_INPUT",
+  "validationErrors": {
+    "Request.Attachment.ContentType": [
+      "The specified condition was not met for 'Request.Attachment.ContentType'."
+    ]
+  }
+}
+```
+
 ## Наступні кроки (по ТЗ)
 
 - ✅ Підключено EF Core + підтримку SQL Server (через `Persistence:Provider=SqlServer`).

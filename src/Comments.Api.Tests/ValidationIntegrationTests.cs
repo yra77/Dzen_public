@@ -808,6 +808,98 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
     }
 
 
+    /// <summary>
+    /// Verifies REST mixed sort/filter boundary trims filter and matches by email field.
+    /// </summary>
+    [Fact]
+    public async Task GetComments_WithTrimmedFilterAndEmailSort_ReturnsEmailMatchedItemsInOrder()
+    {
+        using var client = _factory.CreateClient();
+
+        var unique = Guid.NewGuid().ToString("N");
+
+        await CreateCommentAsync(client, $"UserOne{unique}", $"one-{unique}@example.com", "Contains marker");
+        await CreateCommentAsync(client, $"UserTwo{unique}", $"two-{unique}@example.com", "Contains marker");
+        await CreateCommentAsync(client, $"UserThree{unique}", $"zzz-{unique}@example.com", "No marker");
+
+        var response = await client.GetAsync($"/api/comments?page=1&pageSize=100&sortBy=Email&sortDirection=Desc&filter=%20marker%20");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<PagedResult<CommentDto>>();
+        Assert.NotNull(payload);
+        Assert.Equal(2, payload!.TotalCount);
+
+        var uniqueEmails = payload.Items
+            .Select(x => x.Email)
+            .Where(x => x.Contains(unique, StringComparison.Ordinal))
+            .ToArray();
+
+        Assert.Equal(new[] { $"two-{unique}@example.com", $"one-{unique}@example.com" }, uniqueEmails);
+    }
+
+    /// <summary>
+    /// Verifies GraphQL mixed sort/filter boundary matches by text and preserves pagination contract.
+    /// </summary>
+    [Fact]
+    public async Task GraphQlComments_WithTextFilterAndSecondPage_ReturnsSingleExpectedItem()
+    {
+        using var client = _factory.CreateClient();
+
+        var unique = Guid.NewGuid().ToString("N");
+
+        await CreateCommentAsync(client, $"Echo{unique}", $"echo-{unique}@example.com", $"News {unique}");
+        await CreateCommentAsync(client, $"Delta{unique}", $"delta-{unique}@example.com", $"News {unique}");
+        await CreateCommentAsync(client, $"Alpha{unique}", $"alpha-{unique}@example.com", $"News {unique}");
+
+        var body = new
+        {
+            query = @"query($page: Int!, $pageSize: Int!, $sortBy: CommentSortField!, $sortDirection: CommentSortDirection!, $filter: String) {
+  comments(page: $page, pageSize: $pageSize, sortBy: $sortBy, sortDirection: $sortDirection, filter: $filter) {
+    page
+    pageSize
+    totalCount
+    items {
+      userName
+    }
+  }
+}",
+            variables = new
+            {
+                page = 2,
+                pageSize = 2,
+                sortBy = "UserName",
+                sortDirection = "Asc",
+                filter = unique
+            }
+        };
+
+        var response = await client.PostAsJsonAsync("/graphql", body);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<GraphQlResponse>();
+        Assert.NotNull(payload);
+        Assert.Null(payload!.Errors);
+        Assert.True(payload.Data.HasValue);
+
+        var comments = payload.Data!.Value.GetProperty("comments");
+        Assert.Equal(2, comments.GetProperty("page").GetInt32());
+        Assert.Equal(2, comments.GetProperty("pageSize").GetInt32());
+        Assert.Equal(3, comments.GetProperty("totalCount").GetInt32());
+
+        var uniqueNames = comments
+            .GetProperty("items")
+            .EnumerateArray()
+            .Select(x => x.GetProperty("userName").GetString())
+            .Where(x => x is not null && x.Contains(unique, StringComparison.Ordinal))
+            .Cast<string>()
+            .ToArray();
+
+        Assert.Single(uniqueNames);
+        Assert.Equal($"Echo{unique}", uniqueNames[0]);
+    }
+
     [Fact]
     public async Task GetComments_WithSortPaginationAndFilter_ReturnsFilteredPageSlice()
     {
