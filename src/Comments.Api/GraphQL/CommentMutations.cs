@@ -4,8 +4,14 @@ using MediatR;
 
 namespace Comments.Api.GraphQL;
 
+/// <summary>
+/// GraphQL mutation resolvers для створення коментарів і відповідей.
+/// </summary>
 public sealed class CommentMutations
 {
+    /// <summary>
+    /// Створює новий коментар (root або reply залежно від ParentId).
+    /// </summary>
     public Task<CommentDto> AddComment(
         [Service] IMediator mediator,
         CreateCommentInput input,
@@ -28,6 +34,9 @@ public sealed class CommentMutations
         return mediator.Send(new CreateCommentCommand(request), cancellationToken);
     }
 
+    /// <summary>
+    /// Створює відповідь на існуючий коментар.
+    /// </summary>
     public Task<CommentDto> AddReply(
         [Service] IMediator mediator,
         AddReplyInput input,
@@ -50,6 +59,9 @@ public sealed class CommentMutations
         return mediator.Send(new CreateCommentCommand(request), cancellationToken);
     }
 
+    /// <summary>
+    /// Alias для <see cref="AddComment"/> з більш загальною назвою mutation.
+    /// </summary>
     public Task<CommentDto> CreateComment(
         [Service] IMediator mediator,
         CreateCommentInput input,
