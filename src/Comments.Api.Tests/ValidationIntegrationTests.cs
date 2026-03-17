@@ -21,6 +21,92 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
     }
 
     /// <summary>
+    /// Verifies thread sorting is applied recursively for each nesting level in REST response.
+    /// </summary>
+    [Fact]
+    public async Task GetThread_WithNestedReplies_SortsRecursivelyByUserNameAsc()
+    {
+        using var client = _factory.CreateClient();
+
+        var unique = Guid.NewGuid().ToString("N");
+        var root = await CreateCommentAsync(client, $"Root{unique}", $"root-{unique}@example.com", "Root");
+
+        await CreateCommentAsync(client, $"Zulu{unique}", $"zulu-{unique}@example.com", "Reply Z", root.Id);
+        var replyAlpha = await CreateCommentAsync(client, $"Alpha{unique}", $"alpha-{unique}@example.com", "Reply A", root.Id);
+
+        await CreateCommentAsync(client, $"ChildZulu{unique}", $"child-z-{unique}@example.com", "Child Z", replyAlpha.Id);
+        await CreateCommentAsync(client, $"ChildAlpha{unique}", $"child-a-{unique}@example.com", "Child A", replyAlpha.Id);
+
+        var threadResponse = await client.GetAsync($"/api/comments/{root.Id}/thread?sortBy=UserName&sortDirection=Asc");
+
+        Assert.Equal(HttpStatusCode.OK, threadResponse.StatusCode);
+
+        var thread = await threadResponse.Content.ReadFromJsonAsync<CommentDto>();
+        Assert.NotNull(thread);
+        Assert.Equal(new[] { $"Alpha{unique}", $"Zulu{unique}" }, thread!.Replies.Select(x => x.UserName).ToArray());
+        Assert.Equal(new[] { $"ChildAlpha{unique}", $"ChildZulu{unique}" }, thread.Replies[0].Replies.Select(x => x.UserName).ToArray());
+    }
+
+    /// <summary>
+    /// Verifies GraphQL commentTree applies sorting recursively for nested reply levels.
+    /// </summary>
+    [Fact]
+    public async Task GraphQlCommentTree_WithNestedReplies_SortsRecursivelyByUserNameAsc()
+    {
+        using var client = _factory.CreateClient();
+
+        var unique = Guid.NewGuid().ToString("N");
+        var root = await CreateCommentAsync(client, $"Root{unique}", $"root-{unique}@example.com", "Root");
+
+        await CreateCommentAsync(client, $"Zulu{unique}", $"zulu-{unique}@example.com", "Reply Z", root.Id);
+        var replyAlpha = await CreateCommentAsync(client, $"Alpha{unique}", $"alpha-{unique}@example.com", "Reply A", root.Id);
+
+        await CreateCommentAsync(client, $"ChildZulu{unique}", $"child-z-{unique}@example.com", "Child Z", replyAlpha.Id);
+        await CreateCommentAsync(client, $"ChildAlpha{unique}", $"child-a-{unique}@example.com", "Child A", replyAlpha.Id);
+
+        var body = new
+        {
+            query = @"query($rootCommentId: UUID!) {
+  commentTree(rootCommentId: $rootCommentId, sortBy: UserName, sortDirection: Asc) {
+    replies {
+      userName
+      replies {
+        userName
+      }
+    }
+  }
+}",
+            variables = new { rootCommentId = root.Id }
+        };
+
+        var response = await client.PostAsJsonAsync("/graphql", body);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<GraphQlResponse>();
+        Assert.NotNull(payload);
+        Assert.Null(payload!.Errors);
+        Assert.True(payload.Data.HasValue);
+
+        var replies = payload.Data!.Value
+            .GetProperty("commentTree")
+            .GetProperty("replies")
+            .EnumerateArray()
+            .ToArray();
+
+        Assert.Equal($"Alpha{unique}", replies[0].GetProperty("userName").GetString());
+        Assert.Equal($"Zulu{unique}", replies[1].GetProperty("userName").GetString());
+
+        var nestedReplies = replies[0]
+            .GetProperty("replies")
+            .EnumerateArray()
+            .Select(x => x.GetProperty("userName").GetString())
+            .ToArray();
+
+        Assert.Equal(new[] { $"ChildAlpha{unique}", $"ChildZulu{unique}" }, nestedReplies);
+    }
+
+    /// <summary>
     /// Verifies REST validation rejects a filter value longer than supported limit.
     /// </summary>
     [Fact]
