@@ -26,7 +26,7 @@ body {
 .form-grid .wide {
   grid-column: 1 / -1;
 }
-input, textarea, select, button {
+input, textarea, select {
   width: 100%;
   box-sizing: border-box;
   margin-top: 4px;
@@ -35,10 +35,13 @@ input, textarea, select, button {
   border-radius: 8px;
 }
 button {
+  width: auto;
   cursor: pointer;
   background: #1f6feb;
   color: white;
   border: none;
+  margin-top: 4px;
+  padding: 8px 12px;
 }
 button:disabled {
   opacity: 0.6;
