@@ -75,6 +75,11 @@ k6 run --summary-export=docs/artifacts/k6-middle-summary.json load-test/comments
 `docs/load-test-middle-results.md` та оновіть посилання на актуальний
 `summary`-артефакт.
 
+## Demo
+
+- Запис ключових сценаріїв (3–5 хв): **pending**.
+- Лінк на відео для тестування/приймання: `TODO: add demo video URL`.
+
 ## Актуальний roadmap продовження (ітерація 15)
 
 - **P0 (критично):**
