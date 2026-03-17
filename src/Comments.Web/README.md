@@ -17,6 +17,20 @@ npm start
 
 За замовчуванням API очікується на `http://localhost:5000` (див. `src/environments/environment.ts`).
 
+
+### Швидкий bootstrap для internal npm mirror
+
+```bash
+cd src/Comments.Web
+NPM_REGISTRY_URL=https://npm.example.local/repository/npm-group/ \
+NPM_REGISTRY_TOKEN=<token_if_required> \
+./scripts/bootstrap-npm-auth.sh
+npm install
+```
+
+- Скрипт створює/оновлює локальний `src/Comments.Web/.npmrc` і прибирає ручні кроки для `npm test`/`npm run e2e:smoke` у закритих середовищах.
+- Для шаблону конфіга можна використати `src/Comments.Web/.npmrc.internal-mirror.example`.
+
 ## Unit/Component тести
 
 ```bash

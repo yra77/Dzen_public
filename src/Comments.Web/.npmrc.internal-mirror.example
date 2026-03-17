@@ -1,0 +1,8 @@
+# Example local npm configuration for restricted environments.
+# Copy to .npmrc and replace placeholders with real values from your DevOps team.
+
+registry=https://npm.example.local/repository/npm-group/
+always-auth=true
+
+# Optional token-based auth (if your mirror requires it)
+# //npm.example.local/repository/npm-group/:_authToken=YOUR_TOKEN
