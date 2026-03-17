@@ -12,4 +12,12 @@ public interface IProcessedMessageRepository
     /// <param name="cancellationToken">Токен скасування.</param>
     /// <returns><c>true</c>, якщо повідомлення позначено вперше; інакше <c>false</c>.</returns>
     Task<bool> TryMarkProcessedAsync(string messageId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Видаляє застарілі записи ідемпотентності до вказаної UTC-мітки часу.
+    /// </summary>
+    /// <param name="olderThanUtc">Граничний час (UTC): видаляються всі записи старіші за нього.</param>
+    /// <param name="cancellationToken">Токен скасування.</param>
+    /// <returns>Кількість видалених записів.</returns>
+    Task<int> CleanupOlderThanAsync(DateTime olderThanUtc, CancellationToken cancellationToken = default);
 }

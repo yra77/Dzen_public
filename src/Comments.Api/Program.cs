@@ -17,6 +17,7 @@ var captchaOptions = builder.Configuration.GetSection("Captcha").Get<CaptchaOpti
 var attachmentStorageOptions = builder.Configuration.GetSection("Attachments").Get<LocalAttachmentStorageOptions>() ?? new LocalAttachmentStorageOptions();
 var signalrOptions = builder.Configuration.GetSection("SignalR").Get<SignalROptions>() ?? new SignalROptions();
 var elasticsearchOptions = builder.Configuration.GetSection("Elasticsearch").Get<ElasticsearchOptions>() ?? new ElasticsearchOptions();
+var processedMessageCleanupOptions = builder.Configuration.GetSection(ProcessedMessageCleanupOptions.SectionName).Get<ProcessedMessageCleanupOptions>() ?? new ProcessedMessageCleanupOptions();
 
 builder.Services.AddDbContext<CommentsDbContext>(options =>
 {
@@ -77,11 +78,13 @@ else
 if (rabbitMqOptions.Enabled)
 {
     builder.Services.AddSingleton(rabbitMqOptions);
+    builder.Services.AddSingleton(processedMessageCleanupOptions);
     builder.Services.AddScoped<ICommentCreatedChannel, RabbitMqCommentCreatedPublisher>();
 
     if (rabbitMqOptions.ConsumerEnabled)
     {
         builder.Services.AddHostedService<RabbitMqTaskQueuesConsumerHostedService>();
+        builder.Services.AddHostedService<ProcessedMessageCleanupHostedService>();
     }
 }
 
