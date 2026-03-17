@@ -4,6 +4,9 @@ using Comments.Application.Abstractions;
 
 namespace Comments.Application.Features.Comments.Commands.CreateComment;
 
+/// <summary>
+/// Валідатор команди створення коментаря відповідно до контракту ТЗ.
+/// </summary>
 public sealed class CreateCommentCommandValidator : AbstractValidator<CreateCommentCommand>
 {
     private static readonly Regex UserNameRegex = new("^[a-zA-Z0-9]+$", RegexOptions.Compiled);
@@ -15,6 +18,10 @@ public sealed class CreateCommentCommandValidator : AbstractValidator<CreateComm
         "image/gif"
     };
 
+    /// <summary>
+    /// Ініціалізує валідатор і реєструє набір правил для створення коментаря.
+    /// </summary>
+    /// <param name="captchaValidator">Сервіс перевірки captcha-токена.</param>
     public CreateCommentCommandValidator(ICaptchaValidator captchaValidator)
     {
         RuleFor(x => x.Request.UserName)
@@ -48,6 +55,11 @@ public sealed class CreateCommentCommandValidator : AbstractValidator<CreateComm
             .WithMessage("Attachment is invalid. Ensure file name, content type and base64 payload are valid.");
     }
 
+    /// <summary>
+    /// Перевіряє, що homepage є абсолютним HTTP/HTTPS URL.
+    /// </summary>
+    /// <param name="homePage">URL домашньої сторінки, введений користувачем.</param>
+    /// <returns><see langword="true"/>, якщо URL валідний або порожній; інакше <see langword="false"/>.</returns>
     private static bool BeValidHomePageUrl(string? homePage)
     {
         if (string.IsNullOrWhiteSpace(homePage))
@@ -59,6 +71,11 @@ public sealed class CreateCommentCommandValidator : AbstractValidator<CreateComm
                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
     }
 
+    /// <summary>
+    /// Перевіряє коректність вкладення: назва файлу, MIME-тип та Base64-контент.
+    /// </summary>
+    /// <param name="attachment">Модель вкладення.</param>
+    /// <returns><see langword="true"/>, якщо вкладення проходить всі перевірки.</returns>
     private static bool HasValidAttachment(AttachmentUploadRequest? attachment)
     {
         if (attachment is null)
