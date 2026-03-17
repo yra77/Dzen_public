@@ -1,14 +1,13 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 80).
+Останнє оновлення: 2026-03-17 (ітерація 81).
 
 ## Що перевірено в цій ітерації
 
-- Закрито операційний blocker локального запуску frontend-тестів у закритих середовищах без прямого доступу до `registry.npmjs.org` (`src/Comments.Web/scripts/bootstrap-npm-auth.sh`):
-  - додано bootstrap-скрипт генерації локального `.npmrc` через `NPM_REGISTRY_URL` (+ optional `NPM_REGISTRY_TOKEN`);
-  - додано шаблон `src/Comments.Web/.npmrc.internal-mirror.example` для швидкого старту в DevOps-контурі;
-  - `src/Comments.Web/README.md` доповнено коротким runbook, який прибирає manual bootstrap перед `npm test`/`npm run e2e:smoke`.
-- Оновлено чекліст: frontend npm-mirror bootstrap переведено в `✅ виконано`, наступним кроком лишається лише фінальне підставлення фактичного demo-video URL у `README.md`.
+- Посилено CQRS/Validation quality-gate для MediatR pipeline (`src/Comments.Application.Tests/ValidationBehaviorTests.cs`):
+  - додано unit-тест `Handle_WithCanceledToken_ThrowsOperationCanceledExceptionAndDoesNotCallNext`;
+  - зафіксовано контракт, що при вже скасованому `CancellationToken` валідація переривається `OperationCanceledException`, а `next`-handler не викликається.
+- Оновлено цей чекліст: зафіксовано прогрес по стабілізації CQRS edge-case, у фінальному delivery-пакеті все ще лишається підставити фактичний demo-video URL у `README.md`.
 
 ## Підсумок відповідності
 
@@ -92,6 +91,7 @@
    - ✅ додано негативні attachment edge-case тести: REST (`invalid content-type`) та GraphQL (`invalid base64`);
    - ✅ додано e2e-smoke UI-фіксацію boundary-контрактів attachment на Angular-рівні (`>1MB`, `unsupported MIME`).
    - ✅ додано інтеграційні тести агрегації множинних validation-помилок через REST middleware та GraphQL error-filter.
+   - ✅ додано unit edge-case тест cancellation-token для `ValidationBehavior` (гарантія, що `next` не викликається після скасування).
 
 
 ### P1
