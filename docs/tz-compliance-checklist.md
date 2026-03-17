@@ -1,14 +1,14 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 56).
+Останнє оновлення: 2026-03-17 (ітерація 57).
 
 ## Що перевірено в цій ітерації
 
-- Для Angular SPA закрито ще два edge-case UX-напрями з P0:
-  - **Preview fallback:** у `RootListPageComponent` і `ThreadPageComponent` додано безпечний fallback, якщо `/preview` тимчасово недоступний — користувач отримує зрозуміле повідомлення, форма лишається працездатною, submit не блокується.
-  - **SignalR reconnection-state:** у обох сторінках додано відображення станів realtime (`reconnecting`, `reconnected`, `onclose`, `initial start fail`) з явними повідомленнями та інструкціями для ручного оновлення даних.
-- Збережено вимогу про документування: нові властивості/поведінка покриті inline/XML-коментарями.
-- Checklist синхронізовано: у P0 залишаються e2e smoke та частина API/README boundary-документації; edge-case UX по preview/realtime переведено у виконане.
+- Для P0-напряму **"edge-cases CQRS/Validation"** додано нові інтеграційні boundary-тести для `commentTree`:
+  - **REST recursion-sort boundary:** `GetThread_WithNestedReplies_SortsRecursivelyByUserNameAsc` перевіряє, що сортування `sortBy=UserName&sortDirection=Asc` застосовується рекурсивно (не лише до першого рівня, а й до вкладених replies).
+  - **GraphQL recursion-sort boundary:** `GraphQlCommentTree_WithNestedReplies_SortsRecursivelyByUserNameAsc` фіксує той самий контракт для `commentTree(rootCommentId, sortBy: UserName, sortDirection: Asc)`.
+- Дотримано вимогу документування: нові тестові методи додані з XML-коментарями.
+- Checklist синхронізовано з фактичним станом: блок mixed `commentTree` sort/filter boundary посилено, але лишається доповнення API/README прикладами boundary-помилок та e2e smoke.
 
 ## Підсумок відповідності
 
@@ -42,7 +42,7 @@
    - додати smoke-перевірку UX-статусів realtime reconnect (щоб зафіксувати новий fallback у автоперевірках).
 
 2. **Закриття edge-cases CQRS/Validation:**
-   - додати інтеграційні кейси для mixed `commentTree` sort/filter boundary-сценаріїв;
+   - завершити інтеграційні кейси для mixed `commentTree` sort/filter boundary-сценаріїв (рекурсивний sort вже покрито, лишаються розширені filter-комбінації);
    - доповнити API/README прикладами boundary-помилок (`Page/PageSize`, `CaptchaToken`, attachment).
 
 ### P1
