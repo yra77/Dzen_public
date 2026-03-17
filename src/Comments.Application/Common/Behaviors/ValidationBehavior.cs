@@ -35,6 +35,10 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
+        // Гарантуємо єдину поведінку пайплайна: скасований токен зупиняє обробку
+        // до запуску будь-яких валідаторів або handler-а.
+        cancellationToken.ThrowIfCancellationRequested();
+
         if (!_validators.Any())
         {
             return await next();
