@@ -1,16 +1,14 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 66).
+Останнє оновлення: 2026-03-17 (ітерація 67).
 
 ## Що перевірено в цій ітерації
 
-- Посилено backend validation для attachment-flow на рівні CQRS validator:
-  - у `CreateCommentCommandValidator` додано явну перевірку максимально допустимого розміру вкладення (`<= 1_000_000` байт) до збереження файлу;
-  - додано XML-коментар до нового методу перевірки розміру вкладення.
-- Розширено REST/GraphQL integration coverage для boundary-case-у `attachment > 1MB`:
-  - додано тест `CreateComment_WithAttachmentLargerThan1Mb_ReturnsBadRequestValidationProblem`;
-  - додано тест `GraphQlCreateComment_WithAttachmentLargerThan1Mb_ReturnsValidationErrorsExtension`.
-- Оновлено актуальний backlog: browser e2e smoke (Playwright/Cypress) лишається відкритим P0, але в поточному середовищі встановлення нових npm-пакетів блокується політикою registry (`403`), тому e2e-ранер поки не додано.
+- Розширено REST/GraphQL integration coverage для позитивного boundary-case attachment-flow:
+  - додано тест `CreateComment_WithAttachmentExactly1Mb_ReturnsCreated` для REST-сценарію (`attachment == 1_000_000` байт);
+  - додано тест `GraphQlCreateComment_WithAttachmentExactly1Mb_ReturnsCreatedComment` для GraphQL mutation (`attachment == 1_000_000` байт).
+- Додано допоміжний метод `BuildTextAttachmentPayload(...)` у тестовому класі для детермінованої генерації `text/plain` вкладення заданого розміру.
+- Актуалізовано беклог: browser e2e smoke (Playwright/Cypress) лишається відкритим P0; middle+ load-test та demo-video link також залишаються обов'язковими до фінального Go/No-Go.
 
 ## Підсумок відповідності
 
@@ -80,6 +78,7 @@
    - ✅ додано mixed REST/GraphQL boundary-тести для sort/filter/pagination;
    - ✅ API/README доповнено прикладами boundary-помилок (`Page/PageSize`, `CaptchaToken`, attachment);
    - ✅ додано backend boundary-валідацію і integration coverage для `attachment > 1MB` (REST + GraphQL);
+   - ✅ додано позитивні boundary integration-тести для `attachment == 1MB` (REST + GraphQL);
    - лишається невеликий e2e-smoke шар для фіксації цих контрактів на рівні UI (Angular).
 
 ### P1

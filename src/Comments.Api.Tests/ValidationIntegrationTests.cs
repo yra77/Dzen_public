@@ -1141,6 +1141,102 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
         Assert.Equal(new[] { $"c-{unique}@example.com", $"b-{unique}@example.com", $"a-{unique}@example.com" }, uniqueEmails);
     }
 
+    /// <summary>
+    /// Verifies REST create accepts a boundary attachment of exactly 1MB.
+    /// </summary>
+    [Fact]
+    public async Task CreateComment_WithAttachmentExactly1Mb_ReturnsCreated()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/comments", new
+        {
+            userName = "RestAttachmentBoundary",
+            email = "rest-attachment-boundary@example.com",
+            homePage = "https://example.com",
+            text = "Boundary payload",
+            parentId = (Guid?)null,
+            captchaToken = "1234",
+            attachment = BuildTextAttachmentPayload("boundary-rest.txt", 1_000_000)
+        });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<CommentDto>();
+        Assert.NotNull(payload);
+        Assert.NotNull(payload!.Attachment);
+        Assert.Equal("boundary-rest.txt", payload.Attachment!.FileName);
+        Assert.Equal(1_000_000, payload.Attachment.SizeBytes);
+    }
+
+    /// <summary>
+    /// Verifies GraphQL mutation accepts a boundary attachment of exactly 1MB.
+    /// </summary>
+    [Fact]
+    public async Task GraphQlCreateComment_WithAttachmentExactly1Mb_ReturnsCreatedComment()
+    {
+        using var client = _factory.CreateClient();
+
+        var body = new
+        {
+            query = @"mutation($input: CreateCommentInput!) {
+  createComment(input: $input) {
+    id
+    attachment {
+      fileName
+      sizeBytes
+    }
+  }
+}",
+            variables = new
+            {
+                input = new
+                {
+                    userName = "GraphQlAttachmentBoundary",
+                    email = "graphql-attachment-boundary@example.com",
+                    homePage = "https://example.com",
+                    text = "GraphQL boundary payload",
+                    parentId = (Guid?)null,
+                    captchaToken = "1234",
+                    attachment = BuildTextAttachmentPayload("boundary-graphql.txt", 1_000_000)
+                }
+            }
+        };
+
+        var response = await client.PostAsJsonAsync("/graphql", body);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<GraphQlResponse>();
+        Assert.NotNull(payload);
+        Assert.Null(payload!.Errors);
+        Assert.True(payload.Data.HasValue);
+
+        var created = payload.Data!.Value.GetProperty("createComment");
+        var attachment = created.GetProperty("attachment");
+        Assert.Equal("boundary-graphql.txt", attachment.GetProperty("fileName").GetString());
+        Assert.Equal(1_000_000, attachment.GetProperty("sizeBytes").GetInt64());
+    }
+
+    /// <summary>
+    /// Builds a deterministic text/plain attachment payload with the requested byte size.
+    /// </summary>
+    /// <param name="fileName">Attachment file name.</param>
+    /// <param name="sizeBytes">Required payload size in bytes.</param>
+    /// <returns>Anonymous object that matches CreateComment attachment contract.</returns>
+    private static object BuildTextAttachmentPayload(string fileName, int sizeBytes)
+    {
+        var bytes = new byte[sizeBytes];
+        Array.Fill(bytes, (byte)'a');
+
+        return new
+        {
+            fileName,
+            contentType = "text/plain",
+            base64Content = Convert.ToBase64String(bytes)
+        };
+    }
+
     private static async Task<CommentDto> CreateCommentAsync(
         HttpClient client,
         string userName,
