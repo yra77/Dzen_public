@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+REPORT_FILE=""
+
 # Fails fast when a required CLI is missing in the current environment.
 require_command() {
   local command_name="$1"
@@ -26,6 +28,48 @@ run_go_no_go_checks() {
   npm --prefix src/Comments.Web run e2e
 
   echo "Go/No-Go checks completed successfully."
+
+  if [[ -n "$REPORT_FILE" ]]; then
+    write_report "GO" "Go/No-Go checks completed successfully."
+  fi
 }
+
+# Writes machine-readable execution evidence for QA handoff.
+write_report() {
+  local status="$1"
+  local message="$2"
+  local timestamp
+  timestamp="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+  mkdir -p "$(dirname "$REPORT_FILE")"
+  cat > "$REPORT_FILE" <<EOF
+{
+  "check": "go-no-go",
+  "status": "$status",
+  "timestampUtc": "$timestamp",
+  "message": "$message"
+}
+EOF
+
+  echo "Report saved to: $REPORT_FILE"
+}
+
+# Parses optional CLI flags for report export.
+parse_args() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --report-file)
+        REPORT_FILE="$2"
+        shift 2
+        ;;
+      *)
+        echo "ERROR: Unknown argument '$1'. Supported flags: --report-file <path>." >&2
+        exit 1
+        ;;
+    esac
+  done
+}
+
+parse_args "$@"
 
 run_go_no_go_checks

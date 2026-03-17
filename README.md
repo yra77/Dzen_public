@@ -54,13 +54,15 @@ dotnet run --project src/Comments.Api/Comments.Api.csproj
 
 ```bash
 # 1) Підняти інфраструктуру й перевірити readiness критичних сервісів
-./scripts/qa-stand-check.sh
+./scripts/qa-stand-check.sh --report-file docs/artifacts/qa-stand-check.json
 
 # 2) Прогнати smoke-набір (backend tests + frontend unit + Playwright e2e)
-./scripts/go-no-go-check.sh
+./scripts/go-no-go-check.sh --report-file docs/artifacts/go-no-go-check.json
 ```
 
 Рекомендовано зафіксувати commit/tag після успішного smoke-прогону, і саме цей артефакт передавати в QA.
+
+Обидва скрипти підтримують опційний прапорець `--report-file <path>` для збереження машинно-читаного JSON-звіту (статус + UTC timestamp), який можна долучати до QA handoff.
 
 ## Load testing (k6)
 

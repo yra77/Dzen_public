@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+REPORT_FILE=""
+
 # Starts the local QA dependencies and validates that critical endpoints respond.
 run_qa_stand_check() {
   echo "[1/4] Starting infrastructure services (sqlserver, rabbitmq, elasticsearch, comments-api)..."
@@ -16,6 +18,10 @@ run_qa_stand_check() {
   wait_for_endpoint "http://localhost:9200/_cluster/health" "Elasticsearch cluster health"
 
   echo "Local QA stand is ready for manual testing."
+
+  if [[ -n "$REPORT_FILE" ]]; then
+    write_report "READY" "QA stand dependencies are reachable."
+  fi
 }
 
 # Polls an HTTP endpoint with retries to avoid flaky startup timing.
@@ -38,5 +44,43 @@ wait_for_endpoint() {
   echo "ERROR: $description is not reachable after $retries attempts ($endpoint)." >&2
   return 1
 }
+
+# Writes machine-readable readiness evidence for QA handoff.
+write_report() {
+  local status="$1"
+  local message="$2"
+  local timestamp
+  timestamp="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+  mkdir -p "$(dirname "$REPORT_FILE")"
+  cat > "$REPORT_FILE" <<REPORT
+{
+  "check": "qa-stand",
+  "status": "$status",
+  "timestampUtc": "$timestamp",
+  "message": "$message"
+}
+REPORT
+
+  echo "Report saved to: $REPORT_FILE"
+}
+
+# Parses optional CLI flags for report export.
+parse_args() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --report-file)
+        REPORT_FILE="$2"
+        shift 2
+        ;;
+      *)
+        echo "ERROR: Unknown argument '$1'. Supported flags: --report-file <path>." >&2
+        exit 1
+        ;;
+    esac
+  done
+}
+
+parse_args "$@"
 
 run_qa_stand_check
