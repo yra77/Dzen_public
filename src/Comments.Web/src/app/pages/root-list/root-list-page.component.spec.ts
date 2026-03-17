@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { HubConnectionBuilder } from '@microsoft/signalr';
+import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 
 import { RootListPageComponent } from './root-list-page.component';
 
@@ -70,7 +70,7 @@ describe('RootListPageComponent smoke', () => {
     fakeHub = new FakeHubConnection();
     spyOn(HubConnectionBuilder.prototype, 'withUrl').and.returnThis();
     spyOn(HubConnectionBuilder.prototype, 'withAutomaticReconnect').and.returnThis();
-    spyOn(HubConnectionBuilder.prototype, 'build').and.returnValue(fakeHub as never);
+    spyOn(HubConnectionBuilder.prototype, 'build').and.returnValue(fakeHub as unknown as HubConnection);
 
     await TestBed.configureTestingModule({
       imports: [RootListPageComponent],
@@ -212,7 +212,7 @@ describe('RootListPageComponent smoke', () => {
     httpMock.expectOne('http://localhost:8080/api/comments').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
     httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
 
-    spyOn(window as never, 'FileReader').and.returnValue({
+    spyOn(window, 'FileReader').and.returnValue({
       result: 'data:image/png;base64,ZmFrZQ==',
       onload: null,
       readAsDataURL(this: { onload: null | (() => void) }) {
