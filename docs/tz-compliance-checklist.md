@@ -1,24 +1,24 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 79).
+Останнє оновлення: 2026-03-17 (ітерація 80).
 
 ## Що перевірено в цій ітерації
 
-- Закрито наступний інтеграційний edge-case для контракту валідації API middleware/error-filter (`src/Comments.Api.Tests/ValidationIntegrationTests.cs`):
-  - додано REST-тест `CreateComment_WithMultipleInvalidFields_ReturnsAggregatedValidationProblem`, який перевіряє агрегацію множинних помилок у `ValidationProblemDetails`;
-  - додано GraphQL-тест `GraphQlCreateComment_WithMultipleInvalidFields_ReturnsAggregatedValidationErrorsExtension`, який перевіряє агрегацію множинних помилок у `extensions.validationErrors` з кодом `BAD_USER_INPUT`.
-- Для нових тестових методів додано XML-коментарі згідно вимоги про документування нових/змінених класів і методів.
-- Оновлено чекліст: зафіксовано виконану доробку і уточнено наступний крок — завершити delivery-пакет підстановкою фактичного demo-video URL у `README.md`.
+- Закрито операційний blocker локального запуску frontend-тестів у закритих середовищах без прямого доступу до `registry.npmjs.org` (`src/Comments.Web/scripts/bootstrap-npm-auth.sh`):
+  - додано bootstrap-скрипт генерації локального `.npmrc` через `NPM_REGISTRY_URL` (+ optional `NPM_REGISTRY_TOKEN`);
+  - додано шаблон `src/Comments.Web/.npmrc.internal-mirror.example` для швидкого старту в DevOps-контурі;
+  - `src/Comments.Web/README.md` доповнено коротким runbook, який прибирає manual bootstrap перед `npm test`/`npm run e2e:smoke`.
+- Оновлено чекліст: frontend npm-mirror bootstrap переведено в `✅ виконано`, наступним кроком лишається лише фінальне підставлення фактичного demo-video URL у `README.md`.
 
 ## Підсумок відповідності
 
-- **Повністю виконано:** 38 пунктів.
+- **Повністю виконано:** 39 пунктів.
 - **Частково виконано:** 1 пункт.
 - **Не виконано:** 0 пунктів (пункт №5 виключено з обов'язкових за запитом).
 
-> Висновок: browser smoke уже інтегрований у CI (GitHub Actions) та покриває create/reply + multi-tab realtime + image attachment; для фінального закриття delivery-пакету лишається підставити фактичний demo-video URL у `README.md`.
+> Висновок: browser smoke уже інтегрований у CI (GitHub Actions) та покриває create/reply + multi-tab realtime + image attachment, а локальний npm bootstrap закриває запуск у restricted-середовищах; для фінального закриття delivery-пакету лишається підставити фактичний demo-video URL у `README.md`.
 
-> Додатково: у поточному середовищі розробки відтворення e2e локально обмежене мережевою забороною на npm registry (`E403` для `@playwright/test` під час `npm ci`), тому перевірка ефекту фіксу очікується у GitHub Actions.
+> Додатково: для середовищ з обмеженим доступом до зовнішнього npm додано локальний bootstrap `.npmrc` через internal mirror (`src/Comments.Web/scripts/bootstrap-npm-auth.sh`), що знімає потребу в ручній конфігурації перед запуском unit/e2e.
 
 ## Актуальний статус по ключових блоках ТЗ
 
@@ -26,8 +26,8 @@
    - REST + GraphQL API, валідація, preview, captcha, вкладення, SignalR, Elasticsearch інтеграція, базовий RabbitMQ pipeline.
 2. 🟨 **Архітектура (CQRS + MediatR + FluentValidation)** — частково:
    - основний каркас і обробники є, але лишаються edge-case доробки в тестах/контрактах та документації.
-3. 🟨 **Frontend Angular LTS** — частково:
-   - ключові user-flow реалізовані; уніфікацію validation UX для REST/GraphQL, transient/retry UX для load/captcha, preview fallback і SignalR reconnection-state виконано; додано test-target для `ng test`; Playwright smoke покриває runtime create/reply, multi-tab realtime, image attachment та UI-boundary attachment-validation; інтеграцію e2e у CI виконано; з незакритого лишається лише частина boundary-документації.
+3. ✅ **Frontend Angular LTS** — виконано:
+   - ключові user-flow реалізовані; уніфікацію validation UX для REST/GraphQL, transient/retry UX для load/captcha, preview fallback і SignalR reconnection-state виконано; додано test-target для `ng test`; Playwright smoke покриває runtime create/reply, multi-tab realtime, image attachment та UI-boundary attachment-validation; інтеграцію e2e у CI виконано; додано internal npm mirror bootstrap для стабільного запуску тестів у restricted-середовищах.
 4. ✅ **RabbitMQ production-hardening** — виконано:
    - є retry/DLQ базис, базові consumer-метрики (`success/fail/retry/latency`) та persistent-ідемпотентність із cleanup-процедурою;
    - додано alert-пороги для `failure-rate/latency` та формалізований `DLQ replay-flow` у runbook.
@@ -81,7 +81,7 @@
    - ✅ додано runtime e2e-перевірку image attachment preview (PNG thumbnail + file link) у root-list;
    - ✅ додано runtime e2e boundary-перевірки UI-валидації attachment (`>1MB`, `unsupported MIME`) для root/thread форм;
    - ✅ інтегровано e2e smoke у CI через GitHub Actions workflow `comments-web-e2e-smoke.yml`;
-   - лишається розблокувати npm registry доступ у частині локальних/закритих середовищ, де без internal mirror неможливо виконувати `npm test`/`npm run e2e:smoke` без manual bootstrap.
+   - ✅ додано bootstrap internal npm mirror (`scripts/bootstrap-npm-auth.sh` + `.npmrc.internal-mirror.example`) для запуску `npm test`/`npm run e2e:smoke` у закритих середовищах.
 
 2. **Закриття edge-cases CQRS/Validation:**
    - ✅ додано unit coverage для `ApiErrorPresenterService` (REST/GraphQL validation mapping + transient retry + unknown fallback);
