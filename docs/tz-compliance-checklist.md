@@ -1,20 +1,20 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 63).
+Останнє оновлення: 2026-03-17 (ітерація 64).
 
 ## Що перевірено в цій ітерації
 
-- Посилено `RabbitMQ hardening` у частині життєвого циклу persistent-ідемпотентності:
-  - додано фоновий `ProcessedMessageCleanupHostedService` для періодичної очистки застарілих записів `ProcessedMessages`;
-  - додано конфігурацію `ProcessedMessageCleanup` (`Enabled`, `IntervalMinutes`, `RetentionHours`) в `appsettings.json`;
-  - розширено контракт `IProcessedMessageRepository` методом `CleanupOlderThanAsync(...)` та реалізацію `EfProcessedMessageRepository` через `ExecuteDeleteAsync(...)`.
-- Додано XML-коментарі до нових класів/методів cleanup-потоку та до оновленого EF-репозиторію (відповідно до вимоги документувати нові/змінені класи й методи).
-- Оновлено backlog: блок `RabbitMQ hardening` просунуто (персистентна ідемпотентність + housekeeping), але alert-пороги і формалізований DLQ replay-flow залишаються відкритими.
+- Завершено `RabbitMQ hardening` у частині експлуатаційної готовності:
+  - додано конфігуровані alert-пороги (`RabbitMq:Alerts`) для `failure-rate` та `average-latency`;
+  - у `RabbitMqTaskQueuesConsumerHostedService` реалізовано ковзне вікно метрик на worker та warning/critical логування при перевищенні порогів;
+  - формалізовано `DLQ replay-flow` у runbook `docs/rabbitmq-consumer-runbook.md`.
+- Актуалізовано `appsettings.json` новим блоком `RabbitMq:Alerts` для керування порогами без зміни коду.
+- Додано XML-коментарі до нових класів/методів alert-механізму consumer-а (відповідно до вимоги документувати нові/змінені класи й методи).
 
 ## Підсумок відповідності
 
-- **Повністю виконано:** 34 пункти.
-- **Частково виконано:** 3 пункти.
+- **Повністю виконано:** 35 пунктів.
+- **Частково виконано:** 2 пункти.
 - **Не виконано:** 2 пункти.
 
 > Висновок: **100% відповідності ТЗ ще немає**.
@@ -27,9 +27,9 @@
    - основний каркас і обробники є, але лишаються edge-case доробки в тестах/контрактах та документації.
 3. 🟨 **Frontend Angular LTS** — частково:
    - ключові user-flow реалізовані; уніфікацію validation UX для REST/GraphQL, transient/retry UX для load/captcha, preview fallback і SignalR reconnection-state виконано; лишається e2e smoke та частина boundary-документації.
-4. 🟨 **RabbitMQ production-hardening** — частково:
+4. ✅ **RabbitMQ production-hardening** — виконано:
    - є retry/DLQ базис, базові consumer-метрики (`success/fail/retry/latency`) та persistent-ідемпотентність із cleanup-процедурою;
-   - ще потрібні alert-пороги та формалізовані replay-процедури для DLQ.
+   - додано alert-пороги для `failure-rate/latency` та формалізований `DLQ replay-flow` у runbook.
 5. ❌ **Фінальний Middle+ load-test у цільовому контурі RabbitMQ + Elasticsearch** — не виконано:
    - у `docs/load-test-middle-results.md` лишається шаблон без фактичних метрик.
 6. 🟨 **Delivery-артефакт Demo (README + відео)** — частково виконано:
@@ -59,7 +59,7 @@
 4. **RabbitMQ hardening мінімум для тестування (P1):**
    - ✅ персистентна ідемпотентність (EF/SQL) + cleanup старих id;
    - ✅ мінімальні метрики consumer (success/fail/retry/latency) додано;
-   - лишається визначити базові alert-пороги та коротку replay-інструкцію для DLQ у runbook.
+   - ✅ визначено базові alert-пороги та додано коротку replay-інструкцію для DLQ у runbook.
 
 5. **Go/No-Go для старту ручного QA:**
    - критерій `Go`: Demo-лінк + e2e smoke green + middle-load метрики зафіксовані;
@@ -84,8 +84,8 @@
 3. **RabbitMQ hardening до production-ready:**
    - ✅ додано базові метрики consumer-обробки (`success/fail/retry/latency`) у RabbitMQ hosted service;
    - ✅ персистентна ідемпотентність реалізована через `ProcessedMessages` + додано cleanup-hosted-service;
-   - додати базові alert-умови на нові метрики та задокументувати пороги;
-   - формалізувати DLQ replay flow.
+   - ✅ додано базові alert-умови та задокументовано пороги;
+   - ✅ формалізовано DLQ replay flow (`docs/rabbitmq-consumer-runbook.md`).
 
 4. **Фіналізувати Middle+ load-test:**
    - виконати реальний прогін `load-test/comments-middle.js` у середовищі з RabbitMQ + Elasticsearch;
