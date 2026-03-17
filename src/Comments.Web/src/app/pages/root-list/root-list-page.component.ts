@@ -61,6 +61,10 @@ import { environment } from '../../../environments/environment';
           <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" />
         }
 
+        @if (captchaMessage) {
+          <p class="error">{{ captchaMessage }}</p>
+        }
+
         <label>
           CAPTCHA (сума чисел)
           <input type="text" formControlName="captchaAnswer" />
@@ -90,6 +94,9 @@ import { environment } from '../../../environments/environment';
         <p>Завантаження...</p>
       } @else if (errorMessage) {
         <p class="error">{{ errorMessage }}</p>
+        @if (loadCanRetry) {
+          <p class="meta">Спробуйте натиснути "Оновити" повторно через кілька секунд.</p>
+        }
       } @else if (comments.length === 0) {
         <p>Поки що коментарів немає.</p>
       } @else {
@@ -199,11 +206,15 @@ export class RootListPageComponent implements OnDestroy {
   isLoading = false;
   isSubmitting = false;
   errorMessage = '';
+  /** Прапорець для показу підказки щодо повторної спроби завантаження. */
+  loadCanRetry = false;
   submitMessage = '';
   submitValidationErrors: ReadonlyArray<UiValidationError> = [];
   showRetryHint = false;
   captchaChallengeId = '';
   captchaImageDataUrl = '';
+  /** Повідомлення про помилку завантаження CAPTCHA. */
+  captchaMessage = '';
   textPreviewHtml = '';
   attachmentMessage = '';
   attachment: CreateCommentAttachmentRequest | null = null;
@@ -239,14 +250,17 @@ export class RootListPageComponent implements OnDestroy {
   load(): void {
     this.isLoading = true;
     this.errorMessage = '';
+    this.loadCanRetry = false;
 
     this.commentsApi.getRootComments().subscribe({
       next: (response) => {
         this.comments = response.items;
         this.isLoading = false;
       },
-      error: () => {
-        this.errorMessage = 'Не вдалося завантажити коментарі.';
+      error: (error) => {
+        const uiError = this.apiErrorPresenter.present(error, 'Не вдалося завантажити коментарі.');
+        this.errorMessage = uiError.summary;
+        this.loadCanRetry = uiError.canRetry;
         this.isLoading = false;
       }
     });
@@ -318,10 +332,17 @@ export class RootListPageComponent implements OnDestroy {
    * Перезавантажує CAPTCHA для форми створення.
    */
   reloadCaptcha(): void {
+    this.captchaMessage = '';
+
     this.commentsApi.getCaptcha().subscribe({
       next: (response) => {
         this.captchaChallengeId = response.challengeId;
         this.captchaImageDataUrl = `data:${response.mimeType};base64,${response.imageBase64}`;
+        this.captchaMessage = '';
+      },
+      error: (error) => {
+        const uiError = this.apiErrorPresenter.present(error, 'Не вдалося завантажити CAPTCHA.');
+        this.captchaMessage = uiError.summary;
       }
     });
   }

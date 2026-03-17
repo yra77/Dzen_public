@@ -1,12 +1,14 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 54).
+Останнє оновлення: 2026-03-17 (ітерація 55).
 
 ## Що перевірено в цій ітерації
 
-- У `Comments.Api.Infrastructure` додано XML-коментарі для каналів публікації подій створення коментарів: `ICommentCreatedChannel`, `CompositeCommentCreatedPublisher`, `SignalRCommentCreatedChannel`, `ElasticsearchCommentCreatedChannel`, `RabbitMqCommentCreatedPublisher`, `NoOpCommentCreatedPublisher`, `NoOpCommentSearchService` (класи/інтерфейси, конструктори, публічні методи).
-- Зафіксовано, що поточний backlog по ТЗ залишається незмінним: P0 — frontend stabilization + CQRS edge-cases, P1 — RabbitMQ hardening + middle load-test, P2 — Demo delivery-артефакт.
-- Checklist оновлено як єдине джерело актуального прогресу по відповідності ТЗ.
+- Для Angular SPA посилено `production-hardening UX` у сценаріях мережевих/timeout збоїв:
+  - `RootListPageComponent`: завантаження root-коментарів тепер використовує `ApiErrorPresenterService`, додає retry-підказку для transient-помилок і явний статус-повідомлення при збої оновлення CAPTCHA.
+  - `ThreadPageComponent`: завантаження гілки також переведено на уніфікований `ApiErrorPresenterService`, додано retry-підказку та обробку помилки перезавантаження CAPTCHA.
+- Внесені зміни задокументовані в коді через inline/XML-коментарі на рівні нових/оновлених властивостей і методів відповідно до внутрішнього правила про документування.
+- Checklist синхронізовано: P0-зона звужена до e2e smoke та фінальних edge-case UX/messages; P1/P2 без змін.
 
 ## Підсумок відповідності
 
@@ -23,7 +25,7 @@
 2. 🟨 **Архітектура (CQRS + MediatR + FluentValidation)** — частково:
    - основний каркас і обробники є, але лишаються edge-case доробки в тестах/контрактах та документації.
 3. 🟨 **Frontend Angular LTS** — частково:
-   - ключові user-flow реалізовані; уніфікацію validation UX для REST/GraphQL виконано; лишається e2e smoke та загальний production-hardening.
+   - ключові user-flow реалізовані; уніфікацію validation UX для REST/GraphQL і transient/retry UX для load/captcha виконано; лишається e2e smoke та фінальний edge-case hardening.
 4. 🟨 **RabbitMQ production-hardening** — частково:
    - є retry/DLQ базис, але ще потрібні персистентна ідемпотентність, метрики та replay-процедури.
 5. ❌ **Фінальний Middle+ load-test у цільовому контурі RabbitMQ + Elasticsearch** — не виконано:
@@ -37,7 +39,7 @@
 
 1. **Frontend stabilization (Angular LTS):**
    - додати e2e smoke для сценаріїв: `root create`, `thread reply`, `preview`, `attachments`, `realtime`;
-   - виконати production-hardening UX (retry-state, edge-case повідомлення для мережевих/timeout збоїв).
+   - довести до кінця production-hardening UX для решти edge-case повідомлень (зокрема fallback-сценаріїв preview та SignalR reconnection-state).
 
 2. **Закриття edge-cases CQRS/Validation:**
    - додати інтеграційні кейси для mixed `commentTree` sort/filter boundary-сценаріїв;
