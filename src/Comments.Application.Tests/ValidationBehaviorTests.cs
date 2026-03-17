@@ -97,6 +97,32 @@ public sealed class ValidationBehaviorTests
     }
 
     /// <summary>
+    /// Перевіряє, що при скасуванні токена валідація переривається, а handler не викликається.
+    /// </summary>
+    [Fact]
+    public async Task Handle_WithCanceledToken_ThrowsOperationCanceledExceptionAndDoesNotCallNext()
+    {
+        var behavior = new ValidationBehavior<GetCommentsPageQuery, string>(
+            new IValidator<GetCommentsPageQuery>[] { new GetCommentsPageQueryValidator() });
+
+        using var cancellationTokenSource = new CancellationTokenSource();
+        cancellationTokenSource.Cancel();
+
+        var nextCalled = false;
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => behavior.Handle(
+            new GetCommentsPageQuery(1, 25, Application.DTOs.CommentSortField.CreatedAtUtc, Application.DTOs.CommentSortDirection.Desc),
+            () =>
+            {
+                nextCalled = true;
+                return Task.FromResult("ok");
+            },
+            cancellationTokenSource.Token));
+
+        Assert.False(nextCalled);
+    }
+
+    /// <summary>
     /// Тестовий валідатор, що завжди повертає одну помилку для заданого поля.
     /// </summary>
     private sealed class AlwaysFailGetCommentsPageQueryValidator : AbstractValidator<GetCommentsPageQuery>
