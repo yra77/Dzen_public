@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 88).
+Останнє оновлення: 2026-03-17 (ітерація 89).
 
 ## Підсумок перевірки відповідності ТЗ
 
@@ -94,8 +94,18 @@
 - ✅ Виправлено dev-з'єднання Angular SPA з API/SignalR: у `Comments.Api` додано CORS-політику `CommentsWebDevClient` для `http://localhost:4200` та `http://127.0.0.1:4200` з `AllowCredentials` для SignalR.
 - ✅ Усунено помилку повторної captcha-перевірки під час створення коментаря/відповіді: прибрано дублюючу валідацію з `CommentService`, залишено єдину валідацію у FluentValidation pipeline.
 - ✅ Оновлено базовий UI Angular (`Comments.Web`) до стилістики, наближеної до `Comments.Api/wwwroot`: контейнер/панелі, форми, картки коментарів, captcha/attachment preview.
+
+
+## Оновлення в ітерації 89
+
+- ✅ В Angular (`Comments.Web`) додано preview вибраного зображення у формах створення root-коментаря та reply (до submit).
+- ✅ В Angular додано блок **«Швидкі теги: [i] [strong] [code] [a]»** для обох форм із вставкою тегів у поточне виділення тексту, за аналогією з `Comments.Api/wwwroot/index.html`.
+- ✅ Уточнено CAPTCHA-flow: перевірка виконується на бекенді (`ICaptchaValidator`), для provider `Basic` — локально через challenge store (`challengeId:answer`), для `Recaptcha` — серверним POST на зовнішній verify endpoint.
+- 🔜 Додатково перевірити в локальному ручному прогоні, що після `Оновити CAPTCHA` користувач вводить відповідь саме для нового challenge (попередній токен стає невалідним після першої перевірки).
+
 ## Що ще треба зробити у проєкті
 
+- 🔜 Перевірити end-to-end CAPTCHA сценарії в Angular (особливо після релоаду CAPTCHA та повторного submit), щоб виключити `Captcha validation failed` у разі використання застарілого challenge token.
 - 🔜 Провести ручну UX-перевірку Angular UI проти еталону `src/Comments.Api/wwwroot/index.html` (включно з mobile breakpoint), зафіксувати дрібні візуальні відхилення та пріоритезувати їх окремим backlog-списком.
 - 🔜 Запустити `./scripts/qa-stand-check.sh --report-file docs/artifacts/qa-stand-check.json` на цільовій машині, щоб підтвердити готовність локального стенду (API + RabbitMQ + Elasticsearch) та зберегти evidence-файл.
 - 🔜 Виконати ручний Go/No-Go прогін через `./scripts/go-no-go-check.sh --report-file docs/artifacts/go-no-go-check.json` на цільовій машині та зафіксувати commit/tag реліз-кандидата.

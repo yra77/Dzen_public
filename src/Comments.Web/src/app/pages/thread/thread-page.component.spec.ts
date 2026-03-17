@@ -277,7 +277,65 @@ describe('ThreadPageComponent smoke', () => {
   });
 
 
-  it('показує realtime fallback-повідомлення при розриві зʼєднання', () => {
+
+
+  it('показує preview для вибраного image-вкладення у reply-формі', () => {
+    httpMock.expectOne('http://localhost:8080/api/comments/root-100/thread').flush({
+      id: 'root-100',
+      parentId: null,
+      userName: 'Root',
+      email: 'root@example.com',
+      homePage: null,
+      text: 'Root text',
+      createdAtUtc: '2026-03-17T10:00:00Z',
+      attachment: null,
+      replies: []
+    });
+    httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
+
+    spyOn(window as never, 'FileReader').and.returnValue({
+      result: 'data:image/png;base64,ZmFrZQ==',
+      onload: null,
+      readAsDataURL(this: { onload: null | (() => void) }) {
+        this.onload?.();
+      }
+    } as FileReader);
+
+    const fileInput = document.createElement('input');
+    Object.defineProperty(fileInput, 'files', {
+      value: [new File(['fake-image'], 'reply.png', { type: 'image/png' })]
+    });
+
+    component.onAttachmentSelected({ target: fileInput } as unknown as Event);
+
+    expect(component.attachmentImagePreviewDataUrl).toContain('data:image/png;base64');
+  });
+
+  it('додає quick-тег [code] у текст reply-форми', () => {
+    httpMock.expectOne('http://localhost:8080/api/comments/root-100/thread').flush({
+      id: 'root-100',
+      parentId: null,
+      userName: 'Root',
+      email: 'root@example.com',
+      homePage: null,
+      text: 'Root text',
+      createdAtUtc: '2026-03-17T10:00:00Z',
+      attachment: null,
+      replies: []
+    });
+    httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
+
+    const textArea = document.createElement('textarea');
+    textArea.value = 'snippet';
+    textArea.setSelectionRange(0, 7);
+
+    component.insertQuickTag('code', textArea);
+
+    expect(component.replyForm.controls.text.value).toBe('<code>snippet</code>');
+  });
+
+
+    it('показує realtime fallback-повідомлення при розриві зʼєднання', () => {
     httpMock.expectOne('http://localhost:8080/api/comments/root-100/thread').flush({
       id: 'root-100',
       parentId: null,

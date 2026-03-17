@@ -206,7 +206,44 @@ describe('RootListPageComponent smoke', () => {
     expect(component.attachmentMessage).toContain('Недозволений тип');
   });
 
-  it('оновлює SignalR статуси reconnecting/reconnected/close', () => {
+
+
+  it('показує preview для вибраного image-вкладення', () => {
+    httpMock.expectOne('http://localhost:8080/api/comments').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
+    httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
+
+    spyOn(window as never, 'FileReader').and.returnValue({
+      result: 'data:image/png;base64,ZmFrZQ==',
+      onload: null,
+      readAsDataURL(this: { onload: null | (() => void) }) {
+        this.onload?.();
+      }
+    } as FileReader);
+
+    const fileInput = document.createElement('input');
+    Object.defineProperty(fileInput, 'files', {
+      value: [new File(['fake-image'], 'img.png', { type: 'image/png' })]
+    });
+
+    component.onAttachmentSelected({ target: fileInput } as unknown as Event);
+
+    expect(component.attachmentImagePreviewDataUrl).toContain('data:image/png;base64');
+  });
+
+  it('додає quick-тег [strong] у текст форми', () => {
+    httpMock.expectOne('http://localhost:8080/api/comments').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
+    httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
+
+    const textArea = document.createElement('textarea');
+    textArea.value = 'demo';
+    textArea.setSelectionRange(0, 4);
+
+    component.insertQuickTag('strong', textArea);
+
+    expect(component.createForm.controls.text.value).toBe('<strong>demo</strong>');
+  });
+
+    it('оновлює SignalR статуси reconnecting/reconnected/close', () => {
     httpMock.expectOne('http://localhost:8080/api/comments').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
     httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
 
