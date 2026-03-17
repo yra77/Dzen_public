@@ -1,12 +1,12 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 48).
+Останнє оновлення: 2026-03-17 (ітерація 49).
 
 ## Що перевірено в цій ітерації
 
-- Для Angular API-моделей (`CommentAttachment`, `CommentNode`, `CreateCommentRequest`, `CaptchaImageResponse` тощо) додано field-level коментарі, щоб зафіксувати контракт даних на фронтенді.
-- У `CommentsApiService` додано JSDoc-коментарі до сервісу та всіх публічних методів (`getRootComments`, `getThread`, `getCaptcha`, `createComment`, `previewComment`, `getAttachmentText`).
-- Актуалізовано цей checklist: зафіксовано завершення чергового кроку з документації/коментування коду та підтверджено, що пріоритети P0/P1/P2 залишаються без змін.
+- У доменних моделях `Comment` і `ProcessedMessage` додано XML-коментарі до класів, конструкторів, властивостей та публічних методів для кращої підтримки контрактів доменної логіки.
+- У GraphQL-шарі додано XML-коментарі до input-моделей (`CreateCommentInput`, `AddReplyInput`, `AttachmentInput`) та mutation/query-резолверів (`CommentQueries`, `CommentMutations`).
+- Актуалізовано цей checklist: зафіксовано виконані кроки з коментування класів/методів/моделей і підтверджено, що пріоритети P0/P1/P2 залишаються без змін.
 
 ## Підсумок відповідності
 
