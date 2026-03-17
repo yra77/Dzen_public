@@ -87,50 +87,21 @@ API_MODE=graphql CAPTCHA_TOKEN=test k6 run load-test/comments-middle.js
 k6 run --summary-export=docs/artifacts/k6-middle-summary.json load-test/comments-middle.js
 ```
 
-Після прогона зафіксуйте короткий висновок (p95/p99/error-rate) у
-`docs/load-test-middle-results.md` та оновіть посилання на актуальний
-`summary`-артефакт.
+Після прогона зафіксуйте короткий висновок (p95/p99/error-rate) у PR/релізних нотатках
+та додайте посилання на актуальний `summary`-артефакт.
 
 ## Demo
 
 - Запис ключових сценаріїв (3–5 хв): **pending**.
 - Лінк на відео для тестування/приймання: `TODO: add demo video URL`.
 
-## Актуальний roadmap продовження (ітерація 15)
+## Пріоритети продовження робіт
 
-- **P0 (критично):**
-  - міграція фронтенду на **Angular LTS** у `src/Comments.Web` (список/дерево, create/reply, preview, captcha, attachments, SignalR live updates);
-  - впровадження **CQRS + MediatR + FluentValidation** (handlers, validators, pipeline behaviors).
-- **P1 (production-hardening):**
-  - RabbitMQ: додано базовий runbook `docs/rabbitmq-consumer-runbook.md`; реалізовано персистентну ідемпотентність, cleanup старих `ProcessedMessages`, метрики consumer-обробки та alert-пороги;
-  - фінальний прогін `load-test/comments-middle.js` у середовищі з RabbitMQ + Elasticsearch із фіксацією `docs/artifacts/k6-middle-summary.json` і метрик у `docs/load-test-middle-results.md`.
-- **P2 (delivery):**
-  - додати `Demo`-секцію в README із посиланням на 3–5 хвилинне відео ключових сценаріїв.
+- **P0:** закрити відкриті пункти з `docs/tz-compliance-checklist.md`.
+- **P1:** завершити production-hardening RabbitMQ/Elasticsearch + фінальний middle-load-test з артефактом `docs/artifacts/k6-middle-summary.json`.
+- **P2:** додати demo-відео ключових сценаріїв (3–5 хв) для QA/приймання.
 
-> Детальний стан відповідності ТЗ і покроковий backlog див. у `docs/tz-compliance-checklist.md`.
-
-## Продовження робіт (ітерації 16–19)
-
-- Проміжні плани ітерацій 16–19 консолідовано в актуальний аудит і backlog ітерації 20.
-- Для поточної роботи використовуйте лише `docs/iteration-20-tz-audit.md` та `docs/tz-compliance-checklist.md`.
-
-## Продовження робіт (ітерація 20)
-
-- Додано оперативний аудит: `docs/iteration-20-tz-audit.md` (коротка відповідь на питання відповідності ТЗ + next steps).
-- Ітерація 26: посилено FluentValidation-guard для `CreateComment` (CAPTCHA + attachment pre-validation) і розширено `Comments.Api.Tests` для REST/GraphQL validation-сценаріїв (`thread/preview/create`).
-- Ітерація 27: додано Angular LTS standalone scaffold у `src/Comments.Web` (роути `/` і `/thread/:id`, базовий API service для root-list).
-- Ітерація 28: реалізовано робочий thread-flow в Angular (`/thread/:id`): завантаження гілки, CAPTCHA image reload і submit reply через `POST /api/comments`.
-- Ітерація 29: `thread-page` в Angular доповнено recursive-render reply, live text preview (`POST /api/comments/preview`), attachment upload (base64) і SignalR auto-refresh через `/hubs/comments`.
-- Ітерація 30: на root-list реалізовано create flow (submit + preview + captcha + attachment + SignalR live-refresh).
-- Ітерація 31: у `src/Comments.Web` додано media-preview вкладень (inline image preview + lazy txt preview) для root-list і thread-view.
-- Ітерація 32: для lazy txt-preview у `src/Comments.Web` додано явний loading-state (disabled кнопка + індикатор завантаження) на root-list і thread-view.
-- Перевірено поточний статус відповідності: **100% виконання ТЗ ще не досягнуто** (залишається 3 невиконані та 2 частково виконані пункти).
-- Актуалізовано backlog у `docs/tz-compliance-checklist.md` і зафіксовано пріоритети:
-  1. Angular LTS migration у `src/Comments.Web`;
-  2. CQRS + MediatR + FluentValidation;
-  3. RabbitMQ hardening + фінальний Middle+ load-test + Demo-артефакт.
-
-> Деталі перевірки див. у `docs/iteration-20-tz-audit.md` і `docs/tz-compliance-checklist.md`.
+> Джерело істини для backlog і пріоритетів: `docs/tz-compliance-checklist.md`.
 
 ## GraphQL validation contract (`validationErrors`)
 
@@ -257,61 +228,8 @@ mutation {
 }
 ```
 
-## Наступні кроки (по ТЗ)
+## Короткий статус по ТЗ
 
-- ✅ Підключено EF Core + підтримку SQL Server (через `Persistence:Provider=SqlServer`).
-- ✅ Додано GraphQL (HotChocolate): `comments` query + `createComment` mutation.
-- ✅ Додано публікацію події `comment.created` у RabbitMQ (опційно, через конфіг `RabbitMq:Enabled=true`).
-- ✅ Додано базову CAPTCHA-перевірку під час створення коментаря (`Captcha:Enabled`, `Captcha:ExpectedToken`).
-- ✅ Додано базову підтримку вкладень `image/txt` (base64 upload, валідація типу/розміру, локальне збереження).
-- ✅ Додано опційну інтеграцію з Elasticsearch (індексація + пошук).
-- ✅ Додано CAPTCHA (Basic + опційно reCAPTCHA), завантаження файлів (image/txt), прев’ю та SignalR.
-- 🟨 Angular SPA: піднято базовий shell і маршрути; лишається перенести create/reply/preview/captcha/attachments/realtime.
-
-## Поточний статус реалізації (аудит)
-
-### Готово (підтверджено кодом)
-
-- ✅ **Базова доменна модель і сервісний шар**: сутність коментаря, DTO та сервіс зі створенням/вибіркою.
-- ✅ **REST API**:
-  - `POST /api/comments`
-  - `GET /api/comments` (пагінація + сортування)
-- ✅ **GraphQL API**:
-  - query `comments`, `searchComments`
-  - mutation `createComment`
-- ✅ **Persistence**:
-  - InMemory провайдер за замовчуванням,
-  - SqlServer провайдер через конфіг.
-- ✅ **Інтеграція подій**:
-  - опційна публікація `comment.created` у RabbitMQ.
-
-### Ще не реалізовано (наступний етап)
-
-1. 🔲 **Elasticsearch**
-   - ✅ індексація нових коментарів при створенні,
-   - ✅ запити повнотекстового пошуку (`text`, `userName`, `email`),
-   - ✅ автоматичний бекфіл/реіндексація історичних даних при старті API (`Elasticsearch:BackfillOnStartup`).
-2. 🟨 **Антиспам/безпека для форми**
-   - ✅ базова серверна CAPTCHA-перевірка у створенні коментаря,
-   - ✅ опційна інтеграція з reCAPTCHA (`Captcha:Provider=Recaptcha`, `Captcha:SecretKey`).
-3. 🟨 **Файлові вкладення**
-   - ✅ upload `image/txt` через API (base64 payload),
-   - ✅ валідація MIME-типу та максимального розміру,
-   - ✅ локальне збереження з метаданими в коментарі,
-   - 🔲 відображення/preview у SPA.
-4. 🟨 **Realtime оновлення**
-- ✅ Додано SignalR-хаб `/hubs/comments` і публікацію події `commentCreated` при створенні коментаря.
-  - ✅ Додано web-клієнт (SPA) з підключенням до хабу і оновленням UI в реальному часі.
-5. 🟨 **Frontend (SPA)**
-   - ✅ базова таблиця/дерево коментарів + сортування,
-   - ✅ перемикач джерела даних у SPA: REST або GraphQL для list/search/create,
-   - ✅ форма створення коментаря з базовою клієнтською валідацією,
-   - ✅ перегляд вкладень + клієнтський preview перед відправкою,
-   - 🟨 розширено Angular-клієнт (`src/Comments.Web`): shell + routing + root list + thread/reply/captcha; лишається перенести preview/attachments/realtime та решту користувацьких сценаріїв з `wwwroot`.
-
-### Рекомендований порядок продовження
-
-1. Спершу реалізувати **upload + CAPTCHA** в API (щоб зафіксувати контракт).
-2. Далі додати **SignalR** та подію нового коментаря.
-3. Після цього підняти **Angular SPA** (інтеграція з REST/GraphQL/SignalR).
-4. Завершити **Elasticsearch** як окремий модуль пошуку, не блокуючи базовий CRUD.
+- Реалізовано базові API-шари (REST/GraphQL), валідацію, CAPTCHA, вкладення, SignalR і опційні інтеграції (RabbitMQ/Elasticsearch).
+- Актуальний перелік виконаних/невиконаних пунктів ведеться в `docs/tz-compliance-checklist.md`.
+- Якщо дані в README та checklist розходяться — довіряйте checklist.
