@@ -1,22 +1,22 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 67).
+Останнє оновлення: 2026-03-17 (ітерація 68).
 
 ## Що перевірено в цій ітерації
 
-- Розширено REST/GraphQL integration coverage для позитивного boundary-case attachment-flow:
-  - додано тест `CreateComment_WithAttachmentExactly1Mb_ReturnsCreated` для REST-сценарію (`attachment == 1_000_000` байт);
-  - додано тест `GraphQlCreateComment_WithAttachmentExactly1Mb_ReturnsCreatedComment` для GraphQL mutation (`attachment == 1_000_000` байт).
-- Додано допоміжний метод `BuildTextAttachmentPayload(...)` у тестовому класі для детермінованої генерації `text/plain` вкладення заданого розміру.
+- Розширено integration coverage для attachment validation edge-cases у REST/GraphQL:
+  - додано REST-тест `CreateComment_WithInvalidAttachmentContentType_ReturnsBadRequestValidationProblem` (перевірка помилки `Request.Attachment.ContentType` для `application/pdf`);
+  - додано GraphQL-тест `GraphQlCreateComment_WithInvalidAttachmentBase64_ReturnsValidationErrorsExtension` (перевірка `BAD_USER_INPUT` + `validationErrors["Request.Attachment"]` для malformed base64).
+- Зафіксовано технічне обмеження середовища: локально недоступний `dotnet` CLI, тому прогін `dotnet test` у цій ітерації не виконано (потрібна валідація в CI/на dev-машині з SDK).
 - Актуалізовано беклог: browser e2e smoke (Playwright/Cypress) лишається відкритим P0; middle+ load-test та demo-video link також залишаються обов'язковими до фінального Go/No-Go.
 
 ## Підсумок відповідності
 
-- **Повністю виконано:** 35 пунктів.
-- **Частково виконано:** 2 пункти.
+- **Повністю виконано:** 36 пунктів.
+- **Частково виконано:** 1 пункт.
 - **Не виконано:** 2 пункти.
 
-> Висновок: **100% відповідності ТЗ ще немає**.
+> Висновок: **100% відповідності ТЗ ще немає** (ключові блокери: e2e smoke, middle+ load-test із фактами, demo-video URL).
 
 ## Актуальний статус по ключових блоках ТЗ
 
@@ -79,6 +79,7 @@
    - ✅ API/README доповнено прикладами boundary-помилок (`Page/PageSize`, `CaptchaToken`, attachment);
    - ✅ додано backend boundary-валідацію і integration coverage для `attachment > 1MB` (REST + GraphQL);
    - ✅ додано позитивні boundary integration-тести для `attachment == 1MB` (REST + GraphQL);
+   - ✅ додано негативні attachment edge-case тести: REST (`invalid content-type`) та GraphQL (`invalid base64`);
    - лишається невеликий e2e-smoke шар для фіксації цих контрактів на рівні UI (Angular).
 
 ### P1
