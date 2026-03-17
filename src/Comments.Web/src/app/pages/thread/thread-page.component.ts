@@ -10,6 +10,7 @@ import {
   CreateCommentAttachmentRequest
 } from '../../core/comments-api.service';
 import { environment } from '../../../environments/environment';
+import { ApiErrorPresenterService, UiValidationError } from '../../core/api-error-presenter.service';
 
 @Component({
   selector: 'app-thread-page',
@@ -157,6 +158,13 @@ import { environment } from '../../../environments/environment';
 
           @if (submitMessage) {
             <p>{{ submitMessage }}</p>
+            @if (submitValidationErrors.length > 0) {
+              <ul class="error-list">
+                @for (validationError of submitValidationErrors; track validationError.field) {
+                  <li><strong>{{ validationError.field }}</strong>: {{ validationError.messages.join('; ') }}</li>
+                }
+              </ul>
+            }
           }
         </form>
       }
@@ -178,13 +186,18 @@ import { environment } from '../../../environments/environment';
       .captcha { width: 160px; height: 60px; border: 1px solid #d9e0ec; border-radius: 6px; }
       .text-preview { border: 1px solid #d9e0ec; border-radius: 6px; padding: 8px; background: #f8fafc; }
       .text-preview-title { color: #5f6f85; font-size: 0.85rem; margin-bottom: 6px; }
+      .error-list { color: #b32d2e; margin: 6px 0 0; }
     `
   ]
 })
+/**
+ * Сторінка перегляду однієї гілки коментарів та додавання відповіді.
+ */
 export class ThreadPageComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly commentsApi = inject(CommentsApiService);
   private readonly formBuilder = inject(FormBuilder);
+  private readonly apiErrorPresenter = inject(ApiErrorPresenterService);
 
   private signalRConnection: HubConnection | null = null;
 
@@ -193,6 +206,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   isSubmitting = false;
   errorMessage = '';
   submitMessage = '';
+  submitValidationErrors: ReadonlyArray<UiValidationError> = [];
   captchaChallengeId = '';
   captchaImageDataUrl = '';
   textPreviewHtml = '';
@@ -208,18 +222,27 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     captchaAnswer: ['', [Validators.required]]
   });
 
+  /**
+   * Ініціалізує стан сторінки та realtime-підписку.
+   */
   ngOnInit(): void {
     this.loadThread();
     this.reloadCaptcha();
     this.initializeSignalR();
   }
 
+  /**
+   * Коректно завершує SignalR-з'єднання при знищенні компонента.
+   */
   ngOnDestroy(): void {
     if (this.signalRConnection) {
       void this.signalRConnection.stop();
     }
   }
 
+  /**
+   * Оновлює HTML preview для тексту відповіді.
+   */
   previewText(): void {
     const text = this.replyForm.controls.text.value;
     if (!text || !text.trim()) {
@@ -234,6 +257,9 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Валідовує і читає вкладення відповіді у base64-представлення.
+   */
   onAttachmentSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -276,6 +302,9 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     reader.readAsDataURL(file);
   }
 
+  /**
+   * Перезавантажує CAPTCHA для форми відповіді.
+   */
   reloadCaptcha(): void {
     this.commentsApi.getCaptcha().subscribe({
       next: (response) => {
@@ -285,6 +314,9 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Надсилає нову відповідь у поточну гілку.
+   */
   submitReply(): void {
     if (!this.thread || this.replyForm.invalid || !this.captchaChallengeId) {
       return;
@@ -292,6 +324,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
 
     this.isSubmitting = true;
     this.submitMessage = '';
+    this.submitValidationErrors = [];
 
     const raw = this.replyForm.getRawValue();
 
@@ -316,19 +349,27 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
           this.reloadCaptcha();
           this.isSubmitting = false;
         },
-        error: () => {
-          this.submitMessage = 'Не вдалося надіслати відповідь. Перевірте дані форми.';
+        error: (error) => {
+          const uiError = this.apiErrorPresenter.present(error, 'Не вдалося надіслати відповідь. Перевірте дані форми.');
+          this.submitMessage = uiError.summary;
+          this.submitValidationErrors = uiError.validationErrors;
           this.reloadCaptcha();
           this.isSubmitting = false;
         }
       });
   }
 
+  /**
+   * Формує абсолютне посилання на файл вкладення.
+   */
   getAttachmentUrl(storagePath: string): string {
     const normalizedPath = storagePath.startsWith('/') ? storagePath : `/${storagePath}`;
     return `${environment.apiBaseUrl}${normalizedPath}`;
   }
 
+  /**
+   * Підвантажує вміст txt-вкладення для inline preview.
+   */
   loadTextAttachment(storagePath: string): void {
     if (this.attachmentTextPreviewByPath[storagePath] || this.attachmentTextLoadingByPath.has(storagePath)) {
       return;
@@ -347,6 +388,9 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Ініціалізує SignalR-підписку на створення нових коментарів.
+   */
   private initializeSignalR(): void {
     this.signalRConnection = new HubConnectionBuilder()
       .withUrl(`${environment.apiBaseUrl}/hubs/comments`)
@@ -360,6 +404,9 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     void this.signalRConnection.start();
   }
 
+  /**
+   * Завантажує дерево поточної гілки за id з маршруту.
+   */
   private loadThread(): void {
     const commentId = this.route.snapshot.paramMap.get('id');
     if (!commentId) {

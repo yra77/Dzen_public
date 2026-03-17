@@ -9,6 +9,7 @@ import {
   CommentsApiService,
   CreateCommentAttachmentRequest
 } from '../../core/comments-api.service';
+import { ApiErrorPresenterService, UiValidationError } from '../../core/api-error-presenter.service';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -72,6 +73,13 @@ import { environment } from '../../../environments/environment';
 
         @if (submitMessage) {
           <p>{{ submitMessage }}</p>
+          @if (submitValidationErrors.length > 0) {
+            <ul class="error-list">
+              @for (validationError of submitValidationErrors; track validationError.field) {
+                <li><strong>{{ validationError.field }}</strong>: {{ validationError.messages.join('; ') }}</li>
+              }
+            </ul>
+          }
         }
       </form>
 
@@ -166,12 +174,21 @@ import { environment } from '../../../environments/environment';
         border-radius: 6px;
         padding: 8px;
       }
+
+      .error-list {
+        color: #b32d2e;
+        margin: 6px 0 0;
+      }
     `
   ]
 })
+/**
+ * Сторінка списку кореневих коментарів з формою створення нового запису.
+ */
 export class RootListPageComponent implements OnDestroy {
   private readonly commentsApi = inject(CommentsApiService);
   private readonly formBuilder = inject(FormBuilder);
+  private readonly apiErrorPresenter = inject(ApiErrorPresenterService);
 
   private signalRConnection: HubConnection | null = null;
 
@@ -180,6 +197,7 @@ export class RootListPageComponent implements OnDestroy {
   isSubmitting = false;
   errorMessage = '';
   submitMessage = '';
+  submitValidationErrors: ReadonlyArray<UiValidationError> = [];
   captchaChallengeId = '';
   captchaImageDataUrl = '';
   textPreviewHtml = '';
@@ -202,12 +220,18 @@ export class RootListPageComponent implements OnDestroy {
     this.initializeSignalR();
   }
 
+  /**
+   * Коректно завершує SignalR-з'єднання при знищенні компонента.
+   */
   ngOnDestroy(): void {
     if (this.signalRConnection) {
       void this.signalRConnection.stop();
     }
   }
 
+  /**
+   * Завантажує сторінку кореневих коментарів.
+   */
   load(): void {
     this.isLoading = true;
     this.errorMessage = '';
@@ -224,6 +248,9 @@ export class RootListPageComponent implements OnDestroy {
     });
   }
 
+  /**
+   * Оновлює HTML preview для поточного тексту коментаря.
+   */
   previewText(): void {
     const text = this.createForm.controls.text.value;
     if (!text || !text.trim()) {
@@ -238,6 +265,9 @@ export class RootListPageComponent implements OnDestroy {
     });
   }
 
+  /**
+   * Валідовує і читає вкладення користувача у base64-представлення.
+   */
   onAttachmentSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -280,6 +310,9 @@ export class RootListPageComponent implements OnDestroy {
     reader.readAsDataURL(file);
   }
 
+  /**
+   * Перезавантажує CAPTCHA для форми створення.
+   */
   reloadCaptcha(): void {
     this.commentsApi.getCaptcha().subscribe({
       next: (response) => {
@@ -289,6 +322,9 @@ export class RootListPageComponent implements OnDestroy {
     });
   }
 
+  /**
+   * Надсилає створення кореневого коментаря через REST API.
+   */
   submitComment(): void {
     if (this.createForm.invalid || !this.captchaChallengeId) {
       return;
@@ -296,6 +332,7 @@ export class RootListPageComponent implements OnDestroy {
 
     this.isSubmitting = true;
     this.submitMessage = '';
+    this.submitValidationErrors = [];
 
     const raw = this.createForm.getRawValue();
 
@@ -326,19 +363,27 @@ export class RootListPageComponent implements OnDestroy {
           this.reloadCaptcha();
           this.isSubmitting = false;
         },
-        error: () => {
-          this.submitMessage = 'Не вдалося створити коментар. Перевірте дані форми.';
+        error: (error) => {
+          const uiError = this.apiErrorPresenter.present(error, 'Не вдалося створити коментар. Перевірте дані форми.');
+          this.submitMessage = uiError.summary;
+          this.submitValidationErrors = uiError.validationErrors;
           this.reloadCaptcha();
           this.isSubmitting = false;
         }
       });
   }
 
+  /**
+   * Формує абсолютне посилання на файл вкладення.
+   */
   getAttachmentUrl(storagePath: string): string {
     const normalizedPath = storagePath.startsWith('/') ? storagePath : `/${storagePath}`;
     return `${environment.apiBaseUrl}${normalizedPath}`;
   }
 
+  /**
+   * Підвантажує вміст txt-вкладення для inline preview.
+   */
   loadTextAttachment(storagePath: string): void {
     if (this.attachmentTextPreviewByPath[storagePath] || this.attachmentTextLoadingByPath.has(storagePath)) {
       return;
@@ -357,6 +402,9 @@ export class RootListPageComponent implements OnDestroy {
     });
   }
 
+  /**
+   * Ініціалізує SignalR-підписку, щоб оновлювати список при нових коментарях.
+   */
   private initializeSignalR(): void {
     this.signalRConnection = new HubConnectionBuilder()
       .withUrl(`${environment.apiBaseUrl}/hubs/comments`)
