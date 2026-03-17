@@ -1,14 +1,16 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 65).
+Останнє оновлення: 2026-03-17 (ітерація 66).
 
 ## Що перевірено в цій ітерації
 
-- Розширено Angular smoke/unit покриття attachment boundary-case-ів для runtime-флоу:
-  - у `RootListPageComponent` додано тести на відхилення вкладень >1MB та `application/pdf`;
-  - у `ThreadPageComponent` додано аналогічні тести для reply-форми (size/type reject);
-  - для нових тест-кейсів додано XML/JSDoc-коментарі до нових методів тестів відповідно до вимоги документування змін.
-- Оновлено актуальний backlog у цьому чеклісті: з frontend P0 лишається браузерний e2e smoke (Playwright/Cypress) та фіксація результатів у CI notes/README.
+- Посилено backend validation для attachment-flow на рівні CQRS validator:
+  - у `CreateCommentCommandValidator` додано явну перевірку максимально допустимого розміру вкладення (`<= 1_000_000` байт) до збереження файлу;
+  - додано XML-коментар до нового методу перевірки розміру вкладення.
+- Розширено REST/GraphQL integration coverage для boundary-case-у `attachment > 1MB`:
+  - додано тест `CreateComment_WithAttachmentLargerThan1Mb_ReturnsBadRequestValidationProblem`;
+  - додано тест `GraphQlCreateComment_WithAttachmentLargerThan1Mb_ReturnsValidationErrorsExtension`.
+- Оновлено актуальний backlog: browser e2e smoke (Playwright/Cypress) лишається відкритим P0, але в поточному середовищі встановлення нових npm-пакетів блокується політикою registry (`403`), тому e2e-ранер поки не додано.
 
 ## Підсумок відповідності
 
@@ -77,6 +79,7 @@
 2. **Закриття edge-cases CQRS/Validation:**
    - ✅ додано mixed REST/GraphQL boundary-тести для sort/filter/pagination;
    - ✅ API/README доповнено прикладами boundary-помилок (`Page/PageSize`, `CaptchaToken`, attachment);
+   - ✅ додано backend boundary-валідацію і integration coverage для `attachment > 1MB` (REST + GraphQL);
    - лишається невеликий e2e-smoke шар для фіксації цих контрактів на рівні UI (Angular).
 
 ### P1

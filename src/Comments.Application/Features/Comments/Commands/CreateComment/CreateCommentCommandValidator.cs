@@ -9,6 +9,7 @@ namespace Comments.Application.Features.Comments.Commands.CreateComment;
 /// </summary>
 public sealed class CreateCommentCommandValidator : AbstractValidator<CreateCommentCommand>
 {
+    private const int MaxAttachmentSizeBytes = 1_000_000;
     private static readonly Regex UserNameRegex = new("^[a-zA-Z0-9]+$", RegexOptions.Compiled);
     private static readonly HashSet<string> AllowedAttachmentContentTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -53,6 +54,11 @@ public sealed class CreateCommentCommandValidator : AbstractValidator<CreateComm
             .Must(HasValidAttachment)
             .When(x => x.Request.Attachment is not null)
             .WithMessage("Attachment is invalid. Ensure file name, content type and base64 payload are valid.");
+
+        RuleFor(x => x.Request.Attachment)
+            .Must(HasAllowedAttachmentSize)
+            .When(x => x.Request.Attachment is not null)
+            .WithMessage($"Attachment exceeds max size {MaxAttachmentSizeBytes} bytes.");
     }
 
     /// <summary>
@@ -102,6 +108,29 @@ public sealed class CreateCommentCommandValidator : AbstractValidator<CreateComm
         {
             _ = Convert.FromBase64String(attachment.Base64Content);
             return true;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Перевіряє, що декодований base64-контент вкладення не перевищує 1MB.
+    /// </summary>
+    /// <param name="attachment">Модель вкладення.</param>
+    /// <returns><see langword="true"/>, якщо розмір не перевищує ліміт або вкладення відсутнє.</returns>
+    private static bool HasAllowedAttachmentSize(AttachmentUploadRequest? attachment)
+    {
+        if (attachment is null)
+        {
+            return true;
+        }
+
+        try
+        {
+            var bytes = Convert.FromBase64String(attachment.Base64Content);
+            return bytes.Length <= MaxAttachmentSizeBytes;
         }
         catch (FormatException)
         {
