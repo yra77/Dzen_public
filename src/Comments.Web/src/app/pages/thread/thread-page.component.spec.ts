@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { HubConnectionBuilder } from '@microsoft/signalr';
+import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 
 import { ThreadPageComponent } from './thread-page.component';
 
@@ -73,7 +73,7 @@ describe('ThreadPageComponent smoke', () => {
     fakeHub = new FakeHubConnection();
     spyOn(HubConnectionBuilder.prototype, 'withUrl').and.returnThis();
     spyOn(HubConnectionBuilder.prototype, 'withAutomaticReconnect').and.returnThis();
-    spyOn(HubConnectionBuilder.prototype, 'build').and.returnValue(fakeHub as never);
+    spyOn(HubConnectionBuilder.prototype, 'build').and.returnValue(fakeHub as unknown as HubConnection);
 
     await TestBed.configureTestingModule({
       imports: [ThreadPageComponent],
@@ -293,7 +293,7 @@ describe('ThreadPageComponent smoke', () => {
     });
     httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
 
-    spyOn(window as never, 'FileReader').and.returnValue({
+    spyOn(window, 'FileReader').and.returnValue({
       result: 'data:image/png;base64,ZmFrZQ==',
       onload: null,
       readAsDataURL(this: { onload: null | (() => void) }) {
