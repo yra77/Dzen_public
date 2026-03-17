@@ -377,6 +377,38 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
         Assert.True(payload.Errors.ContainsKey("Request.Attachment"));
     }
 
+    /// <summary>
+    /// Verifies REST validation returns field-level attachment content-type errors for unsupported MIME.
+    /// </summary>
+    [Fact]
+    public async Task CreateComment_WithInvalidAttachmentContentType_ReturnsBadRequestValidationProblem()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/comments", new
+        {
+            userName = "User123",
+            email = "user@example.com",
+            homePage = "https://example.com",
+            text = "Hello",
+            parentId = (Guid?)null,
+            captchaToken = "1234",
+            attachment = new
+            {
+                fileName = "note.pdf",
+                contentType = "application/pdf",
+                base64Content = Convert.ToBase64String("Hello"u8.ToArray())
+            }
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<ValidationProblemPayload>();
+        Assert.NotNull(payload);
+        Assert.Equal(400, payload!.Status);
+        Assert.True(payload.Errors.ContainsKey("Request.Attachment.ContentType"));
+    }
+
 
     /// <summary>
     /// Verifies REST validation rejects attachment payloads larger than 1MB.
@@ -621,6 +653,47 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
         Assert.Equal("BAD_USER_INPUT", payload.Errors![0].Extensions?.Code);
         Assert.NotNull(payload.Errors![0].Extensions?.ValidationErrors);
         Assert.True(payload.Errors![0].Extensions!.ValidationErrors!.ContainsKey("Request.Attachment.ContentType"));
+    }
+
+    /// <summary>
+    /// Verifies GraphQL mutation maps malformed attachment base64 into BAD_USER_INPUT validation metadata.
+    /// </summary>
+    [Fact]
+    public async Task GraphQlCreateComment_WithInvalidAttachmentBase64_ReturnsValidationErrorsExtension()
+    {
+        using var client = _factory.CreateClient();
+
+        var body = new
+        {
+            query = @"mutation {
+  addComment(input: {
+    userName: \"User123\",
+    email: \"user@example.com\",
+    homePage: \"https://example.com\",
+    text: \"Hello\",
+    captchaToken: \"1234\",
+    attachment: {
+      fileName: \"note.txt\",
+      contentType: \"text/plain\",
+      base64Content: \"invalid-base64\"
+    }
+  }) {
+    id
+  }
+}"
+        };
+
+        var response = await client.PostAsJsonAsync("/graphql", body);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<GraphQlResponse>();
+        Assert.NotNull(payload);
+        Assert.NotNull(payload!.Errors);
+        Assert.NotEmpty(payload.Errors!);
+        Assert.Equal("BAD_USER_INPUT", payload.Errors![0].Extensions?.Code);
+        Assert.NotNull(payload.Errors![0].Extensions?.ValidationErrors);
+        Assert.True(payload.Errors![0].Extensions!.ValidationErrors!.ContainsKey("Request.Attachment"));
     }
 
 
