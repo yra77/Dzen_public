@@ -130,8 +130,16 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
 
           <label class="wide">
             Текст
-            <textarea rows="5" formControlName="text" (input)="previewText()" data-testid="thread-text-input"></textarea>
+            <textarea #threadTextArea rows="5" formControlName="text" (input)="previewText()" data-testid="thread-text-input"></textarea>
           </label>
+
+          <div class="wide text-toolbar" role="group" aria-label="Швидкі теги форматування" data-testid="thread-quick-tags">
+            <span class="text-toolbar-label">Швидкі теги:</span>
+            <button type="button" (click)="insertQuickTag('i', threadTextArea)">[i]</button>
+            <button type="button" (click)="insertQuickTag('strong', threadTextArea)">[strong]</button>
+            <button type="button" (click)="insertQuickTag('code', threadTextArea)">[code]</button>
+            <button type="button" (click)="insertQuickTag('a', threadTextArea)">[a]</button>
+          </div>
 
           @if (textPreviewHtml) {
             <div class="text-preview" data-testid="thread-preview-container">
@@ -150,6 +158,12 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
           </label>
           @if (attachmentMessage) {
             <p class="meta">{{ attachmentMessage }}</p>
+          }
+          @if (attachmentImagePreviewDataUrl) {
+            <figure class="attachment-selection-preview" data-testid="thread-selected-image-preview">
+              <img [src]="attachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
+              <figcaption class="meta">Preview вибраного зображення</figcaption>
+            </figure>
           }
 
           @if (captchaImageDataUrl) {
@@ -194,11 +208,14 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
       .attachment-inline { margin-top: 8px; }
       .attachment-thumb { max-width: 260px; max-height: 180px; border: 1px solid #d0d7de; border-radius: 8px; }
       .attachment-text { white-space: pre-wrap; background: #f8fafc; border: 1px solid #d9e0ec; border-radius: 8px; padding: 8px; }
+      .attachment-selection-preview { margin: 0; }
       .thread-node { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; margin-top: 10px; background: #fcfcfd; }
       .tree { list-style: none; margin: 0; padding-left: 14px; }
       .captcha { width: 160px; height: 60px; border: 1px solid #d9e0ec; border-radius: 6px; }
       .text-preview { border: 1px dashed #d0d5dd; border-radius: 8px; padding: 8px; background: #f8fafc; }
       .text-preview-title { color: #344054; font-size: 14px; margin-bottom: 6px; font-weight: 600; }
+      .text-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .text-toolbar-label { color: #344054; font-size: 14px; }
       .error-list { color: #b42318; margin: 6px 0 0; }
       @media (max-width: 900px) { .actions { flex-direction: column; } }
     `
@@ -235,6 +252,8 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   signalRStatusMessage = '';
   attachmentMessage = '';
   attachment: CreateCommentAttachmentRequest | null = null;
+  /** Data URL для preview вибраного зображення перед submit. */
+  attachmentImagePreviewDataUrl = '';
   attachmentTextPreviewByPath: Record<string, string> = {};
   attachmentTextLoadingByPath = new Set<string>();
 
@@ -294,6 +313,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     const file = input.files?.[0];
     this.attachment = null;
     this.attachmentMessage = '';
+    this.attachmentImagePreviewDataUrl = '';
 
     if (!file) {
       return;
@@ -326,9 +346,43 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
         contentType: file.type,
         base64Content
       };
+      this.attachmentImagePreviewDataUrl = file.type.startsWith('image/') ? result : '';
       this.attachmentMessage = `Вкладення готове: ${file.name}`;
     };
     reader.readAsDataURL(file);
+  }
+
+
+
+  /**
+   * Додає HTML-тег у текстове поле з урахуванням поточного виділення користувача.
+   */
+  insertQuickTag(tag: 'i' | 'strong' | 'code' | 'a', textarea: HTMLTextAreaElement): void {
+    const selectionStart = textarea.selectionStart ?? 0;
+    const selectionEnd = textarea.selectionEnd ?? selectionStart;
+    const selectedText = textarea.value.slice(selectionStart, selectionEnd);
+
+    const openTag = `<${tag}>`;
+    const closeTag = `</${tag}>`;
+    let replacement = `${openTag}${selectedText}${closeTag}`;
+    let caretPosition = selectionStart + openTag.length;
+
+    if (tag === 'a') {
+      const hasSelection = selectedText.trim().length > 0;
+      const linkText = hasSelection ? selectedText : 'посилання';
+      replacement = `<a href="https://example.com">${linkText}</a>`;
+      caretPosition = hasSelection
+        ? selectionStart + replacement.length
+        : selectionStart + '<a href="'.length;
+    } else if (selectedText.length > 0) {
+      caretPosition = selectionStart + replacement.length;
+    }
+
+    const updatedText = `${textarea.value.slice(0, selectionStart)}${replacement}${textarea.value.slice(selectionEnd)}`;
+    this.replyForm.controls.text.setValue(updatedText);
+    textarea.focus();
+    textarea.setSelectionRange(caretPosition, caretPosition);
+    this.previewText();
   }
 
   /**
@@ -383,6 +437,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
           this.previewMessage = '';
           this.attachment = null;
           this.attachmentMessage = '';
+          this.attachmentImagePreviewDataUrl = '';
           this.loadThread();
           this.reloadCaptcha();
           this.isSubmitting = false;
