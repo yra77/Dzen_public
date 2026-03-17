@@ -73,6 +73,9 @@ import { environment } from '../../../environments/environment';
 
         @if (submitMessage) {
           <p>{{ submitMessage }}</p>
+          @if (showRetryHint) {
+            <p class="meta">Можна повторити запит без зміни даних форми.</p>
+          }
           @if (submitValidationErrors.length > 0) {
             <ul class="error-list">
               @for (validationError of submitValidationErrors; track validationError.field) {
@@ -198,6 +201,7 @@ export class RootListPageComponent implements OnDestroy {
   errorMessage = '';
   submitMessage = '';
   submitValidationErrors: ReadonlyArray<UiValidationError> = [];
+  showRetryHint = false;
   captchaChallengeId = '';
   captchaImageDataUrl = '';
   textPreviewHtml = '';
@@ -333,6 +337,7 @@ export class RootListPageComponent implements OnDestroy {
     this.isSubmitting = true;
     this.submitMessage = '';
     this.submitValidationErrors = [];
+    this.showRetryHint = false;
 
     const raw = this.createForm.getRawValue();
 
@@ -367,6 +372,7 @@ export class RootListPageComponent implements OnDestroy {
           const uiError = this.apiErrorPresenter.present(error, 'Не вдалося створити коментар. Перевірте дані форми.');
           this.submitMessage = uiError.summary;
           this.submitValidationErrors = uiError.validationErrors;
+          this.showRetryHint = uiError.canRetry;
           this.reloadCaptcha();
           this.isSubmitting = false;
         }
