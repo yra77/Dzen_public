@@ -3,6 +3,9 @@ using MediatR;
 
 namespace Comments.Application.Features.Comments.Queries.SearchComments;
 
+/// <summary>
+/// Query contract for full-text comment search with pagination.
+/// </summary>
 public sealed record SearchCommentsQuery(
     string Query,
     int Page = 1,
