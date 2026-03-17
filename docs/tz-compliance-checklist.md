@@ -1,19 +1,20 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 61).
+Останнє оновлення: 2026-03-17 (ітерація 62).
 
 ## Що перевірено в цій ітерації
 
-- Розширено Angular smoke unit-тести для attachment-flow:
-  - `root-list`: перевірка, що `attachment` (txt) потрапляє у payload `POST /api/comments`.
-  - `thread-page`: перевірка, що reply із `attachment` (txt) коректно відправляється у create payload.
-- Оновлено статус browser e2e smoke: спроба встановити Playwright (`@playwright/test`) заблокована політикою доступу до npm registry (`403 Forbidden`), тому e2e лишається відкритим P0-пунктом.
-- Синхронізовано backlog у цьому чеклісті з урахуванням нових unit smoke покриттів та незакритого e2e-блоку.
+- Посилено `RabbitMqTaskQueuesConsumerHostedService` runtime-спостережуваність:
+  - додано .NET `Meter`-метрики `success/failed/retry/latency` для consumer-обробки;
+  - додано теги `worker`, `outcome/reason/result` для базової діагностики без зміни бізнес-контрактів;
+  - latency фіксується через `Stopwatch.GetElapsedTime(...)` для кожного повідомлення.
+- Додано XML-коментарі до нових полів/методів consumer-сервісу (відповідно до вимоги документувати нові класи/методи).
+- Оновлено backlog: блок `RabbitMQ hardening` частково просунувся (метрики додано), але персистентна ідемпотентність, alert-пороги й replay-runbook лишаються відкритими.
 
 ## Підсумок відповідності
 
-- **Повністю виконано:** 33 пункти.
-- **Частково виконано:** 2 пункти.
+- **Повністю виконано:** 34 пункти.
+- **Частково виконано:** 3 пункти.
 - **Не виконано:** 2 пункти.
 
 > Висновок: **100% відповідності ТЗ ще немає**.
@@ -27,7 +28,7 @@
 3. 🟨 **Frontend Angular LTS** — частково:
    - ключові user-flow реалізовані; уніфікацію validation UX для REST/GraphQL, transient/retry UX для load/captcha, preview fallback і SignalR reconnection-state виконано; лишається e2e smoke та частина boundary-документації.
 4. 🟨 **RabbitMQ production-hardening** — частково:
-   - є retry/DLQ базис, але ще потрібні персистентна ідемпотентність, метрики та replay-процедури.
+   - є retry/DLQ базис і додано базові consumer-метрики (`success/fail/retry/latency`), але ще потрібні персистентна ідемпотентність, alert-пороги та replay-процедури.
 5. ❌ **Фінальний Middle+ load-test у цільовому контурі RabbitMQ + Elasticsearch** — не виконано:
    - у `docs/load-test-middle-results.md` лишається шаблон без фактичних метрик.
 6. 🟨 **Delivery-артефакт Demo (README + відео)** — частково виконано:
@@ -80,8 +81,9 @@
 ### P1
 
 3. **RabbitMQ hardening до production-ready:**
+   - ✅ додано базові метрики consumer-обробки (`success/fail/retry/latency`) у RabbitMQ hosted service;
    - перенести ідемпотентність із in-memory у персистентне сховище (SQL/Redis);
-   - додати метрики consumer-обробки (`success/fail/retry/latency`) і базові alert-умови;
+   - додати базові alert-умови на нові метрики та задокументувати пороги;
    - формалізувати DLQ replay flow.
 
 4. **Фіналізувати Middle+ load-test:**
