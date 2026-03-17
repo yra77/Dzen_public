@@ -1,7 +1,6 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { Component, OnDestroy, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 
 import {
@@ -14,7 +13,7 @@ import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-root-list-page',
-  imports: [DatePipe, ReactiveFormsModule, RouterLink],
+  imports: [DatePipe, ReactiveFormsModule, NgTemplateOutlet],
   template: `
     <section class="panel">
       <h2>Останні кореневі коментарі</h2>
@@ -123,42 +122,151 @@ import { environment } from '../../../environments/environment';
       } @else {
         <ul class="comments-list" data-testid="root-comments-list">
           @for (comment of comments; track comment.id) {
-            <li class="comment">
-              <a [routerLink]="['/thread', comment.id]">#{{ comment.id }} {{ comment.userName }}</a>
-              <small>{{ comment.createdAtUtc | date: 'short' }}</small>
-              <p>{{ comment.text }}</p>
-              @if (comment.attachment) {
-                <div class="attachment-inline">
-                  @if (comment.attachment.contentType.startsWith('image/')) {
-                    <a [href]="getAttachmentUrl(comment.attachment.storagePath)" target="_blank" rel="noreferrer">
-                      <img
-                        class="attachment-thumb"
-                        [src]="getAttachmentUrl(comment.attachment.storagePath)"
-                        [alt]="comment.attachment.fileName"
-                      />
-                    </a>
-                  } @else if (comment.attachment.contentType === 'text/plain') {
-                    <button
-                      type="button"
-                      (click)="loadTextAttachment(comment.attachment.storagePath)"
-                      [disabled]="attachmentTextLoadingByPath.has(comment.attachment.storagePath)"
-                    >
-                      Показати txt preview
-                    </button>
-                    @if (attachmentTextLoadingByPath.has(comment.attachment.storagePath)) {
-                      <p class="meta">Завантаження txt preview...</p>
-                    }
-                    @if (attachmentTextPreviewByPath[comment.attachment.storagePath]) {
-                      <pre class="attachment-text">{{ attachmentTextPreviewByPath[comment.attachment.storagePath] }}</pre>
-                    }
-                  }
-                  <small>📎 <a [href]="getAttachmentUrl(comment.attachment.storagePath)" target="_blank" rel="noreferrer">{{ comment.attachment.fileName }}</a></small>
-                </div>
-              }
-              <small>Відповідей: {{ comment.replies.length }}</small>
+            <li>
+              <ng-container *ngTemplateOutlet="commentTreeNode; context: { $implicit: comment }"></ng-container>
             </li>
           }
         </ul>
+
+        <ng-template #commentTreeNode let-node>
+          <article class="comment thread-node">
+            <p class="meta"><strong>#{{ node.id }} {{ node.userName }}</strong> · {{ node.createdAtUtc | date: 'short' }}</p>
+            <p>{{ node.text }}</p>
+            @if (node.attachment) {
+              <div class="attachment-inline">
+                @if (node.attachment.contentType.startsWith('image/')) {
+                  <a [href]="getAttachmentUrl(node.attachment.storagePath)" target="_blank" rel="noreferrer">
+                    <img
+                      class="attachment-thumb"
+                      [src]="getAttachmentUrl(node.attachment.storagePath)"
+                      [alt]="node.attachment.fileName"
+                    />
+                  </a>
+                } @else if (node.attachment.contentType === 'text/plain') {
+                  <button
+                    type="button"
+                    (click)="loadTextAttachment(node.attachment.storagePath)"
+                    [disabled]="attachmentTextLoadingByPath.has(node.attachment.storagePath)"
+                  >
+                    Показати txt preview
+                  </button>
+                  @if (attachmentTextLoadingByPath.has(node.attachment.storagePath)) {
+                    <p class="meta">Завантаження txt preview...</p>
+                  }
+                  @if (attachmentTextPreviewByPath[node.attachment.storagePath]) {
+                    <pre class="attachment-text">{{ attachmentTextPreviewByPath[node.attachment.storagePath] }}</pre>
+                  }
+                }
+                <small>📎 <a [href]="getAttachmentUrl(node.attachment.storagePath)" target="_blank" rel="noreferrer">{{ node.attachment.fileName }}</a></small>
+              </div>
+            }
+            <div class="thread-actions">
+              <button type="button" (click)="openReplyModal(node)">Відповісти</button>
+            </div>
+          </article>
+
+          @if (node.replies.length > 0) {
+            <ul class="tree">
+              @for (childReply of node.replies; track childReply.id) {
+                <li>
+                  <ng-container *ngTemplateOutlet="commentTreeNode; context: { $implicit: childReply }"></ng-container>
+                </li>
+              }
+            </ul>
+          }
+        </ng-template>
+
+        @if (isReplyModalOpen) {
+          <div class="reply-modal-backdrop" (click)="closeReplyModal()">
+            <div class="reply-modal" (click)="$event.stopPropagation()">
+              <h3>Нова відповідь</h3>
+              <p class="meta">Відповідь для: <strong>{{ activeReplyTarget?.userName }}</strong></p>
+
+              <form class="form-grid" [formGroup]="replyForm" (ngSubmit)="submitReplyComment()">
+                <label>
+                  Ім'я
+                  <input type="text" formControlName="userName" />
+                </label>
+
+                <label>
+                  Email
+                  <input type="email" formControlName="email" />
+                </label>
+
+                <label class="wide">
+                  Текст
+                  <textarea #replyTextArea rows="5" formControlName="text" (input)="previewReplyText()"></textarea>
+                </label>
+
+                <div class="wide text-toolbar" role="group" aria-label="Швидкі теги форматування для відповіді">
+                  <span class="text-toolbar-label">Швидкі теги:</span>
+                  <button type="button" (click)="insertReplyQuickTag('i', replyTextArea)">[i]</button>
+                  <button type="button" (click)="insertReplyQuickTag('strong', replyTextArea)">[strong]</button>
+                  <button type="button" (click)="insertReplyQuickTag('code', replyTextArea)">[code]</button>
+                  <button type="button" (click)="insertReplyQuickTag('a', replyTextArea)">[a]</button>
+                </div>
+
+                @if (replyTextPreviewHtml) {
+                  <div class="text-preview">
+                    <div class="text-preview-title">Preview повідомлення</div>
+                    <div [innerHTML]="replyTextPreviewHtml"></div>
+                  </div>
+                }
+
+                @if (replyPreviewMessage) {
+                  <p class="meta">{{ replyPreviewMessage }}</p>
+                }
+
+                <label class="wide">
+                  Вкладення (png/jpg/gif/txt, до 1MB)
+                  <input type="file" (change)="onReplyAttachmentSelected($event)" accept=".txt,image/png,image/jpeg,image/gif,text/plain" />
+                </label>
+                @if (replyAttachmentMessage) {
+                  <p class="meta">{{ replyAttachmentMessage }}</p>
+                }
+                @if (replyAttachmentImagePreviewDataUrl) {
+                  <figure class="attachment-selection-preview">
+                    <img [src]="replyAttachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
+                    <figcaption class="meta">Preview вибраного зображення</figcaption>
+                  </figure>
+                }
+
+                @if (replyCaptchaImageDataUrl) {
+                  <img [src]="replyCaptchaImageDataUrl" alt="Captcha" class="captcha" />
+                }
+
+                @if (replyCaptchaMessage) {
+                  <p class="error">{{ replyCaptchaMessage }}</p>
+                }
+
+                <label>
+                  CAPTCHA (сума чисел)
+                  <input type="text" formControlName="captchaAnswer" />
+                </label>
+
+                <div class="actions wide">
+                  <button type="button" (click)="reloadReplyCaptcha()">Оновити CAPTCHA</button>
+                  <button type="button" (click)="closeReplyModal()">Закрити</button>
+                  <button type="submit" [disabled]="replyForm.invalid || isReplySubmitting">Створити коментар</button>
+                </div>
+
+                @if (replySubmitMessage) {
+                  <p>{{ replySubmitMessage }}</p>
+                  @if (replyShowRetryHint) {
+                    <p class="meta">Можна повторити запит без зміни даних форми.</p>
+                  }
+                  @if (replySubmitValidationErrors.length > 0) {
+                    <ul class="error-list">
+                      @for (validationError of replySubmitValidationErrors; track validationError.field) {
+                        <li><strong>{{ validationError.field }}</strong>: {{ validationError.messages.join('; ') }}</li>
+                      }
+                    </ul>
+                  }
+                }
+              </form>
+            </div>
+          </div>
+        }
       }
     </section>
   `,
@@ -168,14 +276,21 @@ import { environment } from '../../../environments/environment';
       .meta { color: #475467; }
       .comments-list { padding: 0; list-style: none; display: grid; gap: 10px; }
       .comment { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; background: #fcfcfd; }
+      .thread-node { margin-top: 10px; }
+      .thread-actions { margin-top: 8px; display: flex; justify-content: flex-end; }
+      .tree { list-style: none; margin: 0; padding-left: 14px; }
       .attachment-inline { margin-top: 8px; }
       .attachment-thumb { max-width: 260px; max-height: 180px; border: 1px solid #d0d7de; border-radius: 8px; }
       .attachment-text { white-space: pre-wrap; background: #f8fafc; border: 1px solid #d9e0ec; border-radius: 8px; padding: 8px; }
       .attachment-selection-preview { margin: 0; }
       .error-list { color: #b42318; margin: 6px 0 0; }
       .captcha { width: 160px; height: 60px; border: 1px solid #d9e0ec; border-radius: 6px; }
+      .text-preview { border: 1px dashed #d0d5dd; border-radius: 8px; padding: 8px; background: #f8fafc; }
+      .text-preview-title { color: #344054; font-size: 14px; margin-bottom: 6px; font-weight: 600; }
       .text-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
       .text-toolbar-label { color: #344054; font-size: 14px; }
+      .reply-modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
+      .reply-modal { width: min(760px, 100%); max-height: 92vh; overflow-y: auto; background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25); }
       @media (max-width: 900px) { .actions { flex-direction: column; } }
     `
   ]
@@ -214,11 +329,32 @@ export class RootListPageComponent implements OnDestroy {
   attachmentImagePreviewDataUrl = '';
   attachmentTextPreviewByPath: Record<string, string> = {};
   attachmentTextLoadingByPath = new Set<string>();
+  activeReplyTarget: CommentNode | null = null;
+  isReplyModalOpen = false;
+  isReplySubmitting = false;
+  replySubmitMessage = '';
+  replySubmitValidationErrors: ReadonlyArray<UiValidationError> = [];
+  replyShowRetryHint = false;
+  replyCaptchaChallengeId = '';
+  replyCaptchaImageDataUrl = '';
+  replyCaptchaMessage = '';
+  replyTextPreviewHtml = '';
+  replyPreviewMessage = '';
+  replyAttachmentMessage = '';
+  replyAttachment: CreateCommentAttachmentRequest | null = null;
+  replyAttachmentImagePreviewDataUrl = '';
 
   readonly createForm = this.formBuilder.nonNullable.group({
     userName: ['', [Validators.required, Validators.maxLength(100)]],
     email: ['', [Validators.required, Validators.email]],
     homePage: ['', [Validators.pattern('https?://.+')]],
+    text: ['', [Validators.required, Validators.maxLength(5000)]],
+    captchaAnswer: ['', [Validators.required]]
+  });
+
+  readonly replyForm = this.formBuilder.nonNullable.group({
+    userName: ['', [Validators.required, Validators.maxLength(100)]],
+    email: ['', [Validators.required, Validators.email]],
     text: ['', [Validators.required, Validators.maxLength(5000)]],
     captchaAnswer: ['', [Validators.required]]
   });
@@ -287,77 +423,25 @@ export class RootListPageComponent implements OnDestroy {
    * Валідовує і читає вкладення користувача у base64-представлення.
    */
   onAttachmentSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    this.attachment = null;
-    this.attachmentMessage = '';
-    this.attachmentImagePreviewDataUrl = '';
-
-    if (!file) {
-      return;
-    }
-
-    if (file.size > 1_000_000) {
-      this.attachmentMessage = 'Файл перевищує 1MB.';
-      input.value = '';
-      return;
-    }
-
-    const allowedContentTypes = ['image/png', 'image/jpeg', 'image/gif', 'text/plain'];
-    if (!allowedContentTypes.includes(file.type)) {
-      this.attachmentMessage = 'Недозволений тип вкладення.';
-      input.value = '';
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result !== 'string') {
-        this.attachmentMessage = 'Не вдалося прочитати файл.';
-        return;
+    this.processAttachmentSelection(
+      event,
+      (attachment) => {
+        this.attachment = attachment;
+      },
+      (message) => {
+        this.attachmentMessage = message;
+      },
+      (preview) => {
+        this.attachmentImagePreviewDataUrl = preview;
       }
-
-      const base64Content = result.includes(',') ? result.split(',')[1] : result;
-      this.attachment = {
-        fileName: file.name,
-        contentType: file.type,
-        base64Content
-      };
-      this.attachmentImagePreviewDataUrl = file.type.startsWith('image/') ? result : '';
-      this.attachmentMessage = `Вкладення готове: ${file.name}`;
-    };
-    reader.readAsDataURL(file);
+    );
   }
 
   /**
    * Додає HTML-тег у текстове поле з урахуванням поточного виділення користувача.
    */
   insertQuickTag(tag: 'i' | 'strong' | 'code' | 'a', textarea: HTMLTextAreaElement): void {
-    const selectionStart = textarea.selectionStart ?? 0;
-    const selectionEnd = textarea.selectionEnd ?? selectionStart;
-    const selectedText = textarea.value.slice(selectionStart, selectionEnd);
-
-    const openTag = `<${tag}>`;
-    const closeTag = `</${tag}>`;
-    let replacement = `${openTag}${selectedText}${closeTag}`;
-    let caretPosition = selectionStart + openTag.length;
-
-    if (tag === 'a') {
-      const hasSelection = selectedText.trim().length > 0;
-      const linkText = hasSelection ? selectedText : 'посилання';
-      replacement = `<a href="https://example.com">${linkText}</a>`;
-      caretPosition = hasSelection
-        ? selectionStart + replacement.length
-        : selectionStart + '<a href="'.length;
-    } else if (selectedText.length > 0) {
-      caretPosition = selectionStart + replacement.length;
-    }
-
-    const updatedText = `${textarea.value.slice(0, selectionStart)}${replacement}${textarea.value.slice(selectionEnd)}`;
-    this.createForm.controls.text.setValue(updatedText);
-    textarea.focus();
-    textarea.setSelectionRange(caretPosition, caretPosition);
+    this.insertTagIntoTextarea(tag, textarea, this.createForm.controls.text);
     this.previewText();
   }
 
@@ -436,6 +520,148 @@ export class RootListPageComponent implements OnDestroy {
   }
 
   /**
+   * Відкриває модальне вікно створення відповіді для вибраного коментаря.
+   */
+  openReplyModal(target: CommentNode): void {
+    this.activeReplyTarget = target;
+    this.isReplyModalOpen = true;
+    this.isReplySubmitting = false;
+    this.replySubmitMessage = '';
+    this.replySubmitValidationErrors = [];
+    this.replyShowRetryHint = false;
+    this.replyTextPreviewHtml = '';
+    this.replyPreviewMessage = '';
+    this.replyAttachment = null;
+    this.replyAttachmentMessage = '';
+    this.replyAttachmentImagePreviewDataUrl = '';
+    this.replyForm.reset({
+      userName: this.createForm.controls.userName.value,
+      email: this.createForm.controls.email.value,
+      text: '',
+      captchaAnswer: ''
+    });
+    this.reloadReplyCaptcha();
+  }
+
+  /**
+   * Закриває модальне вікно створення відповіді.
+   */
+  closeReplyModal(): void {
+    this.isReplyModalOpen = false;
+    this.activeReplyTarget = null;
+  }
+
+  /**
+   * Оновлює HTML preview для тексту відповіді з модального вікна.
+   */
+  previewReplyText(): void {
+    const text = this.replyForm.controls.text.value;
+    if (!text || !text.trim()) {
+      this.replyTextPreviewHtml = '';
+      this.replyPreviewMessage = '';
+      return;
+    }
+
+    this.commentsApi.previewComment(text).subscribe({
+      next: (preview) => {
+        this.replyTextPreviewHtml = preview;
+        this.replyPreviewMessage = '';
+      },
+      error: () => {
+        this.replyTextPreviewHtml = '';
+        this.replyPreviewMessage = 'Preview тимчасово недоступний. Ви можете продовжити відправку відповіді без preview.';
+      }
+    });
+  }
+
+  /**
+   * Додає HTML-тег у поле тексту відповіді модального вікна.
+   */
+  insertReplyQuickTag(tag: 'i' | 'strong' | 'code' | 'a', textarea: HTMLTextAreaElement): void {
+    this.insertTagIntoTextarea(tag, textarea, this.replyForm.controls.text);
+    this.previewReplyText();
+  }
+
+  /**
+   * Валідовує та читає вкладення для reply-форми.
+   */
+  onReplyAttachmentSelected(event: Event): void {
+    this.processAttachmentSelection(
+      event,
+      (attachment) => {
+        this.replyAttachment = attachment;
+      },
+      (message) => {
+        this.replyAttachmentMessage = message;
+      },
+      (preview) => {
+        this.replyAttachmentImagePreviewDataUrl = preview;
+      }
+    );
+  }
+
+  /**
+   * Перезавантажує CAPTCHA для модального вікна відповіді.
+   */
+  reloadReplyCaptcha(): void {
+    this.replyCaptchaMessage = '';
+
+    this.commentsApi.getCaptcha().subscribe({
+      next: (response) => {
+        this.replyCaptchaChallengeId = response.challengeId;
+        this.replyCaptchaImageDataUrl = `data:${response.mimeType};base64,${response.imageBase64}`;
+      },
+      error: (error) => {
+        const uiError = this.apiErrorPresenter.present(error, 'Не вдалося завантажити CAPTCHA для відповіді.');
+        this.replyCaptchaMessage = uiError.summary;
+      }
+    });
+  }
+
+  /**
+   * Надсилає створення відповіді на обраний коментар.
+   */
+  submitReplyComment(): void {
+    if (this.replyForm.invalid || !this.activeReplyTarget || !this.replyCaptchaChallengeId) {
+      return;
+    }
+
+    this.isReplySubmitting = true;
+    this.replySubmitMessage = '';
+    this.replySubmitValidationErrors = [];
+    this.replyShowRetryHint = false;
+
+    const raw = this.replyForm.getRawValue();
+
+    this.commentsApi
+      .createComment({
+        userName: raw.userName,
+        email: raw.email,
+        homePage: null,
+        text: raw.text,
+        parentId: this.activeReplyTarget.id,
+        captchaToken: `${this.replyCaptchaChallengeId}:${raw.captchaAnswer}`,
+        attachment: this.replyAttachment
+      })
+      .subscribe({
+        next: () => {
+          this.replySubmitMessage = 'Коментар успішно створено.';
+          this.closeReplyModal();
+          this.load();
+          this.isReplySubmitting = false;
+        },
+        error: (error) => {
+          const uiError = this.apiErrorPresenter.present(error, 'Не вдалося створити відповідь. Перевірте дані форми.');
+          this.replySubmitMessage = uiError.summary;
+          this.replySubmitValidationErrors = uiError.validationErrors;
+          this.replyShowRetryHint = uiError.canRetry;
+          this.reloadReplyCaptcha();
+          this.isReplySubmitting = false;
+        }
+      });
+  }
+
+  /**
    * Формує абсолютне посилання на файл вкладення.
    */
   getAttachmentUrl(storagePath: string): string {
@@ -462,6 +688,92 @@ export class RootListPageComponent implements OnDestroy {
         this.attachmentTextLoadingByPath.delete(storagePath);
       }
     });
+  }
+
+  /**
+   * Універсально вставляє HTML-теги у textarea та синхронізує FormControl.
+   */
+  private insertTagIntoTextarea(
+    tag: 'i' | 'strong' | 'code' | 'a',
+    textarea: HTMLTextAreaElement,
+    control: { setValue: (value: string) => void }
+  ): void {
+    const selectionStart = textarea.selectionStart ?? 0;
+    const selectionEnd = textarea.selectionEnd ?? selectionStart;
+    const selectedText = textarea.value.slice(selectionStart, selectionEnd);
+
+    const openTag = `<${tag}>`;
+    const closeTag = `</${tag}>`;
+    let replacement = `${openTag}${selectedText}${closeTag}`;
+    let caretPosition = selectionStart + openTag.length;
+
+    if (tag === 'a') {
+      const hasSelection = selectedText.trim().length > 0;
+      const linkText = hasSelection ? selectedText : 'посилання';
+      replacement = `<a href="https://example.com">${linkText}</a>`;
+      caretPosition = hasSelection
+        ? selectionStart + replacement.length
+        : selectionStart + '<a href="'.length;
+    } else if (selectedText.length > 0) {
+      caretPosition = selectionStart + replacement.length;
+    }
+
+    const updatedText = `${textarea.value.slice(0, selectionStart)}${replacement}${textarea.value.slice(selectionEnd)}`;
+    control.setValue(updatedText);
+    textarea.focus();
+    textarea.setSelectionRange(caretPosition, caretPosition);
+  }
+
+  /**
+   * Валідовує вкладення, читає його як DataURL та повертає в callback-и.
+   */
+  private processAttachmentSelection(
+    event: Event,
+    setAttachment: (attachment: CreateCommentAttachmentRequest | null) => void,
+    setMessage: (message: string) => void,
+    setPreview: (preview: string) => void
+  ): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    setAttachment(null);
+    setMessage('');
+    setPreview('');
+
+    if (!file) {
+      return;
+    }
+
+    if (file.size > 1_000_000) {
+      setMessage('Файл перевищує 1MB.');
+      input.value = '';
+      return;
+    }
+
+    const allowedContentTypes = ['image/png', 'image/jpeg', 'image/gif', 'text/plain'];
+    if (!allowedContentTypes.includes(file.type)) {
+      setMessage('Недозволений тип вкладення.');
+      input.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== 'string') {
+        setMessage('Не вдалося прочитати файл.');
+        return;
+      }
+
+      const base64Content = result.includes(',') ? result.split(',')[1] : result;
+      setAttachment({
+        fileName: file.name,
+        contentType: file.type,
+        base64Content
+      });
+      setPreview(file.type.startsWith('image/') ? result : '');
+      setMessage(`Вкладення готове: ${file.name}`);
+    };
+    reader.readAsDataURL(file);
   }
 
   /**
