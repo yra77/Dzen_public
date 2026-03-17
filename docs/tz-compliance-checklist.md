@@ -1,15 +1,14 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 64).
+Останнє оновлення: 2026-03-17 (ітерація 65).
 
 ## Що перевірено в цій ітерації
 
-- Завершено `RabbitMQ hardening` у частині експлуатаційної готовності:
-  - додано конфігуровані alert-пороги (`RabbitMq:Alerts`) для `failure-rate` та `average-latency`;
-  - у `RabbitMqTaskQueuesConsumerHostedService` реалізовано ковзне вікно метрик на worker та warning/critical логування при перевищенні порогів;
-  - формалізовано `DLQ replay-flow` у runbook `docs/rabbitmq-consumer-runbook.md`.
-- Актуалізовано `appsettings.json` новим блоком `RabbitMq:Alerts` для керування порогами без зміни коду.
-- Додано XML-коментарі до нових класів/методів alert-механізму consumer-а (відповідно до вимоги документувати нові/змінені класи й методи).
+- Розширено Angular smoke/unit покриття attachment boundary-case-ів для runtime-флоу:
+  - у `RootListPageComponent` додано тести на відхилення вкладень >1MB та `application/pdf`;
+  - у `ThreadPageComponent` додано аналогічні тести для reply-форми (size/type reject);
+  - для нових тест-кейсів додано XML/JSDoc-коментарі до нових методів тестів відповідно до вимоги документування змін.
+- Оновлено актуальний backlog у цьому чеклісті: з frontend P0 лишається браузерний e2e smoke (Playwright/Cypress) та фіксація результатів у CI notes/README.
 
 ## Підсумок відповідності
 
@@ -72,6 +71,7 @@
 1. **Frontend stabilization (Angular LTS):**
    - ✅ додано component smoke-тести для `root create`, `thread reply`, `preview fallback` та `realtime` UX-статусів;
    - ✅ unit smoke для attachment-flow додано (root + thread);
+   - ✅ додано додаткові smoke/unit тести на boundary attachment (size/type) для root і thread сценаріїв;
    - лишається додати browser e2e smoke (Playwright/Cypress) для реального runtime-сценарію, включно з `attachments`.
 
 2. **Закриття edge-cases CQRS/Validation:**

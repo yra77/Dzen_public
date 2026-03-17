@@ -224,6 +224,59 @@ describe('ThreadPageComponent smoke', () => {
     expect(component.submitMessage).toContain('Відповідь додано');
   });
 
+  /** Перевіряє, що reply-форма блокує вкладення, які перевищують ліміт 1MB. */
+  it('відхиляє reply-вкладення розміром більше 1MB', () => {
+    httpMock.expectOne('http://localhost:8080/api/comments/root-100/thread').flush({
+      id: 'root-100',
+      parentId: null,
+      userName: 'Root',
+      email: 'root@example.com',
+      homePage: null,
+      text: 'Root text',
+      createdAtUtc: '2026-03-17T10:00:00Z',
+      attachment: null,
+      replies: []
+    });
+    httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
+
+    const fileInput = document.createElement('input');
+    Object.defineProperty(fileInput, 'files', {
+      value: [new File([new Uint8Array(1_000_001)], 'big.txt', { type: 'text/plain' })]
+    });
+
+    component.onAttachmentSelected({ target: fileInput } as unknown as Event);
+
+    expect(component.attachment).toBeNull();
+    expect(component.attachmentMessage).toContain('перевищує 1MB');
+  });
+
+  /** Перевіряє, що reply-форма блокує невалідні типи вкладень. */
+  it('відхиляє reply-вкладення з недозволеним content-type', () => {
+    httpMock.expectOne('http://localhost:8080/api/comments/root-100/thread').flush({
+      id: 'root-100',
+      parentId: null,
+      userName: 'Root',
+      email: 'root@example.com',
+      homePage: null,
+      text: 'Root text',
+      createdAtUtc: '2026-03-17T10:00:00Z',
+      attachment: null,
+      replies: []
+    });
+    httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
+
+    const fileInput = document.createElement('input');
+    Object.defineProperty(fileInput, 'files', {
+      value: [new File(['pdf-body'], 'file.pdf', { type: 'application/pdf' })]
+    });
+
+    component.onAttachmentSelected({ target: fileInput } as unknown as Event);
+
+    expect(component.attachment).toBeNull();
+    expect(component.attachmentMessage).toContain('Недозволений тип');
+  });
+
+
   it('показує realtime fallback-повідомлення при розриві зʼєднання', () => {
     httpMock.expectOne('http://localhost:8080/api/comments/root-100/thread').flush({
       id: 'root-100',
