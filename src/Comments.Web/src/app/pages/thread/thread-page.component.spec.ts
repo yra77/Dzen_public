@@ -169,6 +169,61 @@ describe('ThreadPageComponent smoke', () => {
     expect(component.submitMessage).toContain('Відповідь додано');
   });
 
+
+  /** Перевіряє, що вкладення передається у payload при створенні reply. */
+  it('надсилає reply з txt-вкладенням', () => {
+    httpMock.expectOne('http://localhost:8080/api/comments/root-100/thread').flush({
+      id: 'root-100',
+      parentId: null,
+      userName: 'Root',
+      email: 'root@example.com',
+      homePage: null,
+      text: 'Root text',
+      createdAtUtc: '2026-03-17T10:00:00Z',
+      attachment: null,
+      replies: []
+    });
+    httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
+
+    component.attachment = {
+      fileName: 'reply.txt',
+      contentType: 'text/plain',
+      base64Content: 'UmVwbHk='
+    };
+
+    component.replyForm.setValue({
+      userName: 'Reply User',
+      email: 'reply@example.com',
+      text: 'Reply with attachment',
+      captchaAnswer: '7'
+    });
+
+    component.submitReply();
+
+    const createRequest = httpMock.expectOne('http://localhost:8080/api/comments');
+    expect(createRequest.request.body.attachment).toEqual({
+      fileName: 'reply.txt',
+      contentType: 'text/plain',
+      base64Content: 'UmVwbHk='
+    });
+    createRequest.flush({ id: 'reply-2' });
+
+    httpMock.expectOne('http://localhost:8080/api/comments/root-100/thread').flush({
+      id: 'root-100',
+      parentId: null,
+      userName: 'Root',
+      email: 'root@example.com',
+      homePage: null,
+      text: 'Root text',
+      createdAtUtc: '2026-03-17T10:00:00Z',
+      attachment: null,
+      replies: []
+    });
+    httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-2', imageBase64: 'BBBB', mimeType: 'image/png', ttlSeconds: 60 });
+
+    expect(component.submitMessage).toContain('Відповідь додано');
+  });
+
   it('показує realtime fallback-повідомлення при розриві зʼєднання', () => {
     httpMock.expectOne('http://localhost:8080/api/comments/root-100/thread').flush({
       id: 'root-100',
