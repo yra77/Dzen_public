@@ -158,6 +158,9 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
 
           @if (submitMessage) {
             <p>{{ submitMessage }}</p>
+            @if (showRetryHint) {
+              <p class="meta">Можна повторити запит без зміни даних форми.</p>
+            }
             @if (submitValidationErrors.length > 0) {
               <ul class="error-list">
                 @for (validationError of submitValidationErrors; track validationError.field) {
@@ -207,6 +210,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   errorMessage = '';
   submitMessage = '';
   submitValidationErrors: ReadonlyArray<UiValidationError> = [];
+  showRetryHint = false;
   captchaChallengeId = '';
   captchaImageDataUrl = '';
   textPreviewHtml = '';
@@ -325,6 +329,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     this.isSubmitting = true;
     this.submitMessage = '';
     this.submitValidationErrors = [];
+    this.showRetryHint = false;
 
     const raw = this.replyForm.getRawValue();
 
@@ -353,6 +358,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
           const uiError = this.apiErrorPresenter.present(error, 'Не вдалося надіслати відповідь. Перевірте дані форми.');
           this.submitMessage = uiError.summary;
           this.submitValidationErrors = uiError.validationErrors;
+          this.showRetryHint = uiError.canRetry;
           this.reloadCaptcha();
           this.isSubmitting = false;
         }

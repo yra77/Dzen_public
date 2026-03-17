@@ -15,6 +15,8 @@ export interface UiValidationError {
 export interface UiApiError {
   summary: string;
   validationErrors: UiValidationError[];
+  /** Ознака, що помилка є тимчасовою і користувачу варто запропонувати retry. */
+  canRetry: boolean;
 }
 
 /**
@@ -27,22 +29,42 @@ export class ApiErrorPresenterService {
    */
   present(error: unknown, fallbackMessage: string): UiApiError {
     if (!(error instanceof HttpErrorResponse)) {
-      return { summary: fallbackMessage, validationErrors: [] };
+      return { summary: fallbackMessage, validationErrors: [], canRetry: false };
     }
 
     const validationErrors = this.extractValidationErrors(error.error);
     if (validationErrors.length > 0) {
       return {
         summary: this.buildValidationSummary(validationErrors),
-        validationErrors
+        validationErrors,
+        canRetry: false
       };
     }
 
     if (error.status === 0) {
-      return { summary: 'Сервер недоступний. Перевірте підключення та спробуйте ще раз.', validationErrors: [] };
+      return {
+        summary: 'Сервер недоступний. Перевірте підключення та спробуйте ще раз.',
+        validationErrors: [],
+        canRetry: true
+      };
     }
 
-    return { summary: fallbackMessage, validationErrors: [] };
+    if (this.isTransientStatus(error.status)) {
+      return {
+        summary: 'Тимчасова помилка мережі або сервера. Спробуйте ще раз через кілька секунд.',
+        validationErrors: [],
+        canRetry: true
+      };
+    }
+
+    return { summary: fallbackMessage, validationErrors: [], canRetry: false };
+  }
+
+  /**
+   * Визначає HTTP-статуси, для яких доцільно показувати UX із повторною спробою.
+   */
+  private isTransientStatus(statusCode: number): boolean {
+    return statusCode === 408 || statusCode === 425 || statusCode === 429 || statusCode === 500 || statusCode === 502 || statusCode === 503 || statusCode === 504;
   }
 
   private buildValidationSummary(validationErrors: ReadonlyArray<UiValidationError>): string {
@@ -120,4 +142,3 @@ export class ApiErrorPresenterService {
     });
   }
 }
-
