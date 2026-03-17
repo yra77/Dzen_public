@@ -17,105 +17,111 @@ import { environment } from '../../../environments/environment';
   template: `
     <section class="panel">
       <h2>Останні кореневі коментарі</h2>
-      <button type="button" (click)="load()" [disabled]="isLoading" data-testid="root-refresh-button">Оновити</button>
+      <button type="button" (click)="openCreateModal()" data-testid="root-open-create-modal-button">Відповісти</button>
       @if (signalRStatusMessage) {
         <p class="meta">{{ signalRStatusMessage }}</p>
       }
 
-      <h3>Додати кореневий коментар</h3>
-      <form class="form-grid" [formGroup]="createForm" (ngSubmit)="submitComment()" data-testid="root-create-form">
-        <label>
-          Ім'я
-          <input type="text" formControlName="userName" data-testid="root-user-name-input" />
-        </label>
+      @if (isCreateModalOpen) {
+        <div class="reply-modal-backdrop" (click)="closeCreateModal()">
+          <div class="reply-modal" (click)="$event.stopPropagation()">
+            <h3>Новий коментар</h3>
+            <form class="form-grid" [formGroup]="createForm" (ngSubmit)="submitComment()" data-testid="root-create-form">
+              <label>
+                Ім'я
+                <input type="text" formControlName="userName" data-testid="root-user-name-input" />
+              </label>
 
-        <label>
-          Email
-          <input type="email" formControlName="email" data-testid="root-email-input" />
-        </label>
+              <label>
+                Email
+                <input type="email" formControlName="email" data-testid="root-email-input" />
+              </label>
 
-        <label>
-          Homepage
-          <input type="url" formControlName="homePage" placeholder="https://example.com" data-testid="root-home-page-input" />
-        </label>
+              <label>
+                Homepage
+                <input type="url" formControlName="homePage" placeholder="https://example.com" data-testid="root-home-page-input" />
+              </label>
 
-        <label class="wide">
-          Текст
-          <textarea #rootTextArea rows="5" formControlName="text" (input)="previewText()" data-testid="root-text-input"></textarea>
-        </label>
+              <label class="wide">
+                Текст
+                <textarea #rootTextArea rows="5" formControlName="text" (input)="previewText()" data-testid="root-text-input"></textarea>
+              </label>
 
-        <div class="wide text-toolbar" role="group" aria-label="Швидкі теги форматування" data-testid="root-quick-tags">
-          <span class="text-toolbar-label">Швидкі теги:</span>
-          <button type="button" (click)="insertQuickTag('i', rootTextArea)">[i]</button>
-          <button type="button" (click)="insertQuickTag('strong', rootTextArea)">[strong]</button>
-          <button type="button" (click)="insertQuickTag('code', rootTextArea)">[code]</button>
-          <button type="button" (click)="insertQuickTag('a', rootTextArea)">[a]</button>
-        </div>
+              <div class="wide text-toolbar" role="group" aria-label="Швидкі теги форматування" data-testid="root-quick-tags">
+                <span class="text-toolbar-label">Швидкі теги:</span>
+                <button type="button" (click)="insertQuickTag('i', rootTextArea)">[i]</button>
+                <button type="button" (click)="insertQuickTag('strong', rootTextArea)">[strong]</button>
+                <button type="button" (click)="insertQuickTag('code', rootTextArea)">[code]</button>
+                <button type="button" (click)="insertQuickTag('a', rootTextArea)">[a]</button>
+              </div>
 
-        @if (textPreviewHtml) {
-            <div class="text-preview" data-testid="root-preview-container">
-            <div class="text-preview-title">Preview повідомлення</div>
-            <div [innerHTML]="textPreviewHtml"></div>
-          </div>
-        }
-
-        @if (previewMessage) {
-          <p class="meta">{{ previewMessage }}</p>
-        }
-
-        <label class="wide">
-          Вкладення (png/jpg/gif/txt, до 1MB)
-          <input type="file" (change)="onAttachmentSelected($event)" accept=".txt,image/png,image/jpeg,image/gif,text/plain" data-testid="root-attachment-input" />
-        </label>
-        @if (attachmentMessage) {
-          <p class="meta">{{ attachmentMessage }}</p>
-        }
-        @if (attachmentImagePreviewDataUrl) {
-          <figure class="attachment-selection-preview" data-testid="root-selected-image-preview">
-            <img [src]="attachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
-            <figcaption class="meta">Preview вибраного зображення</figcaption>
-          </figure>
-        }
-
-        @if (captchaImageDataUrl) {
-          <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" data-testid="root-captcha-image" />
-        }
-
-        @if (captchaMessage) {
-          <p class="error">{{ captchaMessage }}</p>
-        }
-
-        <label>
-          CAPTCHA (сума чисел)
-          <input type="text" formControlName="captchaAnswer" data-testid="root-captcha-answer-input" />
-        </label>
-
-        <div class="actions wide">
-          <button type="button" (click)="reloadCaptcha()" data-testid="root-captcha-reload-button">Оновити CAPTCHA</button>
-          <button type="submit" [disabled]="createForm.invalid || isSubmitting" data-testid="root-submit-button">Створити коментар</button>
-        </div>
-
-        @if (submitMessage) {
-          <p data-testid="root-submit-message">{{ submitMessage }}</p>
-          @if (showRetryHint) {
-            <p class="meta">Можна повторити запит без зміни даних форми.</p>
-          }
-          @if (submitValidationErrors.length > 0) {
-            <ul class="error-list">
-              @for (validationError of submitValidationErrors; track validationError.field) {
-                <li><strong>{{ validationError.field }}</strong>: {{ validationError.messages.join('; ') }}</li>
+              @if (textPreviewHtml) {
+                  <div class="text-preview" data-testid="root-preview-container">
+                  <div class="text-preview-title">Preview повідомлення</div>
+                  <div [innerHTML]="textPreviewHtml"></div>
+                </div>
               }
-            </ul>
-          }
-        }
-      </form>
+
+              @if (previewMessage) {
+                <p class="meta">{{ previewMessage }}</p>
+              }
+
+              <label class="wide">
+                Вкладення (png/jpg/gif/txt, до 1MB)
+                <input type="file" (change)="onAttachmentSelected($event)" accept=".txt,image/png,image/jpeg,image/gif,text/plain" data-testid="root-attachment-input" />
+              </label>
+              @if (attachmentMessage) {
+                <p class="meta">{{ attachmentMessage }}</p>
+              }
+              @if (attachmentImagePreviewDataUrl) {
+                <figure class="attachment-selection-preview" data-testid="root-selected-image-preview">
+                  <img [src]="attachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
+                  <figcaption class="meta">Preview вибраного зображення</figcaption>
+                </figure>
+              }
+
+              @if (captchaImageDataUrl) {
+                <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" data-testid="root-captcha-image" />
+              }
+
+              @if (captchaMessage) {
+                <p class="error">{{ captchaMessage }}</p>
+              }
+
+              <label>
+                CAPTCHA (сума чисел)
+                <input type="text" formControlName="captchaAnswer" data-testid="root-captcha-answer-input" />
+              </label>
+
+              <div class="actions wide">
+                <button type="button" (click)="closeCreateModal()">Закрити</button>
+                <button type="submit" [disabled]="createForm.invalid || isSubmitting" data-testid="root-submit-button">Створити коментар</button>
+              </div>
+
+              @if (submitMessage) {
+                <p data-testid="root-submit-message">{{ submitMessage }}</p>
+                @if (showRetryHint) {
+                  <p class="meta">Можна повторити запит без зміни даних форми.</p>
+                }
+                @if (submitValidationErrors.length > 0) {
+                  <ul class="error-list">
+                    @for (validationError of submitValidationErrors; track validationError.field) {
+                      <li><strong>{{ validationError.field }}</strong>: {{ validationError.messages.join('; ') }}</li>
+                    }
+                  </ul>
+                }
+              }
+            </form>
+          </div>
+        </div>
+      }
 
       @if (isLoading) {
         <p>Завантаження...</p>
       } @else if (errorMessage) {
         <p class="error">{{ errorMessage }}</p>
         @if (loadCanRetry) {
-          <p class="meta">Спробуйте натиснути "Оновити" повторно через кілька секунд.</p>
+          <p class="meta">Спробуйте повторити завантаження через кілька секунд.</p>
         }
       } @else if (comments.length === 0) {
         <p>Поки що коментарів немає.</p>
@@ -245,7 +251,6 @@ import { environment } from '../../../environments/environment';
                 </label>
 
                 <div class="actions wide">
-                  <button type="button" (click)="reloadReplyCaptcha()">Оновити CAPTCHA</button>
                   <button type="button" (click)="closeReplyModal()">Закрити</button>
                   <button type="submit" [disabled]="replyForm.invalid || isReplySubmitting">Створити коментар</button>
                 </div>
@@ -331,6 +336,7 @@ export class RootListPageComponent implements OnDestroy {
   attachmentTextLoadingByPath = new Set<string>();
   activeReplyTarget: CommentNode | null = null;
   isReplyModalOpen = false;
+  isCreateModalOpen = false;
   isReplySubmitting = false;
   replySubmitMessage = '';
   replySubmitValidationErrors: ReadonlyArray<UiValidationError> = [];
@@ -372,6 +378,25 @@ export class RootListPageComponent implements OnDestroy {
     if (this.signalRConnection) {
       void this.signalRConnection.stop();
     }
+  }
+
+
+  /**
+   * Відкриває модальне вікно створення кореневого коментаря.
+   */
+  openCreateModal(): void {
+    this.isCreateModalOpen = true;
+    this.submitMessage = '';
+    this.submitValidationErrors = [];
+    this.showRetryHint = false;
+    this.reloadCaptcha();
+  }
+
+  /**
+   * Закриває модальне вікно створення кореневого коментаря.
+   */
+  closeCreateModal(): void {
+    this.isCreateModalOpen = false;
   }
 
   /**
@@ -504,6 +529,7 @@ export class RootListPageComponent implements OnDestroy {
           this.attachment = null;
           this.attachmentMessage = '';
           this.attachmentImagePreviewDataUrl = '';
+          this.isCreateModalOpen = false;
           this.load();
           this.reloadCaptcha();
           this.isSubmitting = false;
@@ -799,7 +825,7 @@ export class RootListPageComponent implements OnDestroy {
     });
 
     this.signalRConnection.onclose(() => {
-      this.signalRStatusMessage = 'Realtime недоступний. Дані можна оновити кнопкою "Оновити".';
+      this.signalRStatusMessage = 'Realtime недоступний. Дані оновлюються автоматично після створення коментарів.';
     });
 
     void this.signalRConnection
@@ -808,7 +834,7 @@ export class RootListPageComponent implements OnDestroy {
         this.signalRStatusMessage = '';
       })
       .catch(() => {
-        this.signalRStatusMessage = 'Realtime недоступний. Дані можна оновити кнопкою "Оновити".';
+        this.signalRStatusMessage = 'Realtime недоступний. Дані оновлюються автоматично після створення коментарів.';
       });
   }
 }
