@@ -1,15 +1,14 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 58).
+Останнє оновлення: 2026-03-17 (ітерація 59).
 
 ## Що перевірено в цій ітерації
 
-- Для P0-напряму **"edge-cases CQRS/Validation"** додано нові інтеграційні mixed boundary-тести для `comments` (REST + GraphQL):
-  - **REST trim + filter + sort boundary:** `GetComments_WithTrimmedFilterAndEmailSort_ReturnsEmailMatchedItemsInOrder` перевіряє trim фільтра (`%20marker%20`), фільтрацію по тексту та сортування за `Email Desc`.
-  - **GraphQL mixed pagination boundary:** `GraphQlComments_WithTextFilterAndSecondPage_ReturnsSingleExpectedItem` фіксує контракт для `comments(page:2,pageSize:2,sortBy:UserName,sortDirection:Asc,filter:<token>)` з очікуваним single-item slice на другій сторінці.
-- Дотримано вимогу документування: нові тестові методи додані з XML-коментарями.
-- Доповнено `README.md` прикладами boundary-помилок для `Page/PageSize`, `CaptchaToken` та `Attachment` (REST/GraphQL), як і вимагалось у backlog P0.
-- Checklist синхронізовано з фактичним станом: по edge-cases лишається e2e smoke (frontend/realtime) та production-блоки RabbitMQ/load-test/Demo.
+- Для P0-напряму **"Frontend stabilization"** додано smoke-рівень автоперевірок Angular-компонентів:
+  - `root-list-page.component.spec.ts` покриває сценарії `root create`, `preview fallback`, базові `SignalR reconnect`-статуси та ініціалізацію captcha/list loading.
+  - `thread-page.component.spec.ts` покриває `thread reply`, `realtime fallback` і ініціалізацію thread/captcha.
+- Для нових тестових helper-класів (`FakeHubConnection`) додано коментарі до класів і методів відповідно до вимоги документування.
+- Checklist синхронізовано: маємо автоматизований smoke-шар на компонентному рівні, але досі потрібен browser e2e-рівень (повний UI-flow у реальному runtime).
 
 ## Підсумок відповідності
 
@@ -39,8 +38,8 @@
 ### P0
 
 1. **Frontend stabilization (Angular LTS):**
-   - додати e2e smoke для сценаріїв: `root create`, `thread reply`, `preview`, `attachments`, `realtime`;
-   - додати smoke-перевірку UX-статусів realtime reconnect (щоб зафіксувати новий fallback у автоперевірках).
+   - ✅ додано component smoke-тести для `root create`, `thread reply`, `preview fallback` та `realtime` UX-статусів;
+   - лишається додати browser e2e smoke (Playwright/Cypress) для реального runtime-сценарію, включно з `attachments`.
 
 2. **Закриття edge-cases CQRS/Validation:**
    - ✅ додано mixed REST/GraphQL boundary-тести для sort/filter/pagination;
