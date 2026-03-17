@@ -44,4 +44,4 @@ npm run e2e:smoke
 
 1. ✅ Розширено e2e до runtime create/reply з captcha і txt attachment-flow.
 2. ✅ Додано e2e-перевірку realtime refresh (SignalR) між двома вкладками.
-3. Додати e2e smoke у CI-пайплайн після запуску фронтенд/бекенд-контейнерів.
+3. ✅ Додано GitHub Actions workflow `.github/workflows/comments-web-e2e-smoke.yml` для автозапуску Playwright smoke (піднімає backend + frontend та виконує `npm run e2e:smoke`).

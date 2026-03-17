@@ -1,14 +1,15 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 74).
+Останнє оновлення: 2026-03-17 (ітерація 75).
 
 ## Що перевірено в цій ітерації
 
-- У `Comments.Web` розширено Playwright runtime smoke:
-  - додано helper `createRootCommentWithImageAttachment(...)` для сценарію image-вкладень;
-  - додано тест `create root with png attachment and render image preview`, який створює root-коментар із PNG та перевіряє thumbnail + лінк на файл у root-list UI.
-- Оновлено цей чекліст: зафіксовано прогрес по e2e image-attachment smoke.
-- За запитом: пункт №5 (фінальний Middle+ load-test у цільовому контурі RabbitMQ + Elasticsearch) виключено з обов'язкових до виконання в межах поточного плану.
+- Додано CI-інтеграцію browser smoke у GitHub Actions:
+  - створено workflow `.github/workflows/comments-web-e2e-smoke.yml`;
+  - пайплайн підіймає backend (`Comments.Api`) і frontend (`Comments.Web`) та запускає `npm run e2e:smoke`;
+  - при падінні smoke-тестів workflow прикріплює backend/frontend логи як artifact.
+- У `src/Comments.Web/README.md` оновлено roadmap: крок інтеграції e2e у CI позначено виконаним.
+- Оновлено цей чекліст: зафіксовано завершення P0-задачі з CI smoke.
 
 ## Підсумок відповідності
 
@@ -16,7 +17,7 @@
 - **Частково виконано:** 1 пункт.
 - **Не виконано:** 0 пунктів (пункт №5 виключено з обов'язкових за запитом).
 
-> Висновок: для фінального закриття delivery-пакету лишається підставити фактичний demo-video URL у `README.md`; технічний browser smoke покриває create/reply + multi-tab realtime + image attachment, далі потрібна стабільна інтеграція e2e у CI/середовищі з доступним npm mirror.
+> Висновок: browser smoke уже інтегрований у CI (GitHub Actions) та покриває create/reply + multi-tab realtime + image attachment; для фінального закриття delivery-пакету лишається підставити фактичний demo-video URL у `README.md`.
 
 ## Актуальний статус по ключових блоках ТЗ
 
@@ -25,7 +26,7 @@
 2. 🟨 **Архітектура (CQRS + MediatR + FluentValidation)** — частково:
    - основний каркас і обробники є, але лишаються edge-case доробки в тестах/контрактах та документації.
 3. 🟨 **Frontend Angular LTS** — частково:
-   - ключові user-flow реалізовані; уніфікацію validation UX для REST/GraphQL, transient/retry UX для load/captcha, preview fallback і SignalR reconnection-state виконано; додано test-target для `ng test`; Playwright smoke покриває runtime create/reply і multi-tab realtime; лишається інтеграція e2e у CI та частина boundary-документації.
+   - ключові user-flow реалізовані; уніфікацію validation UX для REST/GraphQL, transient/retry UX для load/captcha, preview fallback і SignalR reconnection-state виконано; додано test-target для `ng test`; Playwright smoke покриває runtime create/reply, multi-tab realtime та image attachment; інтеграцію e2e у CI виконано; з незакритого лишається частина boundary-документації.
 4. ✅ **RabbitMQ production-hardening** — виконано:
    - є retry/DLQ базис, базові consumer-метрики (`success/fail/retry/latency`) та persistent-ідемпотентність із cleanup-процедурою;
    - додано alert-пороги для `failure-rate/latency` та формалізований `DLQ replay-flow` у runbook.
@@ -49,7 +50,7 @@
    - ✅ сценарій розширено до наскрізного `create root -> reply -> verify` з інтеракцією captcha;
    - ✅ додано multi-tab realtime smoke (SignalR) між двома вкладками;
    - ✅ зафіксовано txt-attachment-flow в e2e;
-   - ✅ додано image-attachment smoke (PNG preview) у runtime e2e; лишається додавання запуску в CI notes/pipeline.
+   - ✅ додано image-attachment smoke (PNG preview) у runtime e2e;
 
 3. **Middle+ load-test фактами (P0)** — ⏭️ виключено з обов'язкових за поточним запитом.
 
@@ -77,8 +78,8 @@
    - ✅ розширено smoke до runtime-сценарію `create/reply` з captcha та txt attachment;
    - ✅ додано e2e-перевірку realtime оновлень між двома вкладками (SignalR);
    - ✅ додано runtime e2e-перевірку image attachment preview (PNG thumbnail + file link) у root-list;
-   - лишається інтеграція e2e в CI;
-   - лишається розблокувати npm registry доступ у середовищі, щоб дотягнути `karma*` і `@playwright/test` пакети та виконувати `npm test`/`npm run e2e:smoke` у CI/локально без manual bootstrap.
+   - ✅ інтегровано e2e smoke у CI через GitHub Actions workflow `comments-web-e2e-smoke.yml`;
+   - лишається розблокувати npm registry доступ у частині локальних/закритих середовищ, де без internal mirror неможливо виконувати `npm test`/`npm run e2e:smoke` без manual bootstrap.
 
 2. **Закриття edge-cases CQRS/Validation:**
    - ✅ додано unit coverage для `ApiErrorPresenterService` (REST/GraphQL validation mapping + transient retry + unknown fallback);

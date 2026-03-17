@@ -1,0 +1,109 @@
+name: comments-web-e2e-smoke
+
+on:
+  push:
+    paths:
+      - '.github/workflows/comments-web-e2e-smoke.yml'
+      - 'src/Comments.Web/**'
+      - 'src/Comments.Api/**'
+      - 'src/Comments.Application/**'
+      - 'src/Comments.Domain/**'
+      - 'src/Comments.Infrastructure/**'
+  pull_request:
+    paths:
+      - '.github/workflows/comments-web-e2e-smoke.yml'
+      - 'src/Comments.Web/**'
+      - 'src/Comments.Api/**'
+      - 'src/Comments.Application/**'
+      - 'src/Comments.Domain/**'
+      - 'src/Comments.Infrastructure/**'
+
+jobs:
+  e2e-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: src/Comments.Web/package-lock.json
+
+      - name: Restore and build backend
+        run: |
+          dotnet restore Comments.sln
+          dotnet build Comments.sln --configuration Release --no-restore
+
+      - name: Install frontend dependencies
+        working-directory: src/Comments.Web
+        run: npm ci
+
+      - name: Install Playwright browser
+        working-directory: src/Comments.Web
+        run: npx playwright install --with-deps chromium
+
+      - name: Start backend API
+        run: |
+          ASPNETCORE_URLS=http://127.0.0.1:5000 dotnet run --project src/Comments.Api/Comments.Api.csproj --configuration Release > /tmp/comments-api.log 2>&1 &
+          echo $! > /tmp/comments-api.pid
+
+      - name: Wait for backend health
+        run: |
+          for attempt in {1..60}; do
+            if curl --silent --fail http://127.0.0.1:5000/swagger/index.html >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'Backend did not start in time.'
+          cat /tmp/comments-api.log
+          exit 1
+
+      - name: Start Angular app
+        working-directory: src/Comments.Web
+        run: |
+          npm run start -- --host 127.0.0.1 --port 4200 > /tmp/comments-web.log 2>&1 &
+          echo $! > /tmp/comments-web.pid
+
+      - name: Wait for frontend
+        run: |
+          for attempt in {1..60}; do
+            if curl --silent --fail http://127.0.0.1:4200 >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'Frontend did not start in time.'
+          cat /tmp/comments-web.log
+          exit 1
+
+      - name: Run Playwright smoke tests
+        working-directory: src/Comments.Web
+        env:
+          E2E_BASE_URL: http://127.0.0.1:4200
+        run: npm run e2e:smoke
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: comments-web-e2e-logs
+          path: |
+            /tmp/comments-api.log
+            /tmp/comments-web.log
+
+      - name: Stop background services
+        if: always()
+        run: |
+          if [ -f /tmp/comments-api.pid ]; then kill $(cat /tmp/comments-api.pid) || true; fi
+          if [ -f /tmp/comments-web.pid ]; then kill $(cat /tmp/comments-web.pid) || true; fi
