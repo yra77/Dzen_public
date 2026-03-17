@@ -1,15 +1,15 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 62).
+Останнє оновлення: 2026-03-17 (ітерація 63).
 
 ## Що перевірено в цій ітерації
 
-- Посилено `RabbitMqTaskQueuesConsumerHostedService` runtime-спостережуваність:
-  - додано .NET `Meter`-метрики `success/failed/retry/latency` для consumer-обробки;
-  - додано теги `worker`, `outcome/reason/result` для базової діагностики без зміни бізнес-контрактів;
-  - latency фіксується через `Stopwatch.GetElapsedTime(...)` для кожного повідомлення.
-- Додано XML-коментарі до нових полів/методів consumer-сервісу (відповідно до вимоги документувати нові класи/методи).
-- Оновлено backlog: блок `RabbitMQ hardening` частково просунувся (метрики додано), але персистентна ідемпотентність, alert-пороги й replay-runbook лишаються відкритими.
+- Посилено `RabbitMQ hardening` у частині життєвого циклу persistent-ідемпотентності:
+  - додано фоновий `ProcessedMessageCleanupHostedService` для періодичної очистки застарілих записів `ProcessedMessages`;
+  - додано конфігурацію `ProcessedMessageCleanup` (`Enabled`, `IntervalMinutes`, `RetentionHours`) в `appsettings.json`;
+  - розширено контракт `IProcessedMessageRepository` методом `CleanupOlderThanAsync(...)` та реалізацію `EfProcessedMessageRepository` через `ExecuteDeleteAsync(...)`.
+- Додано XML-коментарі до нових класів/методів cleanup-потоку та до оновленого EF-репозиторію (відповідно до вимоги документувати нові/змінені класи й методи).
+- Оновлено backlog: блок `RabbitMQ hardening` просунуто (персистентна ідемпотентність + housekeeping), але alert-пороги і формалізований DLQ replay-flow залишаються відкритими.
 
 ## Підсумок відповідності
 
@@ -28,7 +28,8 @@
 3. 🟨 **Frontend Angular LTS** — частково:
    - ключові user-flow реалізовані; уніфікацію validation UX для REST/GraphQL, transient/retry UX для load/captcha, preview fallback і SignalR reconnection-state виконано; лишається e2e smoke та частина boundary-документації.
 4. 🟨 **RabbitMQ production-hardening** — частково:
-   - є retry/DLQ базис і додано базові consumer-метрики (`success/fail/retry/latency`), але ще потрібні персистентна ідемпотентність, alert-пороги та replay-процедури.
+   - є retry/DLQ базис, базові consumer-метрики (`success/fail/retry/latency`) та persistent-ідемпотентність із cleanup-процедурою;
+   - ще потрібні alert-пороги та формалізовані replay-процедури для DLQ.
 5. ❌ **Фінальний Middle+ load-test у цільовому контурі RabbitMQ + Elasticsearch** — не виконано:
    - у `docs/load-test-middle-results.md` лишається шаблон без фактичних метрик.
 6. 🟨 **Delivery-артефакт Demo (README + відео)** — частково виконано:
@@ -56,9 +57,9 @@
 ### Фаза 2 — одразу після Фази 1 (stabilization)
 
 4. **RabbitMQ hardening мінімум для тестування (P1):**
-   - персистентна ідемпотентність (SQL/Redis);
-   - мінімальні метрики consumer (success/fail/retry/latency) + базові пороги;
-   - коротка replay-інструкція для DLQ у runbook.
+   - ✅ персистентна ідемпотентність (EF/SQL) + cleanup старих id;
+   - ✅ мінімальні метрики consumer (success/fail/retry/latency) додано;
+   - лишається визначити базові alert-пороги та коротку replay-інструкцію для DLQ у runbook.
 
 5. **Go/No-Go для старту ручного QA:**
    - критерій `Go`: Demo-лінк + e2e smoke green + middle-load метрики зафіксовані;
@@ -82,7 +83,7 @@
 
 3. **RabbitMQ hardening до production-ready:**
    - ✅ додано базові метрики consumer-обробки (`success/fail/retry/latency`) у RabbitMQ hosted service;
-   - перенести ідемпотентність із in-memory у персистентне сховище (SQL/Redis);
+   - ✅ персистентна ідемпотентність реалізована через `ProcessedMessages` + додано cleanup-hosted-service;
    - додати базові alert-умови на нові метрики та задокументувати пороги;
    - формалізувати DLQ replay flow.
 

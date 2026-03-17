@@ -4,15 +4,24 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Comments.Api.Infrastructure;
 
+/// <summary>
+/// EF Core-реалізація сховища ідемпотентності оброблених повідомлень.
+/// </summary>
 public sealed class EfProcessedMessageRepository : IProcessedMessageRepository
 {
     private readonly CommentsDbContext _dbContext;
 
+    /// <summary>
+    /// Створює репозиторій на базі <see cref="CommentsDbContext"/>.
+    /// </summary>
     public EfProcessedMessageRepository(CommentsDbContext dbContext)
     {
         _dbContext = dbContext;
     }
 
+    /// <summary>
+    /// Позначає message id як оброблений, якщо він зустрівся вперше.
+    /// </summary>
     public async Task<bool> TryMarkProcessedAsync(string messageId, CancellationToken cancellationToken = default)
     {
         var normalizedId = messageId.Trim();
@@ -38,5 +47,17 @@ public sealed class EfProcessedMessageRepository : IProcessedMessageRepository
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// Видаляє застарілі записи ідемпотентності.
+    /// </summary>
+    public async Task<int> CleanupOlderThanAsync(DateTime olderThanUtc, CancellationToken cancellationToken = default)
+    {
+        var deleted = await _dbContext.ProcessedMessages
+            .Where(x => x.ProcessedAtUtc < olderThanUtc)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        return deleted;
     }
 }
