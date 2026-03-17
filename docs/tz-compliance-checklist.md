@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 43).
+Останнє оновлення: 2026-03-17 (ітерація 44).
 
 ## Підсумок
 
@@ -11,6 +11,35 @@
 > Висновок: поточний стан ще не покриває **всі** вимоги ТЗ на 100%. Документаційний контур синхронізовано з README, а незакриті пункти сфокусовано в практичному roadmap (Angular, CQRS, production-hardening RabbitMQ, фінальний прогін Middle+ load-test, demo).
 
 ---
+
+## Оновлення ітерації 44
+
+### Внесені зміни в цій ітерації
+
+- ✅ Додано XML-коментарі до `CreateCommentCommand` (CQRS-команда) для прозорого опису payload-моделі створення коментаря.
+- ✅ Додано XML-коментарі до `CreateCommentCommandHandler` (клас, конструктор, метод `Handle`) для документування обробки створення коментаря через `CommentService`.
+- ✅ Додано XML-коментарі до `CreateCommentCommandValidator` (клас, конструктор, приватні методи `BeValidHomePageUrl` і `HasValidAttachment`) відповідно до вимоги коментувати класи/методи/моделі.
+- ✅ Додано XML-коментарі до DTO-моделей `CreateCommentRequest`, `AttachmentUploadRequest`, `CommentDto`, `AttachmentDto`.
+
+### Що ще треба зробити у проєкті (актуально після ітерації 44)
+
+1. 🟨 **Angular LTS (довести до production-ready):**
+   - додати e2e smoke для ключових user-flow (`root create`, `thread reply`, `preview`, `attachments`, `realtime`);
+   - уніфікувати UX-відображення API/GraphQL validation помилок прямо в Angular UI (single presenter/adapter).
+2. 🟨 **CQRS + MediatR + FluentValidation (закриття edge-cases):**
+   - додати docs-приклади для інших boundary-помилок (`Page/PageSize`, `CaptchaToken`, attachment) у REST + GraphQL стилі;
+   - розширити integration coverage для `commentTree` mixed sort/filter edge-поведінки, де релевантно для контракту.
+3. 🟨 **RabbitMQ production-hardening:**
+   - довести delayed retry + DLQ replay tooling;
+   - додати метрики consumer-обробки та базові alert-умови.
+4. 🔲 **Фінальний Middle+ load-test у цільовому контурі RabbitMQ + Elasticsearch:**
+   - виконати прогін `load-test/comments-middle.js`;
+   - заповнити `docs/load-test-middle-results.md` фактичними метриками та додати актуальний `docs/artifacts/k6-middle-summary.json`.
+5. 👤 **Delivery-артефакт Demo:**
+   - пункт делеговано власнику репозиторію (секція `Demo` у `README.md` + посилання на відео) — у цій ітерації не змінювався.
+
+---
+
 
 ## Оновлення ітерації 43
 
