@@ -5,7 +5,8 @@
   "scripts": {
     "start": "ng serve",
     "build": "ng build",
-    "test": "ng test"
+    "test": "ng test",
+    "e2e:smoke": "playwright test"
   },
   "dependencies": {
     "@angular/common": "^19.2.0",
@@ -29,6 +30,7 @@
     "karma-chrome-launcher": "^3.2.0",
     "karma-coverage": "^2.2.1",
     "karma-jasmine": "^5.1.0",
-    "karma-jasmine-html-reporter": "^2.1.0"
+    "karma-jasmine-html-reporter": "^2.1.0",
+    "@playwright/test": "^1.52.0"
   }
 }

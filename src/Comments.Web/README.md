@@ -26,10 +26,22 @@ npm test -- --watch=false
 
 > Якщо середовище обмежує доступ до `registry.npmjs.org`, спочатку потрібно налаштувати internal npm mirror/proxy, інакше `karma`/`jasmine` залежності не встановляться.
 
+## Browser smoke e2e (Playwright)
+
+```bash
+cd src/Comments.Web
+npm run e2e:smoke
+```
+
+Налаштування:
+- `playwright.config.ts` використовує `E2E_BASE_URL` (за замовчуванням `http://127.0.0.1:4200`);
+- smoke-spec знаходиться у `e2e/smoke.spec.ts`;
+- для стабільної перевірки thread-сценарію потрібен доступний root-коментар з `id=1` (seed/dev-дані).
+
+> Якщо середовище блокує npm registry, встановлення `@playwright/test` буде недоступне до підключення internal npm mirror/proxy.
 
 ## Наступні кроки міграції
 
-1. Додати preview тексту перед submit (REST/GraphQL parity).
-2. Підключити attachments upload/preview.
-3. Додати SignalR live updates.
-4. Додати e2e smoke для create + reply + realtime.
+1. Розширити e2e до create/reply з інтеракцією captcha і attachment-flow.
+2. Додати e2e-перевірку realtime refresh (SignalR) між двома вкладками.
+3. Додати e2e smoke у CI-пайплайн після запуску фронтенд/бекенд-контейнерів.
