@@ -19,6 +19,9 @@ import { environment } from '../../../environments/environment';
     <section class="card">
       <h2>Останні кореневі коментарі</h2>
       <button type="button" (click)="load()" [disabled]="isLoading">Оновити</button>
+      @if (signalRStatusMessage) {
+        <p class="meta">{{ signalRStatusMessage }}</p>
+      }
 
       <h3>Додати кореневий коментар</h3>
       <form [formGroup]="createForm" (ngSubmit)="submitComment()">
@@ -47,6 +50,10 @@ import { environment } from '../../../environments/environment';
             <div class="text-preview-title">Preview повідомлення</div>
             <div [innerHTML]="textPreviewHtml"></div>
           </div>
+        }
+
+        @if (previewMessage) {
+          <p class="meta">{{ previewMessage }}</p>
         }
 
         <label>
@@ -216,6 +223,10 @@ export class RootListPageComponent implements OnDestroy {
   /** Повідомлення про помилку завантаження CAPTCHA. */
   captchaMessage = '';
   textPreviewHtml = '';
+  /** Повідомлення про fallback-стан, коли preview тимчасово недоступний. */
+  previewMessage = '';
+  /** Поточний статус realtime-з'єднання SignalR. */
+  signalRStatusMessage = '';
   attachmentMessage = '';
   attachment: CreateCommentAttachmentRequest | null = null;
   attachmentTextPreviewByPath: Record<string, string> = {};
@@ -273,12 +284,18 @@ export class RootListPageComponent implements OnDestroy {
     const text = this.createForm.controls.text.value;
     if (!text || !text.trim()) {
       this.textPreviewHtml = '';
+      this.previewMessage = '';
       return;
     }
 
     this.commentsApi.previewComment(text).subscribe({
       next: (preview) => {
         this.textPreviewHtml = preview;
+        this.previewMessage = '';
+      },
+      error: () => {
+        this.textPreviewHtml = '';
+        this.previewMessage = 'Preview тимчасово недоступний. Ви можете продовжити відправку коментаря без preview.';
       }
     });
   }
@@ -383,6 +400,7 @@ export class RootListPageComponent implements OnDestroy {
             captchaAnswer: ''
           });
           this.textPreviewHtml = '';
+          this.previewMessage = '';
           this.attachment = null;
           this.attachmentMessage = '';
           this.load();
@@ -442,6 +460,26 @@ export class RootListPageComponent implements OnDestroy {
       this.load();
     });
 
-    void this.signalRConnection.start();
+    this.signalRConnection.onreconnecting(() => {
+      this.signalRStatusMessage = "Realtime-з'єднання втрачено. Виконуємо перепідключення...";
+    });
+
+    this.signalRConnection.onreconnected(() => {
+      this.signalRStatusMessage = "Realtime-з'єднання відновлено.";
+      this.load();
+    });
+
+    this.signalRConnection.onclose(() => {
+      this.signalRStatusMessage = 'Realtime недоступний. Дані можна оновити кнопкою "Оновити".';
+    });
+
+    void this.signalRConnection
+      .start()
+      .then(() => {
+        this.signalRStatusMessage = '';
+      })
+      .catch(() => {
+        this.signalRStatusMessage = 'Realtime недоступний. Дані можна оновити кнопкою "Оновити".';
+      });
   }
 }
