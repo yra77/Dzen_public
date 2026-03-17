@@ -18,7 +18,7 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
   template: `
     <section class="card">
       <h2>Гілка коментаря</h2>
-      <a routerLink="/">← Назад до списку</a>
+      <a routerLink="/" data-testid="thread-back-link">← Назад до списку</a>
       @if (signalRStatusMessage) {
         <p class="meta">{{ signalRStatusMessage }}</p>
       }
@@ -117,24 +117,24 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
         </ng-template>
 
         <h3>Додати відповідь</h3>
-        <form [formGroup]="replyForm" (ngSubmit)="submitReply()">
+        <form [formGroup]="replyForm" (ngSubmit)="submitReply()" data-testid="thread-reply-form">
           <label>
             Ім'я
-            <input type="text" formControlName="userName" />
+            <input type="text" formControlName="userName" data-testid="thread-user-name-input" />
           </label>
 
           <label>
             Email
-            <input type="email" formControlName="email" />
+            <input type="email" formControlName="email" data-testid="thread-email-input" />
           </label>
 
           <label>
             Текст
-            <textarea rows="5" formControlName="text" (input)="previewText()"></textarea>
+            <textarea rows="5" formControlName="text" (input)="previewText()" data-testid="thread-text-input"></textarea>
           </label>
 
           @if (textPreviewHtml) {
-            <div class="text-preview">
+            <div class="text-preview" data-testid="thread-preview-container">
               <div class="text-preview-title">Preview повідомлення</div>
               <div [innerHTML]="textPreviewHtml"></div>
             </div>
@@ -146,14 +146,14 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
 
           <label>
             Вкладення (png/jpg/gif/txt, до 1MB)
-            <input type="file" (change)="onAttachmentSelected($event)" accept=".txt,image/png,image/jpeg,image/gif,text/plain" />
+            <input type="file" (change)="onAttachmentSelected($event)" accept=".txt,image/png,image/jpeg,image/gif,text/plain" data-testid="thread-attachment-input" />
           </label>
           @if (attachmentMessage) {
             <p class="meta">{{ attachmentMessage }}</p>
           }
 
           @if (captchaImageDataUrl) {
-            <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" />
+            <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" data-testid="thread-captcha-image" />
           }
 
           @if (captchaMessage) {
@@ -162,16 +162,16 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
 
           <label>
             CAPTCHA (сума чисел)
-            <input type="text" formControlName="captchaAnswer" />
+            <input type="text" formControlName="captchaAnswer" data-testid="thread-captcha-answer-input" />
           </label>
 
           <div class="actions">
-            <button type="button" (click)="reloadCaptcha()">Оновити CAPTCHA</button>
-            <button type="submit" [disabled]="replyForm.invalid || isSubmitting">Надіслати reply</button>
+            <button type="button" (click)="reloadCaptcha()" data-testid="thread-captcha-reload-button">Оновити CAPTCHA</button>
+            <button type="submit" [disabled]="replyForm.invalid || isSubmitting" data-testid="thread-submit-button">Надіслати reply</button>
           </div>
 
           @if (submitMessage) {
-            <p>{{ submitMessage }}</p>
+              <p data-testid="thread-submit-message">{{ submitMessage }}</p>
             @if (showRetryHint) {
               <p class="meta">Можна повторити запит без зміни даних форми.</p>
             }

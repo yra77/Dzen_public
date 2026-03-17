@@ -18,35 +18,35 @@ import { environment } from '../../../environments/environment';
   template: `
     <section class="card">
       <h2>Останні кореневі коментарі</h2>
-      <button type="button" (click)="load()" [disabled]="isLoading">Оновити</button>
+      <button type="button" (click)="load()" [disabled]="isLoading" data-testid="root-refresh-button">Оновити</button>
       @if (signalRStatusMessage) {
         <p class="meta">{{ signalRStatusMessage }}</p>
       }
 
       <h3>Додати кореневий коментар</h3>
-      <form [formGroup]="createForm" (ngSubmit)="submitComment()">
+      <form [formGroup]="createForm" (ngSubmit)="submitComment()" data-testid="root-create-form">
         <label>
           Ім'я
-          <input type="text" formControlName="userName" />
+          <input type="text" formControlName="userName" data-testid="root-user-name-input" />
         </label>
 
         <label>
           Email
-          <input type="email" formControlName="email" />
+          <input type="email" formControlName="email" data-testid="root-email-input" />
         </label>
 
         <label>
           Homepage
-          <input type="url" formControlName="homePage" placeholder="https://example.com" />
+          <input type="url" formControlName="homePage" placeholder="https://example.com" data-testid="root-home-page-input" />
         </label>
 
         <label>
           Текст
-          <textarea rows="5" formControlName="text" (input)="previewText()"></textarea>
+          <textarea rows="5" formControlName="text" (input)="previewText()" data-testid="root-text-input"></textarea>
         </label>
 
         @if (textPreviewHtml) {
-          <div class="text-preview">
+            <div class="text-preview" data-testid="root-preview-container">
             <div class="text-preview-title">Preview повідомлення</div>
             <div [innerHTML]="textPreviewHtml"></div>
           </div>
@@ -58,14 +58,14 @@ import { environment } from '../../../environments/environment';
 
         <label>
           Вкладення (png/jpg/gif/txt, до 1MB)
-          <input type="file" (change)="onAttachmentSelected($event)" accept=".txt,image/png,image/jpeg,image/gif,text/plain" />
+          <input type="file" (change)="onAttachmentSelected($event)" accept=".txt,image/png,image/jpeg,image/gif,text/plain" data-testid="root-attachment-input" />
         </label>
         @if (attachmentMessage) {
           <p class="meta">{{ attachmentMessage }}</p>
         }
 
         @if (captchaImageDataUrl) {
-          <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" />
+          <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" data-testid="root-captcha-image" />
         }
 
         @if (captchaMessage) {
@@ -74,16 +74,16 @@ import { environment } from '../../../environments/environment';
 
         <label>
           CAPTCHA (сума чисел)
-          <input type="text" formControlName="captchaAnswer" />
+          <input type="text" formControlName="captchaAnswer" data-testid="root-captcha-answer-input" />
         </label>
 
         <div class="actions">
-          <button type="button" (click)="reloadCaptcha()">Оновити CAPTCHA</button>
-          <button type="submit" [disabled]="createForm.invalid || isSubmitting">Створити коментар</button>
+          <button type="button" (click)="reloadCaptcha()" data-testid="root-captcha-reload-button">Оновити CAPTCHA</button>
+          <button type="submit" [disabled]="createForm.invalid || isSubmitting" data-testid="root-submit-button">Створити коментар</button>
         </div>
 
         @if (submitMessage) {
-          <p>{{ submitMessage }}</p>
+          <p data-testid="root-submit-message">{{ submitMessage }}</p>
           @if (showRetryHint) {
             <p class="meta">Можна повторити запит без зміни даних форми.</p>
           }
@@ -107,7 +107,7 @@ import { environment } from '../../../environments/environment';
       } @else if (comments.length === 0) {
         <p>Поки що коментарів немає.</p>
       } @else {
-        <ul>
+        <ul data-testid="root-comments-list">
           @for (comment of comments; track comment.id) {
             <li>
               <a [routerLink]="['/thread', comment.id]">#{{ comment.id }} {{ comment.userName }}</a>
