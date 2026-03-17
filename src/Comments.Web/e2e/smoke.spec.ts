@@ -197,3 +197,36 @@ test('create root with png attachment and render image preview', async ({ page }
   await expect(createdRootItem.locator('img.attachment-thumb')).toBeVisible();
   await expect(createdRootItem.getByRole('link', { name: new RegExp(`root-image-${seed}\\.png`) })).toBeVisible();
 });
+
+/**
+ * Runtime smoke: перевіряє UI-boundary валідацію, коли root-вкладення перевищує 1MB.
+ */
+test('root form rejects over-limit attachment before submit', async ({ page }) => {
+  await page.goto('/');
+
+  const overLimitBuffer = Buffer.alloc(1_000_001, 0x41);
+  await page.getByTestId('root-attachment-input').setInputFiles({
+    name: 'root-over-limit.txt',
+    mimeType: 'text/plain',
+    buffer: overLimitBuffer
+  });
+
+  await expect(page.getByTestId('root-create-form')).toContainText('Файл перевищує 1MB.');
+  await expect(page.getByTestId('root-create-form')).not.toContainText('Вкладення готове: root-over-limit.txt');
+});
+
+/**
+ * Runtime smoke: перевіряє UI-boundary валідацію для недозволеного MIME у reply-вкладенні.
+ */
+test('thread form rejects unsupported attachment type before submit', async ({ page }) => {
+  await page.goto('/thread/1');
+
+  await page.getByTestId('thread-attachment-input').setInputFiles({
+    name: 'thread-unsupported.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('%PDF-1.7', 'utf8')
+  });
+
+  await expect(page.getByTestId('thread-reply-form')).toContainText('Недозволений тип вкладення.');
+  await expect(page.getByTestId('thread-reply-form')).not.toContainText('Вкладення готове: thread-unsupported.pdf');
+});

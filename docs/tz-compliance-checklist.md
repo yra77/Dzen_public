@@ -1,15 +1,13 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 75).
+Останнє оновлення: 2026-03-17 (ітерація 76).
 
 ## Що перевірено в цій ітерації
 
-- Додано CI-інтеграцію browser smoke у GitHub Actions:
-  - створено workflow `.github/workflows/comments-web-e2e-smoke.yml`;
-  - пайплайн підіймає backend (`Comments.Api`) і frontend (`Comments.Web`) та запускає `npm run e2e:smoke`;
-  - при падінні smoke-тестів workflow прикріплює backend/frontend логи як artifact.
-- У `src/Comments.Web/README.md` оновлено roadmap: крок інтеграції e2e у CI позначено виконаним.
-- Оновлено цей чекліст: зафіксовано завершення P0-задачі з CI smoke.
+- Розширено Playwright e2e smoke у `src/Comments.Web/e2e/smoke.spec.ts` двома boundary runtime-сценаріями UI-валидації attachment:
+  - root-форма відхиляє файл `>1MB` і показує повідомлення `Файл перевищує 1MB.`;
+  - thread reply-форма відхиляє недозволений MIME (`application/pdf`) і показує повідомлення `Недозволений тип вкладення.`.
+- Оновлено цей чекліст: закрито останній незавершений підпункт про UI-рівень e2e фіксації attachment boundary-контрактів.
 
 ## Підсумок відповідності
 
@@ -26,7 +24,7 @@
 2. 🟨 **Архітектура (CQRS + MediatR + FluentValidation)** — частково:
    - основний каркас і обробники є, але лишаються edge-case доробки в тестах/контрактах та документації.
 3. 🟨 **Frontend Angular LTS** — частково:
-   - ключові user-flow реалізовані; уніфікацію validation UX для REST/GraphQL, transient/retry UX для load/captcha, preview fallback і SignalR reconnection-state виконано; додано test-target для `ng test`; Playwright smoke покриває runtime create/reply, multi-tab realtime та image attachment; інтеграцію e2e у CI виконано; з незакритого лишається частина boundary-документації.
+   - ключові user-flow реалізовані; уніфікацію validation UX для REST/GraphQL, transient/retry UX для load/captcha, preview fallback і SignalR reconnection-state виконано; додано test-target для `ng test`; Playwright smoke покриває runtime create/reply, multi-tab realtime, image attachment та UI-boundary attachment-validation; інтеграцію e2e у CI виконано; з незакритого лишається лише частина boundary-документації.
 4. ✅ **RabbitMQ production-hardening** — виконано:
    - є retry/DLQ базис, базові consumer-метрики (`success/fail/retry/latency`) та persistent-ідемпотентність із cleanup-процедурою;
    - додано alert-пороги для `failure-rate/latency` та формалізований `DLQ replay-flow` у runbook.
@@ -78,6 +76,7 @@
    - ✅ розширено smoke до runtime-сценарію `create/reply` з captcha та txt attachment;
    - ✅ додано e2e-перевірку realtime оновлень між двома вкладками (SignalR);
    - ✅ додано runtime e2e-перевірку image attachment preview (PNG thumbnail + file link) у root-list;
+   - ✅ додано runtime e2e boundary-перевірки UI-валидації attachment (`>1MB`, `unsupported MIME`) для root/thread форм;
    - ✅ інтегровано e2e smoke у CI через GitHub Actions workflow `comments-web-e2e-smoke.yml`;
    - лишається розблокувати npm registry доступ у частині локальних/закритих середовищ, де без internal mirror неможливо виконувати `npm test`/`npm run e2e:smoke` без manual bootstrap.
 
@@ -88,7 +87,7 @@
    - ✅ додано backend boundary-валідацію і integration coverage для `attachment > 1MB` (REST + GraphQL);
    - ✅ додано позитивні boundary integration-тести для `attachment == 1MB` (REST + GraphQL);
    - ✅ додано негативні attachment edge-case тести: REST (`invalid content-type`) та GraphQL (`invalid base64`);
-   - лишається невеликий e2e-smoke шар для фіксації цих контрактів на рівні UI (Angular).
+   - ✅ додано e2e-smoke UI-фіксацію boundary-контрактів attachment на Angular-рівні (`>1MB`, `unsupported MIME`).
 
 ### P1
 
