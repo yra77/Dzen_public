@@ -113,10 +113,13 @@ test('root page renders main controls', async ({ page }) => {
 /**
  * Швидкий smoke-тест: перевіряє, що thread-сторінка відкривається і має reply-форму.
  *
- * Примітка: використовує стабільний rootId=1, який очікується в seed/dev-даних.
+ * Примітка: тест не залежить від seed-даних та сам створює root-коментар для thread URL.
  */
 test('thread page renders reply form', async ({ page }) => {
-  await page.goto('/thread/1');
+  const seed = Date.now();
+  const threadUrl = await createRootCommentAndOpenThread(page, seed);
+
+  await page.goto(threadUrl);
 
   await expect(page.getByTestId('thread-back-link')).toBeVisible();
   await expect(page.getByTestId('thread-reply-form')).toBeVisible();
@@ -219,7 +222,10 @@ test('root form rejects over-limit attachment before submit', async ({ page }) =
  * Runtime smoke: перевіряє UI-boundary валідацію для недозволеного MIME у reply-вкладенні.
  */
 test('thread form rejects unsupported attachment type before submit', async ({ page }) => {
-  await page.goto('/thread/1');
+  const seed = Date.now();
+  const threadUrl = await createRootCommentAndOpenThread(page, seed);
+
+  await page.goto(threadUrl);
 
   await page.getByTestId('thread-attachment-input').setInputFiles({
     name: 'thread-unsupported.pdf',

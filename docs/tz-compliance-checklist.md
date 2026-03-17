@@ -1,13 +1,13 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 76).
+Останнє оновлення: 2026-03-17 (ітерація 77).
 
 ## Що перевірено в цій ітерації
 
-- Розширено Playwright e2e smoke у `src/Comments.Web/e2e/smoke.spec.ts` двома boundary runtime-сценаріями UI-валидації attachment:
-  - root-форма відхиляє файл `>1MB` і показує повідомлення `Файл перевищує 1MB.`;
-  - thread reply-форма відхиляє недозволений MIME (`application/pdf`) і показує повідомлення `Недозволений тип вкладення.`.
-- Оновлено цей чекліст: закрито останній незавершений підпункт про UI-рівень e2e фіксації attachment boundary-контрактів.
+- Усунуто флейкову залежність Playwright smoke від seed/dev-даних у `src/Comments.Web/e2e/smoke.spec.ts`:
+  - `thread page renders reply form` більше не відкриває жорстко `/thread/1`, а спочатку створює root-коментар і переходить у створений thread;
+  - `thread form rejects unsupported attachment type before submit` також переведено на runtime thread, створений у тесті.
+- Оновлено чекліст і зафіксовано фокус поточної ітерації: стабілізація CI check `comments-web-e2e-smoke` після падінь на GitHub (`pull_request` + `push`).
 
 ## Підсумок відповідності
 
@@ -16,6 +16,8 @@
 - **Не виконано:** 0 пунктів (пункт №5 виключено з обов'язкових за запитом).
 
 > Висновок: browser smoke уже інтегрований у CI (GitHub Actions) та покриває create/reply + multi-tab realtime + image attachment; для фінального закриття delivery-пакету лишається підставити фактичний demo-video URL у `README.md`.
+
+> Додатково: у поточному середовищі розробки відтворення e2e локально обмежене мережевою забороною на npm registry (`E403` для `@playwright/test` під час `npm ci`), тому перевірка ефекту фіксу очікується у GitHub Actions.
 
 ## Актуальний статус по ключових блоках ТЗ
 
