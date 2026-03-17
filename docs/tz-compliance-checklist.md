@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-17 (ітерація 40).
+Останнє оновлення: 2026-03-17 (ітерація 41).
 
 ## Підсумок
 
@@ -22,6 +22,37 @@
 
 
 
+
+## Оновлення ітерації 41
+
+### Внесені зміни в цій ітерації
+
+- ✅ Розширено integration-покриття `src/Comments.Api.Tests/ValidationIntegrationTests.cs` для `comments` (REST + GraphQL) boundary/negative кейсами для `filter`:
+  - `GetComments_WithFilterLongerThan200_ReturnsBadRequestValidationProblem`;
+  - `GraphQlComments_WithFilterLongerThan200_ReturnsBadUserInputError`.
+- ✅ Закрито edge-case комбінації `filter + sort + pagination` на порожній сторінці у REST і GraphQL:
+  - `GetComments_WithSortPaginationAndFilter_EmptyPageReturnsNoItems`;
+  - `GraphQlComments_WithSortPaginationAndFilter_EmptyPageReturnsNoItems`.
+- ✅ Додано XML-коментарі до оновленого тестового класу, методів і допоміжних моделей payload/error, щоб дотримати вимогу коментування класів/методів/моделей.
+
+### Що ще треба зробити у проєкті (актуально після ітерації 41)
+
+1. 🟨 **Angular LTS (довести до production-ready):**
+   - додати e2e smoke для ключових user-flow (`root create`, `thread reply`, `preview`, `attachments`, `realtime`);
+   - уніфікувати UX-відображення API/GraphQL validation помилок.
+2. 🟨 **CQRS + MediatR + FluentValidation (закриття edge-cases):**
+   - формалізувати контракт `validationErrors` у GraphQL `extensions` в README/API docs;
+   - додати окремий docs-приклад для `Filter` validation-помилки (REST + GraphQL).
+3. 🟨 **RabbitMQ production-hardening:**
+   - довести delayed retry + DLQ replay tooling;
+   - додати метрики consumer-обробки та базові alert-умови.
+4. 🔲 **Фінальний Middle+ load-test у цільовому контурі RabbitMQ + Elasticsearch:**
+   - виконати прогін `load-test/comments-middle.js`;
+   - заповнити `docs/load-test-middle-results.md` фактичними метриками та додати актуальний `docs/artifacts/k6-middle-summary.json`.
+5. 👤 **Delivery-артефакт Demo:**
+   - пункт делеговано власнику репозиторію (секція `Demo` у `README.md` + посилання на відео) — у цій ітерації не змінювався.
+
+---
 
 ## Оновлення ітерації 40
 
