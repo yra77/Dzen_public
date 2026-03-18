@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-18 (оновлено після hardening startup для MySQL і docker-compose readiness).
+Останнє оновлення: 2026-03-18 (оновлено після виправлення Docker build для різних CPU-архітектур).
 
 ## Актуальний стан по ТЗ
 
@@ -11,45 +11,35 @@
 
 2. ✅ **Базова безпека введення**
    - Валідація і санітизація коментарів активні.
-   - Немає ручного SQL-конкатенування для роботи з коментарями.
+   - Немає ручного SQL-конкатенування для операцій з коментарями.
 
-3. ✅ **Коментарі до нових змін у коді**
-   - Для нових класів/методів, доданих у цій ітерації, внесені пояснювальні XML/inline-коментарі.
+3. ✅ **Стійкість startup-процесу**
+   - Діє preflight-очікування TCP-доступності MySQL endpoint перед `Database.MigrateAsync()`.
+   - Логи старту містять діагностику підключення без витоку паролів.
+   - У `docker-compose` для MySQL налаштований healthcheck, а API чекає `service_healthy`.
 
-4. ✅ **Діагностика та стійкість startup-процесу**
-   - Збережено retry-стратегію EF Core для MySQL.
-   - Додано preflight-очікування TCP-доступності MySQL endpoint перед `Database.MigrateAsync()`.
-   - Помилки старту логуються з безпечним target (`Server/Port/Database/User`, без пароля) і з більш явними підказками для локального запуску.
-
-5. ✅ **Readiness для docker-compose**
-   - Для `mysql` додано `healthcheck` через `mysqladmin ping`.
-   - `comments-api` очікує готовність MySQL через `depends_on.condition: service_healthy`.
+4. ✅ **Сумісність Docker build з різними архітектурами**
+   - Прибрано жорстке платформне обмеження зі stage `build` у `src/Comments.Api/Dockerfile`, щоб уникнути `exec /bin/sh: exec format error` на хостах без емуляції.
+   - `dotnet publish` тепер передає `-a` лише якщо задано `TARGETARCH`, що коректно працює і для buildx, і для звичайного `docker compose build`.
 
 ## Що змінено в цій ітерації (2026-03-18)
 
-- ✅ Реалізовано `MySqlStartupOptions` для керування preflight-поведінкою (`Enabled`, `MaxWaitSeconds`, `RetryDelaySeconds`, `ConnectTimeoutSeconds`).
-- ✅ У стартовому конвеєрі API додано `WaitForMySqlAvailabilityAsync(...)`, який виконує кілька TCP-спроб до MySQL перед запуском міграцій.
-- ✅ Додано конфіг `MySqlStartup` у `appsettings.json`.
-- ✅ Додано env-перевизначення `MySqlStartup__*` у `docker-compose.yml` для контейнерного сценарію.
-- ✅ Для локального сценарію покращено текст `TimeoutException` preflight (явна підказка: треба запущений MySQL або коректний host у connection string).
-- ✅ Додано `healthcheck` для сервісу `mysql` та оновлено залежності старту `comments-api`.
-- ✅ Очищено чекліст: прибрано застарілі записи, які вже реалізовані.
+- ✅ Виправлено причину помилки збірки:
+  - `exec /bin/sh: exec format error` на кроці `dotnet restore`.
+- ✅ Оновлено `src/Comments.Api/Dockerfile`:
+  - видалено привʼязку build-stage до конкретної платформи;
+  - додано умовну передачу `TARGETARCH` у publish-команду.
+- ✅ Очищено чекліст від неактуальних формулювань; залишено лише актуальний стан і фактичний backlog.
 
-## Чому виникала помилка `Unable to connect to any of the specified MySQL hosts`
+## Що ще потрібно зробити у проєкті (актуальний backlog)
 
-- Якщо API стартує раніше, ніж MySQL приймає TCP-з’єднання, `Database.MigrateAsync()` падає після вичерпання retry policy EF (`RetryLimitExceededException`).
-- У локальному запуску поза Docker помилка також виникає, якщо в `ConnectionStrings:CommentsDb` лишився `Server=localhost`, але MySQL фактично не запущений або слухає інший host/port.
-
-## Що ще потрібно зробити далі (актуальний backlog)
-
-- 🔜 Прогнати повний E2E запуск `docker-compose` (API + MySQL + RabbitMQ + Elasticsearch) і зафіксувати результати в README/чеклісті.
-- 🔜 Описати в README runbook для типових startup-проблем:
-  - перевірка host/port;
-  - перевірка креденшалів;
-  - перевірка, що container MySQL у статусі healthy;
-  - повторний старт API.
-- 🔜 Синхронізувати prod/stage конфіги та секрети під MySQL (connection string + policy обробки startup timeout).
-- 🔜 Доробити smoke-check у CI: перевірка `/health` після підняття стеку.
+- 🔜 Додати в README окремий розділ **Troubleshooting Docker/Architecture**:
+  - як запускати стек на Apple Silicon/ARM;
+  - коли й навіщо задавати `DOCKER_DEFAULT_PLATFORM`;
+  - як діагностувати `exec format error`.
+- 🔜 Прогнати E2E перевірку `docker compose up --build` на двох середовищах (amd64 та arm64) і зафіксувати результати.
+- 🔜 Додати CI smoke-check: підняття стеку й перевірка `GET /health`.
+- 🔜 Додати короткий операційний runbook для startup-помилок MySQL (host/port/credentials/healthy-state).
 
 ---
 
