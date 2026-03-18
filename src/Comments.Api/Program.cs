@@ -288,8 +288,22 @@ static async Task WaitForMySqlAvailabilityAsync(
         await Task.Delay(TimeSpan.FromSeconds(options.RetryDelaySeconds), cancellationToken);
     }
 
-    throw new TimeoutException(
-        $"MySQL endpoint {host}:{port} недоступний після {options.MaxWaitSeconds} секунд очікування preflight.");
+    throw new TimeoutException(BuildMySqlPreflightTimeoutMessage(host, port, options.MaxWaitSeconds));
+}
+
+// Формує зрозуміле повідомлення таймауту preflight, щоб швидко відрізнити локальну проблему запуску MySQL
+// від помилки docker-compose мережі або невірного host у connection string.
+static string BuildMySqlPreflightTimeoutMessage(string host, int port, int maxWaitSeconds)
+{
+    var baseMessage = $"MySQL endpoint {host}:{port} недоступний після {maxWaitSeconds} секунд очікування preflight.";
+    if (string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(host, "127.0.0.1", StringComparison.OrdinalIgnoreCase))
+    {
+        return $"{baseMessage} Локальний сценарій: запустіть MySQL локально (або через docker compose) " +
+               "чи змініть ConnectionStrings:CommentsDb на актуальний host контейнера/сервера.";
+    }
+
+    return $"{baseMessage} Перевірте DNS/host, порт і доступність сервісу MySQL у поточному середовищі.";
 }
 
 

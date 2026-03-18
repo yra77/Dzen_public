@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-18 (після виправлення старту API при недоступному MySQL).
+Останнє оновлення: 2026-03-18 (оновлено після hardening startup для MySQL і docker-compose readiness).
 
 ## Актуальний стан по ТЗ
 
@@ -19,7 +19,11 @@
 4. ✅ **Діагностика та стійкість startup-процесу**
    - Збережено retry-стратегію EF Core для MySQL.
    - Додано preflight-очікування TCP-доступності MySQL endpoint перед `Database.MigrateAsync()`.
-   - Помилки старту логуються з безпечним target (`Server/Port/Database/User`, без пароля).
+   - Помилки старту логуються з безпечним target (`Server/Port/Database/User`, без пароля) і з більш явними підказками для локального запуску.
+
+5. ✅ **Readiness для docker-compose**
+   - Для `mysql` додано `healthcheck` через `mysqladmin ping`.
+   - `comments-api` очікує готовність MySQL через `depends_on.condition: service_healthy`.
 
 ## Що змінено в цій ітерації (2026-03-18)
 
@@ -27,7 +31,9 @@
 - ✅ У стартовому конвеєрі API додано `WaitForMySqlAvailabilityAsync(...)`, який виконує кілька TCP-спроб до MySQL перед запуском міграцій.
 - ✅ Додано конфіг `MySqlStartup` у `appsettings.json`.
 - ✅ Додано env-перевизначення `MySqlStartup__*` у `docker-compose.yml` для контейнерного сценарію.
-- ✅ Очищено цей чекліст від неактуальних/виконаних пунктів, що більше не є TODO.
+- ✅ Для локального сценарію покращено текст `TimeoutException` preflight (явна підказка: треба запущений MySQL або коректний host у connection string).
+- ✅ Додано `healthcheck` для сервісу `mysql` та оновлено залежності старту `comments-api`.
+- ✅ Очищено чекліст: прибрано застарілі записи, які вже реалізовані.
 
 ## Чому виникала помилка `Unable to connect to any of the specified MySQL hosts`
 
@@ -37,7 +43,6 @@
 ## Що ще потрібно зробити далі (актуальний backlog)
 
 - 🔜 Прогнати повний E2E запуск `docker-compose` (API + MySQL + RabbitMQ + Elasticsearch) і зафіксувати результати в README/чеклісті.
-- 🔜 Додати `healthcheck` для `mysql` та перевести `depends_on` на умову `service_healthy` (щоб orchestration також очікував готовність БД).
 - 🔜 Описати в README runbook для типових startup-проблем:
   - перевірка host/port;
   - перевірка креденшалів;
