@@ -14,7 +14,7 @@
   - REST API `POST /api/comments`, `GET /api/comments` (пагінація + сортування),
   - REST API пошуку `GET /api/comments/search?q=...` через Elasticsearch,
   - GraphQL endpoint `POST /graphql` (query comments + mutation createComment),
-  - EF Core репозиторій (MySQL за замовчуванням для персистентного збереження + підтримка `InMemory`/`SqlServer` через конфіг),
+  - EF Core репозиторій (SQLite за замовчуванням для персистентного збереження + підтримка `InMemory` через конфіг),
   - базовий HTML sanitizer,
   - Swagger в development-режимі.
 
@@ -39,7 +39,8 @@ comments-spa/
 ## Запуск локально
 
 1. Встановити .NET 8 SDK
-2. Виконати:
+2. Переконатися, що шлях до SQLite у `src/Comments.Api/appsettings.json` валідний (`ConnectionStrings:CommentsDb`).
+3. Виконати:
 
 ```bash
 dotnet restore Comments.sln

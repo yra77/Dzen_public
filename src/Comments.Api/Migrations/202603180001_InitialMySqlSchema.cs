@@ -6,38 +6,29 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Comments.Api.Migrations;
 
 /// <summary>
-/// Початкова схема MySQL для збереження коментарів і журналу ідемпотентності.
+/// Початкова схема SQLite для збереження коментарів і журналу ідемпотентності.
 /// </summary>
-public partial class InitialMySqlSchema : Migration
+public partial class InitialSqliteSchema : Migration
 {
     /// <inheritdoc />
     protected override void Up(MigrationBuilder migrationBuilder)
     {
-        migrationBuilder.AlterDatabase()
-            .Annotation("MySql:CharSet", "utf8mb4");
-
+        // Створює основну таблицю коментарів з self-reference для дерева відповідей.
         migrationBuilder.CreateTable(
             name: "Comments",
             columns: table => new
             {
-                Id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                ParentId = table.Column<Guid>(type: "char(36)", nullable: true, collation: "ascii_general_ci"),
-                UserName = table.Column<string>(type: "varchar(128)", maxLength: 128, nullable: false)
-                    .Annotation("MySql:CharSet", "utf8mb4"),
-                Email = table.Column<string>(type: "varchar(256)", maxLength: 256, nullable: false)
-                    .Annotation("MySql:CharSet", "utf8mb4"),
-                HomePage = table.Column<string>(type: "varchar(512)", maxLength: 512, nullable: true)
-                    .Annotation("MySql:CharSet", "utf8mb4"),
-                Text = table.Column<string>(type: "longtext", nullable: false)
-                    .Annotation("MySql:CharSet", "utf8mb4"),
-                CreatedAtUtc = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                AttachmentFileName = table.Column<string>(type: "varchar(260)", maxLength: 260, nullable: true)
-                    .Annotation("MySql:CharSet", "utf8mb4"),
-                AttachmentContentType = table.Column<string>(type: "varchar(128)", maxLength: 128, nullable: true)
-                    .Annotation("MySql:CharSet", "utf8mb4"),
-                AttachmentStoragePath = table.Column<string>(type: "varchar(512)", maxLength: 512, nullable: true)
-                    .Annotation("MySql:CharSet", "utf8mb4"),
-                AttachmentSizeBytes = table.Column<long>(type: "bigint", nullable: true)
+                Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                ParentId = table.Column<Guid>(type: "TEXT", nullable: true),
+                UserName = table.Column<string>(type: "TEXT", maxLength: 128, nullable: false),
+                Email = table.Column<string>(type: "TEXT", maxLength: 256, nullable: false),
+                HomePage = table.Column<string>(type: "TEXT", maxLength: 512, nullable: true),
+                Text = table.Column<string>(type: "TEXT", nullable: false),
+                CreatedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
+                AttachmentFileName = table.Column<string>(type: "TEXT", maxLength: 260, nullable: true),
+                AttachmentContentType = table.Column<string>(type: "TEXT", maxLength: 128, nullable: true),
+                AttachmentStoragePath = table.Column<string>(type: "TEXT", maxLength: 512, nullable: true),
+                AttachmentSizeBytes = table.Column<long>(type: "INTEGER", nullable: true)
             },
             constraints: table =>
             {
@@ -48,22 +39,20 @@ public partial class InitialMySqlSchema : Migration
                     principalTable: "Comments",
                     principalColumn: "Id",
                     onDelete: ReferentialAction.Restrict);
-            })
-            .Annotation("MySql:CharSet", "utf8mb4");
+            });
 
+        // Зберігає idempotency-маркери для RabbitMQ consumer-обробки.
         migrationBuilder.CreateTable(
             name: "ProcessedMessages",
             columns: table => new
             {
-                Id = table.Column<string>(type: "varchar(128)", maxLength: 128, nullable: false)
-                    .Annotation("MySql:CharSet", "utf8mb4"),
-                ProcessedAtUtc = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                Id = table.Column<string>(type: "TEXT", maxLength: 128, nullable: false),
+                ProcessedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false)
             },
             constraints: table =>
             {
                 table.PrimaryKey("PK_ProcessedMessages", x => x.Id);
-            })
-            .Annotation("MySql:CharSet", "utf8mb4");
+            });
 
         migrationBuilder.CreateIndex(
             name: "IX_Comments_ParentId",
