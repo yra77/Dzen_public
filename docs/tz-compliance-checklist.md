@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-18 (ітерація 93).
+Останнє оновлення: 2026-03-18 (ітерація 94).
 
 ## Підсумок перевірки відповідності ТЗ
 
@@ -136,9 +136,20 @@
   - **Підтверджено реалізоване:** ASP.NET Core 8, EF Core + SQL Server, GraphQL (HotChocolate), CQRS + MediatR, RabbitMQ (через `RabbitMQ.Client`), Elasticsearch (HTTP-інтеграція), SignalR, Angular standalone, RxJS, Docker + Compose.
   - ⚠️ **Не підтверджено як реалізоване саме у заявленому формулюванні:** `MassTransit`, `NEST`, `Apollo Client (GraphQL)`, `TailwindCSS`, `Redis` (опціонально).
 
+## Оновлення в ітерації 94
+
+- ✅ На сервері (`Comments.Application`) додано явну FluentValidation-перевірку поля `Request.Text` на валідний XHTML-фрагмент: теги повинні бути коректно закриті, інакше повертається validation-помилка (`400 Bad Request`).
+- ✅ На клієнті (`Comments.Web`) додано `xhtmlFragmentValidator` для textarea у формах root/reply (root-list + thread): перевіряються валідність XHTML, дозволені теги (`a`, `code`, `i`, `strong`), атрибути та валідність `a[href]` (тільки абсолютні `http/https` URL).
+- ✅ У UI Angular додано інлайнові повідомлення про помилки для XHTML-валидації тексту, щоб користувач бачив проблему ще до submit.
+- ✅ Додано інтеграційний тест API, який підтверджує відхилення malformed XHTML у `POST /api/comments` з помилкою по полю `Request.Text`.
+
 ## Що ще треба зробити у проєкті
 
 - 🔜 Додати e2e-перевірку нового CAPTCHA формату (латинські літери + цифри): позитивний submit і негативний сценарій із невалідною відповіддю.
+- 🔜 Додати e2e-сценарії для XHTML-валидації у формах коментарів:
+  - незакритий тег (`<strong>broken`) блокує submit на клієнті;
+  - недозволений тег (`<b>`) показує коректне повідомлення;
+  - `<a href=\"...\">` з не-`http/https` URL відхиляється до відправки.
 - 🔜 Якщо потрібно 100% відповідність заявленому стеку, додати окремий backlog-епік на міграцію:
   - RabbitMQ `RabbitMQ.Client` → `MassTransit`,
   - Elasticsearch HTTP-клієнт → `NEST`,

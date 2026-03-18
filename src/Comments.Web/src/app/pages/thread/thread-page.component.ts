@@ -11,6 +11,7 @@ import {
 } from '../../core/comments-api.service';
 import { environment } from '../../../environments/environment';
 import { ApiErrorPresenterService, UiValidationError } from '../../core/api-error-presenter.service';
+import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
 
 @Component({
   selector: 'app-thread-page',
@@ -146,6 +147,9 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
                   Текст
                   <textarea #threadTextArea rows="5" formControlName="text" (input)="previewText()" data-testid="thread-text-input"></textarea>
                 </label>
+                @if (getTextValidationMessage(replyForm.controls.text)) {
+                  <p class="error wide">{{ getTextValidationMessage(replyForm.controls.text) }}</p>
+                }
 
                 <div class="wide text-toolbar" role="group" aria-label="Швидкі теги форматування" data-testid="thread-quick-tags">
                   <span class="text-toolbar-label">Швидкі теги:</span>
@@ -296,9 +300,43 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   readonly replyForm = this.formBuilder.nonNullable.group({
     userName: ['', [Validators.required, Validators.maxLength(100)]],
     email: ['', [Validators.required, Validators.email]],
-    text: ['', [Validators.required, Validators.maxLength(5000)]],
+    text: ['', [Validators.required, Validators.maxLength(5000), xhtmlFragmentValidator()]],
     captchaAnswer: ['', [Validators.required]]
   });
+
+  /**
+   * Повертає локалізований текст помилки XHTML-валидації для textarea відповіді.
+   */
+  getTextValidationMessage(control: { errors: Record<string, unknown> | null; touched: boolean; dirty: boolean }): string {
+    const shouldShow = control.touched || control.dirty;
+    if (!shouldShow || !control.errors) {
+      return '';
+    }
+
+    if (control.errors['xhtmlFragment']) {
+      return 'Текст повинен бути валідним XHTML (теги мають бути коректно закриті).';
+    }
+
+    if (control.errors['unsupportedTag']) {
+      const tagName = String(control.errors['unsupportedTag']);
+      return `Тег <${tagName}> заборонений. Дозволено лише: <a>, <code>, <i>, <strong>.`;
+    }
+
+    if (control.errors['invalidAnchorAttributes']) {
+      return 'Для тегу <a> дозволено тільки атрибут href.';
+    }
+
+    if (control.errors['invalidAnchorHref']) {
+      return 'У <a href> потрібно вказати абсолютний URL з протоколом http або https.';
+    }
+
+    if (control.errors['disallowedAttributes']) {
+      const tagName = String(control.errors['disallowedAttributes']);
+      return `Атрибути заборонені для тегу <${tagName}>.`;
+    }
+
+    return '';
+  }
 
   /**
    * Ініціалізує стан сторінки та realtime-підписку.
