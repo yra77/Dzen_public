@@ -9,6 +9,8 @@ services:
       ASPNETCORE_URLS: http://+:5000
       Persistence__Provider: MySql
       ConnectionStrings__CommentsDb: Server=mysql;Port=3306;Database=comments;User=comments_user;Password=comments_password;
+      MySqlStartup__Enabled: 'true'
+      MySqlStartup__MaxWaitSeconds: '120'
       RabbitMq__Enabled: 'true'
       RabbitMq__HostName: rabbitmq
       Elasticsearch__Enabled: 'true'
