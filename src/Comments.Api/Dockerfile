@@ -1,4 +1,5 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+ARG TARGETARCH
 WORKDIR /src
 COPY Comments.sln ./
 COPY src/Comments.Domain/Comments.Domain.csproj src/Comments.Domain/
@@ -7,9 +8,9 @@ COPY src/Comments.Infrastructure/Comments.Infrastructure.csproj src/Comments.Inf
 COPY src/Comments.Api/Comments.Api.csproj src/Comments.Api/
 RUN dotnet restore src/Comments.Api/Comments.Api.csproj
 COPY . .
-RUN dotnet publish src/Comments.Api/Comments.Api.csproj -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish src/Comments.Api/Comments.Api.csproj -c Release -a $TARGETARCH -o /app/publish /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+FROM --platform=$TARGETPLATFORM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
 EXPOSE 5000
