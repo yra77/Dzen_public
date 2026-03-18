@@ -47,6 +47,12 @@ export interface PagedCommentsResponse {
   items: CommentNode[];
 }
 
+/** Доступні поля сортування root-коментарів у REST API. */
+export type RootCommentsSortField = 'CreatedAtUtc' | 'UserName' | 'Email';
+
+/** Доступні напрямки сортування root-коментарів у REST API. */
+export type RootCommentsSortDirection = 'Asc' | 'Desc';
+
 export interface CreateCommentAttachmentRequest {
   /** Ім'я файлу, що буде відображено в UI. */
   fileName: string;
@@ -90,9 +96,21 @@ export class CommentsApiService {
   private readonly httpClient = inject(HttpClient);
   private readonly apiBaseUrl = environment.apiBaseUrl;
 
-  /** Отримує список root-коментарів (перша сторінка за замовчуванням). */
-  getRootComments(): Observable<PagedCommentsResponse> {
-    return this.httpClient.get<PagedCommentsResponse>(`${this.apiBaseUrl}/api/comments`);
+  /** Отримує сторінку root-коментарів з урахуванням пагінації та сортування. */
+  getRootComments(
+    page: number,
+    pageSize: number,
+    sortBy: RootCommentsSortField,
+    sortDirection: RootCommentsSortDirection
+  ): Observable<PagedCommentsResponse> {
+    return this.httpClient.get<PagedCommentsResponse>(`${this.apiBaseUrl}/api/comments`, {
+      params: {
+        page,
+        pageSize,
+        sortBy,
+        sortDirection
+      }
+    });
   }
 
   /** Отримує повне дерево гілки для root-коментаря. */

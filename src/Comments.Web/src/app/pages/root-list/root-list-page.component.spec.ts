@@ -88,7 +88,7 @@ describe('RootListPageComponent smoke', () => {
   });
 
   it('завантажує root-коментарі та captcha при ініціалізації', () => {
-    const commentsRequest = httpMock.expectOne('http://localhost:8080/api/comments');
+    const commentsRequest = httpMock.expectOne((request) => request.url === 'http://localhost:8080/api/comments' && request.params.get('page') === '1' && request.params.get('pageSize') === '25' && request.params.get('sortBy') === 'CreatedAtUtc' && request.params.get('sortDirection') === 'Desc');
     expect(commentsRequest.request.method).toBe('GET');
     commentsRequest.flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
 
@@ -101,7 +101,7 @@ describe('RootListPageComponent smoke', () => {
   });
 
   it('показує fallback-повідомлення коли preview тимчасово недоступний', () => {
-    httpMock.expectOne('http://localhost:8080/api/comments').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
+    httpMock.expectOne((request) => request.url === 'http://localhost:8080/api/comments' && request.params.get('page') === '1' && request.params.get('pageSize') === '25' && request.params.get('sortBy') === 'CreatedAtUtc' && request.params.get('sortDirection') === 'Desc').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
     httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
 
     component.createForm.controls.text.setValue('demo preview text');
@@ -114,7 +114,7 @@ describe('RootListPageComponent smoke', () => {
   });
 
   it('створює root-коментар із captchaToken у форматі challenge:answer', () => {
-    httpMock.expectOne('http://localhost:8080/api/comments').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
+    httpMock.expectOne((request) => request.url === 'http://localhost:8080/api/comments' && request.params.get('page') === '1' && request.params.get('pageSize') === '25' && request.params.get('sortBy') === 'CreatedAtUtc' && request.params.get('sortDirection') === 'Desc').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
     httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
 
     component.createForm.setValue({
@@ -127,13 +127,13 @@ describe('RootListPageComponent smoke', () => {
 
     component.submitComment();
 
-    const createRequest = httpMock.expectOne('http://localhost:8080/api/comments');
+    const createRequest = httpMock.expectOne((request) => request.url === 'http://localhost:8080/api/comments' && request.params.get('page') === '1' && request.params.get('pageSize') === '25' && request.params.get('sortBy') === 'CreatedAtUtc' && request.params.get('sortDirection') === 'Desc');
     expect(createRequest.request.method).toBe('POST');
     expect(createRequest.request.body.parentId).toBeNull();
     expect(createRequest.request.body.captchaToken).toBe('captcha-1:9');
     createRequest.flush({ id: 'r-1' });
 
-    httpMock.expectOne('http://localhost:8080/api/comments').flush({ page: 1, pageSize: 25, totalCount: 1, items: [] });
+    httpMock.expectOne((request) => request.url === 'http://localhost:8080/api/comments' && request.params.get('page') === '1' && request.params.get('pageSize') === '25' && request.params.get('sortBy') === 'CreatedAtUtc' && request.params.get('sortDirection') === 'Desc').flush({ page: 1, pageSize: 25, totalCount: 1, items: [] });
     httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-2', imageBase64: 'BBBB', mimeType: 'image/png', ttlSeconds: 60 });
 
     expect(component.submitMessage).toContain('успішно створено');
@@ -141,7 +141,7 @@ describe('RootListPageComponent smoke', () => {
 
   /** Перевіряє, що txt-вкладення коректно передається у create payload. */
   it('додає txt-вкладення до payload створення root-коментаря', () => {
-    httpMock.expectOne('http://localhost:8080/api/comments').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
+    httpMock.expectOne((request) => request.url === 'http://localhost:8080/api/comments' && request.params.get('page') === '1' && request.params.get('pageSize') === '25' && request.params.get('sortBy') === 'CreatedAtUtc' && request.params.get('sortDirection') === 'Desc').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
     httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
 
     component.attachment = {
@@ -160,7 +160,7 @@ describe('RootListPageComponent smoke', () => {
 
     component.submitComment();
 
-    const createRequest = httpMock.expectOne('http://localhost:8080/api/comments');
+    const createRequest = httpMock.expectOne((request) => request.url === 'http://localhost:8080/api/comments' && request.params.get('page') === '1' && request.params.get('pageSize') === '25' && request.params.get('sortBy') === 'CreatedAtUtc' && request.params.get('sortDirection') === 'Desc');
     expect(createRequest.request.body.attachment).toEqual({
       fileName: 'note.txt',
       contentType: 'text/plain',
@@ -168,7 +168,7 @@ describe('RootListPageComponent smoke', () => {
     });
     createRequest.flush({ id: 'r-2' });
 
-    httpMock.expectOne('http://localhost:8080/api/comments').flush({ page: 1, pageSize: 25, totalCount: 1, items: [] });
+    httpMock.expectOne((request) => request.url === 'http://localhost:8080/api/comments' && request.params.get('page') === '1' && request.params.get('pageSize') === '25' && request.params.get('sortBy') === 'CreatedAtUtc' && request.params.get('sortDirection') === 'Desc').flush({ page: 1, pageSize: 25, totalCount: 1, items: [] });
     httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-2', imageBase64: 'BBBB', mimeType: 'image/png', ttlSeconds: 60 });
 
     expect(component.submitMessage).toContain('успішно створено');
@@ -176,7 +176,7 @@ describe('RootListPageComponent smoke', () => {
 
   /** Перевіряє, що форма блокує вкладення, які перевищують ліміт 1MB. */
   it('відхиляє вкладення розміром більше 1MB', () => {
-    httpMock.expectOne('http://localhost:8080/api/comments').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
+    httpMock.expectOne((request) => request.url === 'http://localhost:8080/api/comments' && request.params.get('page') === '1' && request.params.get('pageSize') === '25' && request.params.get('sortBy') === 'CreatedAtUtc' && request.params.get('sortDirection') === 'Desc').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
     httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
 
     const fileInput = document.createElement('input');
@@ -192,7 +192,7 @@ describe('RootListPageComponent smoke', () => {
 
   /** Перевіряє, що форма блокує невалідні типи вкладень. */
   it('відхиляє вкладення з недозволеним content-type', () => {
-    httpMock.expectOne('http://localhost:8080/api/comments').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
+    httpMock.expectOne((request) => request.url === 'http://localhost:8080/api/comments' && request.params.get('page') === '1' && request.params.get('pageSize') === '25' && request.params.get('sortBy') === 'CreatedAtUtc' && request.params.get('sortDirection') === 'Desc').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
     httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
 
     const fileInput = document.createElement('input');
@@ -209,7 +209,7 @@ describe('RootListPageComponent smoke', () => {
 
 
   it('показує preview для вибраного image-вкладення', () => {
-    httpMock.expectOne('http://localhost:8080/api/comments').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
+    httpMock.expectOne((request) => request.url === 'http://localhost:8080/api/comments' && request.params.get('page') === '1' && request.params.get('pageSize') === '25' && request.params.get('sortBy') === 'CreatedAtUtc' && request.params.get('sortDirection') === 'Desc').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
     httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
 
     spyOn(window, 'FileReader').and.returnValue({
@@ -231,7 +231,7 @@ describe('RootListPageComponent smoke', () => {
   });
 
   it('додає quick-тег [strong] у текст форми', () => {
-    httpMock.expectOne('http://localhost:8080/api/comments').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
+    httpMock.expectOne((request) => request.url === 'http://localhost:8080/api/comments' && request.params.get('page') === '1' && request.params.get('pageSize') === '25' && request.params.get('sortBy') === 'CreatedAtUtc' && request.params.get('sortDirection') === 'Desc').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
     httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
 
     const textArea = document.createElement('textarea');
@@ -243,15 +243,53 @@ describe('RootListPageComponent smoke', () => {
     expect(component.createForm.controls.text.value).toBe('<strong>demo</strong>');
   });
 
-    it('оновлює SignalR статуси reconnecting/reconnected/close', () => {
-    httpMock.expectOne('http://localhost:8080/api/comments').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
+  
+
+  it('передає обрані параметри сортування при зміні контролів', () => {
+    httpMock.expectOne((request) => request.url === 'http://localhost:8080/api/comments' && request.params.get('page') === '1' && request.params.get('pageSize') === '25' && request.params.get('sortBy') === 'CreatedAtUtc' && request.params.get('sortDirection') === 'Desc').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
+    httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
+
+    component.onSortByChanged({ target: { value: 'Email' } } as unknown as Event);
+
+    const sortedRequest = httpMock.expectOne((request) => request.url === 'http://localhost:8080/api/comments' && request.params.get('sortBy') === 'Email' && request.params.get('sortDirection') === 'Desc');
+    sortedRequest.flush({ page: 1, pageSize: 25, totalCount: 30, items: [] });
+
+    component.onSortDirectionChanged({ target: { value: 'Asc' } } as unknown as Event);
+
+    const ascRequest = httpMock.expectOne((request) => request.url === 'http://localhost:8080/api/comments' && request.params.get('sortBy') === 'Email' && request.params.get('sortDirection') === 'Asc');
+    ascRequest.flush({ page: 1, pageSize: 25, totalCount: 30, items: [] });
+
+    expect(component.sortBy).toBe('Email');
+    expect(component.sortDirection).toBe('Asc');
+  });
+
+  it('очищає вибране зображення у формі root-коментаря', () => {
+    httpMock.expectOne((request) => request.url === 'http://localhost:8080/api/comments' && request.params.get('page') === '1' && request.params.get('pageSize') === '25' && request.params.get('sortBy') === 'CreatedAtUtc' && request.params.get('sortDirection') === 'Desc').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
+    httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
+
+    component.attachment = {
+      fileName: 'image.png',
+      contentType: 'image/png',
+      base64Content: 'ZmFrZQ=='
+    };
+    component.attachmentImagePreviewDataUrl = 'data:image/png;base64,ZmFrZQ==';
+    component.attachmentMessage = 'Вкладення готове: image.png';
+
+    component.clearCreateAttachment();
+
+    expect(component.attachment).toBeNull();
+    expect(component.attachmentImagePreviewDataUrl).toBe('');
+    expect(component.attachmentMessage).toBe('');
+  });
+  it('оновлює SignalR статуси reconnecting/reconnected/close', () => {
+    httpMock.expectOne((request) => request.url === 'http://localhost:8080/api/comments' && request.params.get('page') === '1' && request.params.get('pageSize') === '25' && request.params.get('sortBy') === 'CreatedAtUtc' && request.params.get('sortDirection') === 'Desc').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
     httpMock.expectOne('http://localhost:8080/api/captcha/image').flush({ challengeId: 'captcha-1', imageBase64: 'AAAA', mimeType: 'image/png', ttlSeconds: 60 });
 
     fakeHub.emitReconnecting();
     expect(component.signalRStatusMessage).toContain('перепідключення');
 
     fakeHub.emitReconnected();
-    httpMock.expectOne('http://localhost:8080/api/comments').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
+    httpMock.expectOne((request) => request.url === 'http://localhost:8080/api/comments' && request.params.get('page') === '1' && request.params.get('pageSize') === '25' && request.params.get('sortBy') === 'CreatedAtUtc' && request.params.get('sortDirection') === 'Desc').flush({ page: 1, pageSize: 25, totalCount: 0, items: [] });
     expect(component.signalRStatusMessage).toContain('відновлено');
 
     fakeHub.emitClosed();

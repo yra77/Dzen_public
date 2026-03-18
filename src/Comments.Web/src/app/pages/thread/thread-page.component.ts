@@ -32,7 +32,7 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
         }
       } @else if (thread) {
         <div class="thread-node">
-          <p class="meta"><strong>{{ thread.userName }}</strong> · {{ thread.createdAtUtc | date: 'short' }}</p>
+          <p class="comment-header"><strong>{{ thread.userName }}</strong><span>{{ thread.email }}</span><span>{{ thread.createdAtUtc | date: 'short' }}</span></p>
           <p>{{ thread.text }}</p>
           @if (thread.attachment) {
             <div class="attachment-inline">
@@ -79,7 +79,7 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
             @for (reply of replies; track reply.id) {
               <li>
                 <article class="thread-node">
-                  <p class="meta"><strong>{{ reply.userName }}</strong> · {{ reply.createdAtUtc | date: 'short' }}</p>
+                  <p class="comment-header"><strong>{{ reply.userName }}</strong><span>{{ reply.email }}</span><span>{{ reply.createdAtUtc | date: 'short' }}</span></p>
                   <p>{{ reply.text }}</p>
                   @if (reply.attachment) {
                     <div class="attachment-inline">
@@ -175,6 +175,7 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
                     <img [src]="attachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
                     <figcaption class="meta">Preview вибраного зображення</figcaption>
                   </figure>
+                  <button type="button" class="attachment-remove" (click)="clearReplyAttachment()">Видалити зображення</button>
                 }
 
                 @if (captchaImageDataUrl) {
@@ -186,7 +187,7 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
                 }
 
                 <label>
-                  CAPTCHA (сума чисел)
+                  CAPTCHA (цифри і букви латинського алфавіту)
                   <input type="text" formControlName="captchaAnswer" data-testid="thread-captcha-answer-input" />
                 </label>
 
@@ -223,7 +224,9 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
       .attachment-thumb { max-width: 260px; max-height: 180px; border: 1px solid #d0d7de; border-radius: 8px; }
       .attachment-text { white-space: pre-wrap; background: #f8fafc; border: 1px solid #d9e0ec; border-radius: 8px; padding: 8px; }
       .attachment-selection-preview { margin: 0; }
+      .attachment-remove { margin-top: 8px; }
       .thread-node { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; margin-top: 10px; background: #fcfcfd; }
+      .comment-header { display: flex; gap: 10px; flex-wrap: wrap; background: #e5e7eb; padding: 6px 8px; border-radius: 8px; margin: 0 0 8px; }
       .thread-actions { margin-top: 8px; display: flex; justify-content: flex-end; }
       .tree { list-style: none; margin: 0; padding-left: 14px; }
       .captcha { width: 160px; height: 60px; border: 1px solid #d9e0ec; border-radius: 6px; }
@@ -404,6 +407,14 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     textarea.focus();
     textarea.setSelectionRange(caretPosition, caretPosition);
     this.previewText();
+  }
+
+
+  /** Очищає вибране вкладення у формі відповіді. */
+  clearReplyAttachment(): void {
+    this.attachment = null;
+    this.attachmentImagePreviewDataUrl = '';
+    this.attachmentMessage = '';
   }
 
   /**
