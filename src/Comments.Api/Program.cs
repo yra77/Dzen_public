@@ -38,6 +38,7 @@ builder.Services.AddDbContext<CommentsDbContext>(options =>
         var connectionString = builder.Configuration.GetConnectionString("CommentsDb")
                                ?? throw new InvalidOperationException("Connection string 'CommentsDb' is required for MySql provider.");
 
+        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
         // AutoDetect робить мережеве підключення під час старту; задаємо версію явно,
         // щоб застосунок коректно стартував навіть коли БД тимчасово недоступна.
         options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 36)));
