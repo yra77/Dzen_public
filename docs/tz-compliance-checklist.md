@@ -24,6 +24,8 @@
 - ✅ Додано підтримку MySQL-провайдера в API та зроблено його провайдером за замовчуванням.
 - ✅ Оновлено `appsettings.json` на підключення до MySQL бази `comments`.
 - ✅ Оновлено `docker-compose.yml`: замінено `sqlserver` на `mysql`, синхронізовано env-змінні для API.
+- ✅ Для MySQL додано `EnableRetryOnFailure()` та прибрано `ServerVersion.AutoDetect(...)` зі стартового конвеєра, щоб уникати падіння на етапі конфігурації DI при тимчасовій недоступності БД.
+- ✅ Виправлено назви env-змінних у `docker-compose.yml` (`RabbitMq__HostName`, `Elasticsearch__Uri`) відповідно до options-класів API.
 - ✅ Актуалізовано README під новий дефолтний сценарій persistence.
 - ✅ Цей чекліст очищено від неактуальних пунктів попередньої ітерації.
 
