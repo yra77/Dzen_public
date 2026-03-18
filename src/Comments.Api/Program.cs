@@ -10,6 +10,7 @@ using MediatR;
 using FluentValidation;
 using Microsoft.Extensions.FileProviders;
 using MySqlConnector;
+using System.Net.Sockets;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,7 @@ var attachmentStorageOptions = builder.Configuration.GetSection("Attachments").G
 var signalrOptions = builder.Configuration.GetSection("SignalR").Get<SignalROptions>() ?? new SignalROptions();
 var elasticsearchOptions = builder.Configuration.GetSection("Elasticsearch").Get<ElasticsearchOptions>() ?? new ElasticsearchOptions();
 var processedMessageCleanupOptions = builder.Configuration.GetSection(ProcessedMessageCleanupOptions.SectionName).Get<ProcessedMessageCleanupOptions>() ?? new ProcessedMessageCleanupOptions();
+var mySqlStartupOptions = builder.Configuration.GetSection(MySqlStartupOptions.SectionName).Get<MySqlStartupOptions>() ?? new MySqlStartupOptions();
 
 builder.Services.AddDbContext<CommentsDbContext>(options =>
 {
@@ -112,6 +114,7 @@ if (rabbitMqOptions.Enabled)
 }
 
 builder.Services.AddSingleton(signalrOptions);
+builder.Services.AddSingleton(mySqlStartupOptions);
 if (signalrOptions.Enabled)
 {
     builder.Services.AddScoped<ICommentCreatedChannel, SignalRCommentCreatedChannel>();
@@ -158,6 +161,13 @@ using (var scope = app.Services.CreateScope())
     {
         try
         {
+            if (provider.Equals("MySql", StringComparison.OrdinalIgnoreCase))
+            {
+                // Перед запуском EF Core migration очікуємо доступність TCP endpoint MySQL,
+                // щоб уникати миттєвого падіння API у docker-compose при "одночасному" старті контейнерів.
+                await WaitForMySqlAvailabilityAsync(connectionString, mySqlStartupOptions, logger, app.Lifetime.ApplicationStopping);
+            }
+
             await dbContext.Database.MigrateAsync();
         }
         catch (RetryLimitExceededException ex) when (provider.Equals("MySql", StringComparison.OrdinalIgnoreCase))
@@ -226,6 +236,60 @@ static string BuildMySqlTarget(string connectionString)
 
     var csb = new MySqlConnectionStringBuilder(connectionString);
     return $"Server={csb.Server};Port={csb.Port};Database={csb.Database};User={csb.UserID};";
+}
+
+// Очікує доступність MySQL по host/port, щоб старт застосунку був стабільнішим у контейнерних середовищах.
+static async Task WaitForMySqlAvailabilityAsync(
+    string connectionString,
+    MySqlStartupOptions options,
+    ILogger logger,
+    CancellationToken cancellationToken)
+{
+    if (!options.Enabled)
+    {
+        return;
+    }
+
+    var csb = new MySqlConnectionStringBuilder(connectionString);
+    var host = csb.Server;
+    var port = (int)csb.Port;
+    var deadline = DateTime.UtcNow.AddSeconds(options.MaxWaitSeconds);
+    var attempt = 0;
+
+    while (DateTime.UtcNow < deadline)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        attempt++;
+
+        try
+        {
+            using var tcpClient = new TcpClient();
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(options.ConnectTimeoutSeconds));
+            await tcpClient.ConnectAsync(host, port, timeoutCts.Token);
+
+            logger.LogInformation(
+                "MySQL endpoint {Host}:{Port} став доступним перед стартом migration (attempt {Attempt}).",
+                host,
+                port,
+                attempt);
+            return;
+        }
+        catch (Exception ex) when (ex is SocketException || ex is OperationCanceledException)
+        {
+            logger.LogWarning(
+                "Очікуємо доступність MySQL endpoint {Host}:{Port} (attempt {Attempt}). Наступна спроба через {DelaySeconds} с.",
+                host,
+                port,
+                attempt,
+                options.RetryDelaySeconds);
+        }
+
+        await Task.Delay(TimeSpan.FromSeconds(options.RetryDelaySeconds), cancellationToken);
+    }
+
+    throw new TimeoutException(
+        $"MySQL endpoint {host}:{port} недоступний після {options.MaxWaitSeconds} секунд очікування preflight.");
 }
 
 
