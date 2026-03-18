@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-18.
+Останнє оновлення: 2026-03-18 (оновлено після діагностики старту MySQL migration).
 
 ## Актуальний статус вимог
 
@@ -28,14 +28,16 @@
 - ✅ Виправлено назви env-змінних у `docker-compose.yml` (`RabbitMq__HostName`, `Elasticsearch__Uri`) відповідно до options-класів API.
 - ✅ Актуалізовано README під новий дефолтний сценарій persistence.
 - ✅ Цей чекліст очищено від неактуальних пунктів попередньої ітерації.
+- ✅ Додано окрему обробку `RetryLimitExceededException` під час `Database.MigrateAsync()` для MySQL.
+- ✅ Логи старту БД тепер містять безпечний (без пароля) target підключення (`Server/Port/Database/User`) для швидкої діагностики помилок типу `Unable to connect to any of the specified MySQL hosts`.
 
 ## Що ще потрібно зробити у проєкті
 
-- 🔜 Додати і застосувати EF Core migration для MySQL (замість покладання лише на `EnsureCreated`) для контрольованих оновлень схеми.
-- ✅ Додано початкову EF Core migration для MySQL і перемкнуто ініціалізацію БД на `Database.Migrate()` для реляційних провайдерів.
 - 🔜 Перевірити запуск у `docker-compose` end-to-end: API + MySQL + RabbitMQ + Elasticsearch.
+- 🔜 Додати preflight-check перед запуском API (healthcheck/очікування доступності `mysql:3306`), щоб уникати падіння при старті контейнерів "одночасно".
 - 🔜 Оновити розділ deployment-конфігів (prod/stage) під MySQL connection string та секрети.
 - 🔜 Провести ручну перевірку сценаріїв: створення root-коментаря, reply, перезавантаження API, повторне читання даних з БД.
+- 🔜 Додати короткий runbook у README: як діяти при `RetryLimitExceededException` (перевірка host/port, запуск БД, перевірка креденшалів, повторний старт API).
 
 ---
 

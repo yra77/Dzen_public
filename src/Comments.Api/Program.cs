@@ -5,6 +5,7 @@ using Comments.Api.GraphQL;
 using Comments.Api.Realtime;
 using Comments.Application.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using MediatR;
 using FluentValidation;
 using Microsoft.Extensions.FileProviders;
@@ -148,6 +149,8 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<CommentsDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("StartupDatabaseInitialization");
+    var connectionString = builder.Configuration.GetConnectionString("CommentsDb") ?? string.Empty;
+    var mySqlTarget = BuildMySqlTarget(connectionString);
 
     // Для реляційних провайдерів застосовуємо migration-процес, для InMemory лишаємось на EnsureCreated.
     if (provider.Equals("MySql", StringComparison.OrdinalIgnoreCase) ||
@@ -157,12 +160,22 @@ using (var scope = app.Services.CreateScope())
         {
             await dbContext.Database.MigrateAsync();
         }
+        catch (RetryLimitExceededException ex) when (provider.Equals("MySql", StringComparison.OrdinalIgnoreCase))
+        {
+            logger.LogError(
+                ex,
+                "Не вдалося застосувати міграції MySQL після вичерпання retry policy. " +
+                "Ціль підключення: {MySqlTarget}. Перевірте, що MySQL запущено та доступне по host/port.",
+                mySqlTarget);
+            throw;
+        }
         catch (MySqlException ex) when (provider.Equals("MySql", StringComparison.OrdinalIgnoreCase))
         {
             logger.LogError(
                 ex,
                 "Не вдалося підключитись до MySQL під час застосування міграцій. " +
-                "Перевірте, що MySQL запущено та що ConnectionStrings:CommentsDb має коректний host/port/credentials.");
+                "Ціль підключення: {MySqlTarget}. Перевірте host/port/credentials у ConnectionStrings:CommentsDb.",
+                mySqlTarget);
             throw;
         }
     }
@@ -202,6 +215,18 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 app.MapFallbackToFile("index.html");
 app.Run();
+
+// Повертає безпечний для логування опис цілі MySQL без пароля, щоб швидше діагностувати проблеми з підключенням.
+static string BuildMySqlTarget(string connectionString)
+{
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        return "(connection string is empty)";
+    }
+
+    var csb = new MySqlConnectionStringBuilder(connectionString);
+    return $"Server={csb.Server};Port={csb.Port};Database={csb.Database};User={csb.UserID};";
+}
 
 
 public partial class Program { }
