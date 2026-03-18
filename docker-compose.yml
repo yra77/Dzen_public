@@ -7,26 +7,28 @@ services:
       dockerfile: src/Comments.Api/Dockerfile
     environment:
       ASPNETCORE_URLS: http://+:5000
-      Persistence__Provider: SqlServer
-      Persistence__ConnectionString: Server=sqlserver;Database=CommentsDb;User Id=sa;Password=Your_password123;TrustServerCertificate=true;
+      Persistence__Provider: MySql
+      ConnectionStrings__CommentsDb: Server=mysql;Port=3306;Database=comments;User=comments_user;Password=comments_password;
       RabbitMq__Enabled: 'true'
       RabbitMq__Host: rabbitmq
       Elasticsearch__Enabled: 'true'
       Elasticsearch__Url: http://elasticsearch:9200
     depends_on:
-      - sqlserver
+      - mysql
       - rabbitmq
       - elasticsearch
     ports:
       - '5000:5000'
 
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+  mysql:
+    image: mysql:8.4
     environment:
-      ACCEPT_EULA: 'Y'
-      SA_PASSWORD: 'Your_password123'
+      MYSQL_DATABASE: comments
+      MYSQL_USER: comments_user
+      MYSQL_PASSWORD: comments_password
+      MYSQL_ROOT_PASSWORD: root_password
     ports:
-      - '1433:1433'
+      - '3306:3306'
 
   rabbitmq:
     image: rabbitmq:3-management
