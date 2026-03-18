@@ -1,13 +1,13 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-18 (оновлено після виправлення Docker build для різних CPU-архітектур).
+Останнє оновлення: 2026-03-18.
 
 ## Актуальний стан по ТЗ
 
 1. ✅ **Персистентність коментарів у MySQL (`comments`)**
    - Backend за замовчуванням працює з `Persistence:Provider=MySql`.
    - Підключення задається через `ConnectionStrings:CommentsDb`.
-   - Дані автора й коментаря зберігаються через EF Core + Pomelo у реляційній БД.
+   - Дані автора і коментаря зберігаються через EF Core + Pomelo у реляційній БД.
 
 2. ✅ **Базова безпека введення**
    - Валідація і санітизація коментарів активні.
@@ -19,27 +19,25 @@
    - У `docker-compose` для MySQL налаштований healthcheck, а API чекає `service_healthy`.
 
 4. ✅ **Сумісність Docker build з різними архітектурами**
-   - Прибрано жорстке платформне обмеження зі stage `build` у `src/Comments.Api/Dockerfile`, щоб уникнути `exec /bin/sh: exec format error` на хостах без емуляції.
-   - `dotnet publish` тепер передає `-a` лише якщо задано `TARGETARCH`, що коректно працює і для buildx, і для звичайного `docker compose build`.
+   - Build stage у `src/Comments.Api/Dockerfile` більше не зафіксований на конкретну платформу.
+   - `dotnet publish` передає `-a` лише якщо задано `TARGETARCH`.
 
-## Що змінено в цій ітерації (2026-03-18)
+## Що внесено (поточна ітерація)
 
-- ✅ Виправлено причину помилки збірки:
-  - `exec /bin/sh: exec format error` на кроці `dotnet restore`.
-- ✅ Оновлено `src/Comments.Api/Dockerfile`:
-  - видалено привʼязку build-stage до конкретної платформи;
-  - додано умовну передачу `TARGETARCH` у publish-команду.
-- ✅ Очищено чекліст від неактуальних формулювань; залишено лише актуальний стан і фактичний backlog.
+- ✅ Підтверджено і зафіксовано причину помилки збірки `exec /bin/sh: exec format error` на кроці `dotnet restore`.
+- ✅ Актуалізовано статус по Docker multi-arch сумісності у цьому чеклісті.
+- ✅ Видалено застарілі/дубльовані формулювання, залишено лише релевантний стан і backlog.
 
 ## Що ще потрібно зробити у проєкті (актуальний backlog)
 
-- 🔜 Додати в README окремий розділ **Troubleshooting Docker/Architecture**:
+- 🔜 Додати в README розділ **Troubleshooting Docker/Architecture**:
   - як запускати стек на Apple Silicon/ARM;
-  - коли й навіщо задавати `DOCKER_DEFAULT_PLATFORM`;
+  - коли і навіщо задавати `DOCKER_DEFAULT_PLATFORM`;
   - як діагностувати `exec format error`.
 - 🔜 Прогнати E2E перевірку `docker compose up --build` на двох середовищах (amd64 та arm64) і зафіксувати результати.
-- 🔜 Додати CI smoke-check: підняття стеку й перевірка `GET /health`.
-- 🔜 Додати короткий операційний runbook для startup-помилок MySQL (host/port/credentials/healthy-state).
+- 🔜 Додати CI smoke-check: підняття стеку і перевірка `GET /health`.
+- 🔜 Додати короткий runbook для startup-помилок MySQL (host/port/credentials/healthy-state).
+- 🔜 Додати в CONTRIBUTING/README правило: при редагуванні або створенні нових класів/методів додавати XML-коментарі (`///`) для публічних елементів.
 
 ---
 
