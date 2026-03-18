@@ -11,7 +11,7 @@ RUN dotnet restore src/Comments.Api/Comments.Api.csproj
 COPY . .
 RUN dotnet publish src/Comments.Api/Comments.Api.csproj -c Release -a ${TARGETARCH:-x64} -o /app/publish /p:UseAppHost=false
 
-FROM --platform=$TARGETPLATFORM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
 EXPOSE 5000

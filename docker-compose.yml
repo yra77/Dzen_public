@@ -1,7 +1,6 @@
-version: '3.9'
-
 services:
   comments-api:
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/amd64}
     build:
       context: .
       dockerfile: src/Comments.Api/Dockerfile
