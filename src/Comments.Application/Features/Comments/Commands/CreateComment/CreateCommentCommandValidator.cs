@@ -1,6 +1,8 @@
 using FluentValidation;
 using System.Text.RegularExpressions;
 using Comments.Application.Abstractions;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace Comments.Application.Features.Comments.Commands.CreateComment;
 
@@ -44,7 +46,9 @@ public sealed class CreateCommentCommandValidator : AbstractValidator<CreateComm
 
         RuleFor(x => x.Request.Text)
             .NotEmpty()
-            .MaximumLength(5000);
+            .MaximumLength(5000)
+            .Must(BeValidXhtmlFragment)
+            .WithMessage("Comment text must be valid XHTML and all tags must be closed.");
 
         RuleFor(x => x.Request.CaptchaToken)
             .MustAsync(async (command, token, cancellationToken) => await captchaValidator.ValidateAsync(token, cancellationToken))
@@ -75,6 +79,30 @@ public sealed class CreateCommentCommandValidator : AbstractValidator<CreateComm
 
         return Uri.TryCreate(homePage.Trim(), UriKind.Absolute, out var uri)
                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+    }
+
+    /// <summary>
+    /// Перевіряє, що HTML-фрагмент тексту є коректним XHTML (добре сформований XML).
+    /// </summary>
+    /// <param name="text">Текст коментаря з HTML-розміткою.</param>
+    /// <returns><see langword="true"/>, якщо фрагмент валідний; інакше <see langword="false"/>.</returns>
+    private static bool BeValidXhtmlFragment(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return true;
+        }
+
+        try
+        {
+            var wrapped = $"<root>{text.Trim()}</root>";
+            _ = XDocument.Parse(wrapped, LoadOptions.PreserveWhitespace);
+            return true;
+        }
+        catch (XmlException)
+        {
+            return false;
+        }
     }
 
     /// <summary>
