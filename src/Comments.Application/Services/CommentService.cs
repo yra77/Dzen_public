@@ -100,12 +100,16 @@ public sealed class CommentService
             page,
             pageSize,
             totalCount,
-            comments.Select(x => Map(x, sortField, sortDirection)).ToArray());
+            comments.Select(x => Map(x, RepliesSortField, RepliesSortDirection)).ToArray());
     }
 
     /// <summary>
-    /// Returns a root comment with recursively sorted replies.
+    /// Returns a root comment with replies sorted by creation date (oldest first).
     /// </summary>
+    /// <remarks>
+    /// <paramref name="sortField"/> and <paramref name="sortDirection"/> are kept for API backward compatibility
+    /// but are not used because business rule allows sorting only for root comments list.
+    /// </remarks>
     public async Task<CommentDto> GetThreadAsync(
         Guid rootCommentId,
         CommentSortField sortField,
@@ -118,8 +122,18 @@ public sealed class CommentService
             throw new InvalidOperationException("Comment was not found.");
         }
 
-        return Map(rootComment, sortField, sortDirection);
+        return Map(rootComment, RepliesSortField, RepliesSortDirection);
     }
+
+    /// <summary>
+    /// Поле сортування відповідей: для дочірніх коментарів завжди використовується дата.
+    /// </summary>
+    private const CommentSortField RepliesSortField = CommentSortField.CreatedAtUtc;
+
+    /// <summary>
+    /// Напрям сортування відповідей: у межах гілки відповіді йдуть від старих до нових.
+    /// </summary>
+    private const CommentSortDirection RepliesSortDirection = CommentSortDirection.Asc;
 
     /// <summary>
     /// Produces sanitized preview HTML for provided plain text/markup input.
