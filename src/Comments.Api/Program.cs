@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using MediatR;
 using FluentValidation;
 using Microsoft.Extensions.FileProviders;
+using MySqlConnector;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,10 +39,15 @@ builder.Services.AddDbContext<CommentsDbContext>(options =>
         var connectionString = builder.Configuration.GetConnectionString("CommentsDb")
                                ?? throw new InvalidOperationException("Connection string 'CommentsDb' is required for MySql provider.");
 
-        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-        // AutoDetect робить мережеве підключення під час старту; задаємо версію явно,
-        // щоб застосунок коректно стартував навіть коли БД тимчасово недоступна.
-        options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 36)));
+        // Не використовуємо AutoDetect, щоб уникнути мережевого конекту під час конфігурування DI.
+        // Додаємо retry policy для тимчасових помилок доступності MySQL на старті застосунку.
+        options.UseMySql(
+            connectionString,
+            new MySqlServerVersion(new Version(8, 0, 36)),
+            mySqlOptions => mySqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(10),
+                errorNumbersToAdd: null));
         return;
     }
 
@@ -141,12 +147,24 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<CommentsDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("StartupDatabaseInitialization");
 
     // Для реляційних провайдерів застосовуємо migration-процес, для InMemory лишаємось на EnsureCreated.
     if (provider.Equals("MySql", StringComparison.OrdinalIgnoreCase) ||
         provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
     {
-        await dbContext.Database.MigrateAsync();
+        try
+        {
+            await dbContext.Database.MigrateAsync();
+        }
+        catch (MySqlException ex) when (provider.Equals("MySql", StringComparison.OrdinalIgnoreCase))
+        {
+            logger.LogError(
+                ex,
+                "Не вдалося підключитись до MySQL під час застосування міграцій. " +
+                "Перевірте, що MySQL запущено та що ConnectionStrings:CommentsDb має коректний host/port/credentials.");
+            throw;
+        }
     }
     else
     {

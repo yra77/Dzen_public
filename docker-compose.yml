@@ -10,9 +10,9 @@ services:
       Persistence__Provider: MySql
       ConnectionStrings__CommentsDb: Server=mysql;Port=3306;Database=comments;User=comments_user;Password=comments_password;
       RabbitMq__Enabled: 'true'
-      RabbitMq__Host: rabbitmq
+      RabbitMq__HostName: rabbitmq
       Elasticsearch__Enabled: 'true'
-      Elasticsearch__Url: http://elasticsearch:9200
+      Elasticsearch__Uri: http://elasticsearch:9200
     depends_on:
       - mysql
       - rabbitmq
