@@ -7,7 +7,8 @@ services:
     environment:
       ASPNETCORE_URLS: http://+:5000
       Persistence__Provider: Sqlite
-      ConnectionStrings__CommentsDb: Data Source=/app/data/comments.db
+      # Явно дозволяємо створення SQLite-файлу при першому старті контейнера.
+      ConnectionStrings__CommentsDb: Data Source=/app/data/comments.db;Mode=ReadWriteCreate
       RabbitMq__Enabled: 'true'
       RabbitMq__HostName: rabbitmq
       Elasticsearch__Enabled: 'true'
