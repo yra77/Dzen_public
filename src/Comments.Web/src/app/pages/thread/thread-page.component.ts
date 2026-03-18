@@ -32,7 +32,7 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
         }
       } @else if (thread) {
         <div class="thread-node">
-          <p class="comment-header"><strong>{{ thread.userName }}</strong><span>{{ thread.email }}</span><span>{{ thread.createdAtUtc | date: 'short' }}</span></p>
+          <p class="comment-header"><strong>{{ thread.userName }}</strong><span>{{ thread.email }}</span><span>{{ thread.createdAtUtc | date: 'dd.MM.yy HH:mm' }}</span></p>
           <p>{{ thread.text }}</p>
           @if (thread.attachment) {
             <div class="attachment-inline">
@@ -79,7 +79,7 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
             @for (reply of replies; track reply.id) {
               <li>
                 <article class="thread-node">
-                  <p class="comment-header"><strong>{{ reply.userName }}</strong><span>{{ reply.email }}</span><span>{{ reply.createdAtUtc | date: 'short' }}</span></p>
+                  <p class="comment-header"><strong>{{ reply.userName }}</strong><span>{{ reply.email }}</span><span>{{ reply.createdAtUtc | date: 'dd.MM.yy HH:mm' }}</span></p>
                   <p>{{ reply.text }}</p>
                   @if (reply.attachment) {
                     <div class="attachment-inline">
@@ -125,7 +125,10 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
         @if (isReplyModalOpen && activeReplyTarget) {
           <div class="reply-modal-backdrop" (click)="closeReplyModal()">
             <div class="reply-modal" (click)="$event.stopPropagation()">
-              <h3>Нова відповідь</h3>
+              <div class="modal-header">
+                <h3>Нова відповідь</h3>
+                <button type="button" class="modal-close-button" (click)="closeReplyModal()">Закрити</button>
+              </div>
               <p class="meta">Відповідь на: <strong>{{ activeReplyTarget.userName }}</strong></p>
 
               <form class="form-grid" [formGroup]="replyForm" (ngSubmit)="submitReply()" data-testid="thread-reply-form">
@@ -171,28 +174,30 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
                   <p class="meta">{{ attachmentMessage }}</p>
                 }
                 @if (attachmentImagePreviewDataUrl) {
-                  <figure class="attachment-selection-preview" data-testid="thread-selected-image-preview">
-                    <img [src]="attachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
-                    <figcaption class="meta">Preview вибраного зображення</figcaption>
-                  </figure>
-                  <button type="button" class="attachment-remove" (click)="clearReplyAttachment()">Видалити зображення</button>
+                  <div class="attachment-selection-block">
+                    <figure class="attachment-selection-preview" data-testid="thread-selected-image-preview">
+                      <img [src]="attachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
+                      <figcaption class="meta">Preview вибраного зображення</figcaption>
+                    </figure>
+                    <button type="button" class="attachment-remove" (click)="clearReplyAttachment()">Видалити зображення</button>
+                  </div>
                 }
 
-                @if (captchaImageDataUrl) {
-                  <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" data-testid="thread-captcha-image" />
-                }
+                <div class="captcha-block wide">
+                  @if (captchaImageDataUrl) {
+                    <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" data-testid="thread-captcha-image" />
+                  }
+                  <label class="captcha-answer-label">
+                    CAPTCHA (цифри і букви латинського алфавіту)
+                    <input type="text" formControlName="captchaAnswer" data-testid="thread-captcha-answer-input" />
+                  </label>
+                </div>
 
                 @if (captchaMessage) {
-                  <p class="error">{{ captchaMessage }}</p>
+                  <p class="error wide">{{ captchaMessage }}</p>
                 }
 
-                <label>
-                  CAPTCHA (цифри і букви латинського алфавіту)
-                  <input type="text" formControlName="captchaAnswer" data-testid="thread-captcha-answer-input" />
-                </label>
-
                 <div class="actions wide">
-                  <button type="button" (click)="closeReplyModal()">Закрити</button>
                   <button type="submit" [disabled]="replyForm.invalid || isSubmitting" data-testid="thread-submit-button">Створити коментар</button>
                 </div>
 
@@ -224,14 +229,21 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
       .attachment-thumb { max-width: 260px; max-height: 180px; border: 1px solid #d0d7de; border-radius: 8px; }
       .attachment-text { white-space: pre-wrap; background: #f8fafc; border: 1px solid #d9e0ec; border-radius: 8px; padding: 8px; }
       .attachment-selection-preview { margin: 0; }
-      .attachment-remove { margin-top: 8px; }
+      .attachment-selection-block { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+      .attachment-remove { margin-top: 0; font-size: 12px; padding: 4px 8px; background: #b42318; color: #fff; border: 1px solid #912018; border-radius: 6px; cursor: pointer; }
+      .attachment-remove:hover { background: #912018; }
       .thread-node { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; margin-top: 10px; background: #fcfcfd; }
       .comment-header { display: flex; gap: 10px; flex-wrap: wrap; background: #e5e7eb; padding: 6px 8px; border-radius: 8px; margin: 0 0 8px; }
       .thread-actions { margin-top: 8px; display: flex; justify-content: flex-end; }
       .tree { list-style: none; margin: 0; padding-left: 14px; }
       .captcha { width: 160px; height: 60px; border: 1px solid #d9e0ec; border-radius: 6px; }
+      .captcha-block { display: flex; align-items: flex-start; gap: 12px; }
+      .captcha-answer-label { flex: 1; min-width: 240px; }
       .reply-modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
       .reply-modal { width: min(760px, 100%); max-height: 92vh; overflow-y: auto; background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25); }
+      .modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+      .modal-header h3 { margin: 0; }
+      .modal-close-button { margin-left: auto; }
       .text-preview { border: 1px dashed #d0d5dd; border-radius: 8px; padding: 8px; background: #f8fafc; }
       .text-preview-title { color: #344054; font-size: 14px; margin-bottom: 6px; font-weight: 600; }
       .text-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }

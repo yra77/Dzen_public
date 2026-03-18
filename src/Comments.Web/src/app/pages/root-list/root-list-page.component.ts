@@ -46,7 +46,10 @@ import { environment } from '../../../environments/environment';
       @if (isCreateModalOpen) {
         <div class="reply-modal-backdrop" (click)="closeCreateModal()">
           <div class="reply-modal" (click)="$event.stopPropagation()">
-            <h3>Новий коментар</h3>
+            <div class="modal-header">
+              <h3>Новий коментар</h3>
+              <button type="button" class="modal-close-button" (click)="closeCreateModal()">Закрити</button>
+            </div>
             <form class="form-grid" [formGroup]="createForm" (ngSubmit)="submitComment()" data-testid="root-create-form">
               <label>
                 Ім'я
@@ -95,28 +98,30 @@ import { environment } from '../../../environments/environment';
                 <p class="meta">{{ attachmentMessage }}</p>
               }
               @if (attachmentImagePreviewDataUrl) {
-                <figure class="attachment-selection-preview" data-testid="root-selected-image-preview">
-                  <img [src]="attachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
-                  <figcaption class="meta">Preview вибраного зображення</figcaption>
-                </figure>
-                <button type="button" class="attachment-remove" (click)="clearCreateAttachment()">Видалити зображення</button>
+                <div class="attachment-selection-block">
+                  <figure class="attachment-selection-preview" data-testid="root-selected-image-preview">
+                    <img [src]="attachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
+                    <figcaption class="meta">Preview вибраного зображення</figcaption>
+                  </figure>
+                  <button type="button" class="attachment-remove" (click)="clearCreateAttachment()">Видалити зображення</button>
+                </div>
               }
 
-              @if (captchaImageDataUrl) {
-                <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" data-testid="root-captcha-image" />
-              }
+              <div class="captcha-block wide">
+                @if (captchaImageDataUrl) {
+                  <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" data-testid="root-captcha-image" />
+                }
+                <label class="captcha-answer-label">
+                  CAPTCHA (цифри і букви латинського алфавіту)
+                  <input type="text" formControlName="captchaAnswer" data-testid="root-captcha-answer-input" />
+                </label>
+              </div>
 
               @if (captchaMessage) {
-                <p class="error">{{ captchaMessage }}</p>
+                <p class="error wide">{{ captchaMessage }}</p>
               }
 
-              <label>
-                CAPTCHA (цифри і букви латинського алфавіту)
-                <input type="text" formControlName="captchaAnswer" data-testid="root-captcha-answer-input" />
-              </label>
-
               <div class="actions wide">
-                <button type="button" (click)="closeCreateModal()">Закрити</button>
                 <button type="submit" [disabled]="createForm.invalid || isSubmitting" data-testid="root-submit-button">Створити коментар</button>
               </div>
 
@@ -164,7 +169,7 @@ import { environment } from '../../../environments/environment';
 
         <ng-template #commentTreeNode let-node>
           <article class="comment thread-node">
-            <p class="comment-header"><strong>{{ node.userName }}</strong><span>{{ node.email }}</span><span>{{ node.createdAtUtc | date: 'short' }}</span></p>
+            <p class="comment-header"><strong>{{ node.userName }}</strong><span>{{ node.email }}</span><span>{{ node.createdAtUtc | date: 'dd.MM.yy HH:mm' }}</span></p>
             <p>{{ node.text }}</p>
             @if (node.attachment) {
               <div class="attachment-inline">
@@ -213,7 +218,10 @@ import { environment } from '../../../environments/environment';
         @if (isReplyModalOpen) {
           <div class="reply-modal-backdrop" (click)="closeReplyModal()">
             <div class="reply-modal" (click)="$event.stopPropagation()">
-              <h3>Нова відповідь</h3>
+              <div class="modal-header">
+                <h3>Нова відповідь</h3>
+                <button type="button" class="modal-close-button" (click)="closeReplyModal()">Закрити</button>
+              </div>
               <p class="meta">Відповідь для: <strong>{{ activeReplyTarget?.userName }}</strong></p>
 
               <form class="form-grid" [formGroup]="replyForm" (ngSubmit)="submitReplyComment()">
@@ -259,28 +267,30 @@ import { environment } from '../../../environments/environment';
                   <p class="meta">{{ replyAttachmentMessage }}</p>
                 }
                 @if (replyAttachmentImagePreviewDataUrl) {
-                  <figure class="attachment-selection-preview">
-                    <img [src]="replyAttachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
-                    <figcaption class="meta">Preview вибраного зображення</figcaption>
-                  </figure>
-                  <button type="button" class="attachment-remove" (click)="clearReplyAttachment()">Видалити зображення</button>
+                  <div class="attachment-selection-block">
+                    <figure class="attachment-selection-preview">
+                      <img [src]="replyAttachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
+                      <figcaption class="meta">Preview вибраного зображення</figcaption>
+                    </figure>
+                    <button type="button" class="attachment-remove" (click)="clearReplyAttachment()">Видалити зображення</button>
+                  </div>
                 }
 
-                @if (replyCaptchaImageDataUrl) {
-                  <img [src]="replyCaptchaImageDataUrl" alt="Captcha" class="captcha" />
-                }
+                <div class="captcha-block wide">
+                  @if (replyCaptchaImageDataUrl) {
+                    <img [src]="replyCaptchaImageDataUrl" alt="Captcha" class="captcha" />
+                  }
+                  <label class="captcha-answer-label">
+                    CAPTCHA (цифри і букви латинського алфавіту)
+                    <input type="text" formControlName="captchaAnswer" />
+                  </label>
+                </div>
 
                 @if (replyCaptchaMessage) {
-                  <p class="error">{{ replyCaptchaMessage }}</p>
+                  <p class="error wide">{{ replyCaptchaMessage }}</p>
                 }
 
-                <label>
-                  CAPTCHA (цифри і букви латинського алфавіту)
-                  <input type="text" formControlName="captchaAnswer" />
-                </label>
-
                 <div class="actions wide">
-                  <button type="button" (click)="closeReplyModal()">Закрити</button>
                   <button type="submit" [disabled]="replyForm.invalid || isReplySubmitting">Створити коментар</button>
                 </div>
 
@@ -320,15 +330,22 @@ import { environment } from '../../../environments/environment';
       .attachment-thumb { max-width: 260px; max-height: 180px; border: 1px solid #d0d7de; border-radius: 8px; }
       .attachment-text { white-space: pre-wrap; background: #f8fafc; border: 1px solid #d9e0ec; border-radius: 8px; padding: 8px; }
       .attachment-selection-preview { margin: 0; }
-      .attachment-remove { margin-top: 8px; }
+      .attachment-selection-block { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+      .attachment-remove { margin-top: 0; font-size: 12px; padding: 4px 8px; background: #b42318; color: #fff; border: 1px solid #912018; border-radius: 6px; cursor: pointer; }
+      .attachment-remove:hover { background: #912018; }
       .error-list { color: #b42318; margin: 6px 0 0; }
       .captcha { width: 160px; height: 60px; border: 1px solid #d9e0ec; border-radius: 6px; }
+      .captcha-block { display: flex; align-items: flex-start; gap: 12px; }
+      .captcha-answer-label { flex: 1; min-width: 240px; }
       .text-preview { border: 1px dashed #d0d5dd; border-radius: 8px; padding: 8px; background: #f8fafc; }
       .text-preview-title { color: #344054; font-size: 14px; margin-bottom: 6px; font-weight: 600; }
       .text-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
       .text-toolbar-label { color: #344054; font-size: 14px; }
       .reply-modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
       .reply-modal { width: min(760px, 100%); max-height: 92vh; overflow-y: auto; background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25); }
+      .modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+      .modal-header h3 { margin: 0; }
+      .modal-close-button { margin-left: auto; }
       @media (max-width: 900px) { .actions { flex-direction: column; } }
     `
   ]
