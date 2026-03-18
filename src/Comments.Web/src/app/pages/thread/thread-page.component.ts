@@ -218,6 +218,8 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
                 }
 
                 <div class="actions wide">
+                  <button type="button" (click)="closeReplyModal()">Закрити</button>
+                  <button type="submit" [disabled]="replyForm.invalid || isSubmitting" data-testid="thread-submit-button">Створити коментар</button>
                   <button type="submit" [disabled]="replyForm.invalid || isSubmitting || hasBlockingErrors(replyForm)" data-testid="thread-submit-button">Створити коментар</button>
                 </div>
               </form>
