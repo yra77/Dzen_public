@@ -15,54 +15,52 @@ partial class CommentsDbContextModelSnapshot : ModelSnapshot
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
 #pragma warning disable 612, 618
-        modelBuilder
-            .HasAnnotation("ProductVersion", "8.0.10")
-            .HasAnnotation("Relational:MaxIdentifierLength", 64);
+        modelBuilder.HasAnnotation("ProductVersion", "8.0.10");
 
         modelBuilder.Entity("Comments.Domain.Entities.Comment", b =>
             {
                 b.Property<Guid>("Id")
                     .ValueGeneratedOnAdd()
-                    .HasColumnType("char(36)");
+                    .HasColumnType("TEXT");
 
                 b.Property<long?>("AttachmentSizeBytes")
-                    .HasColumnType("bigint");
+                    .HasColumnType("INTEGER");
 
                 b.Property<string>("AttachmentContentType")
                     .HasMaxLength(128)
-                    .HasColumnType("varchar(128)");
+                    .HasColumnType("TEXT");
 
                 b.Property<string>("AttachmentFileName")
                     .HasMaxLength(260)
-                    .HasColumnType("varchar(260)");
+                    .HasColumnType("TEXT");
 
                 b.Property<string>("AttachmentStoragePath")
                     .HasMaxLength(512)
-                    .HasColumnType("varchar(512)");
+                    .HasColumnType("TEXT");
 
                 b.Property<DateTime>("CreatedAtUtc")
-                    .HasColumnType("datetime(6)");
+                    .HasColumnType("TEXT");
 
                 b.Property<string>("Email")
                     .IsRequired()
                     .HasMaxLength(256)
-                    .HasColumnType("varchar(256)");
+                    .HasColumnType("TEXT");
 
                 b.Property<string>("HomePage")
                     .HasMaxLength(512)
-                    .HasColumnType("varchar(512)");
+                    .HasColumnType("TEXT");
 
                 b.Property<Guid?>("ParentId")
-                    .HasColumnType("char(36)");
+                    .HasColumnType("TEXT");
 
                 b.Property<string>("Text")
                     .IsRequired()
-                    .HasColumnType("longtext");
+                    .HasColumnType("TEXT");
 
                 b.Property<string>("UserName")
                     .IsRequired()
                     .HasMaxLength(128)
-                    .HasColumnType("varchar(128)");
+                    .HasColumnType("TEXT");
 
                 b.HasKey("Id");
 
@@ -75,10 +73,10 @@ partial class CommentsDbContextModelSnapshot : ModelSnapshot
             {
                 b.Property<string>("Id")
                     .HasMaxLength(128)
-                    .HasColumnType("varchar(128)");
+                    .HasColumnType("TEXT");
 
                 b.Property<DateTime>("ProcessedAtUtc")
-                    .HasColumnType("datetime(6)");
+                    .HasColumnType("TEXT");
 
                 b.HasKey("Id");
 

@@ -6,41 +6,22 @@ services:
       dockerfile: src/Comments.Api/Dockerfile
     environment:
       ASPNETCORE_URLS: http://+:5000
-      Persistence__Provider: MySql
-      ConnectionStrings__CommentsDb: Server=mysql;Port=3306;Database=comments;User=comments_user;Password=comments_password;
-      MySqlStartup__Enabled: 'true'
-      MySqlStartup__MaxWaitSeconds: '120'
+      Persistence__Provider: Sqlite
+      ConnectionStrings__CommentsDb: Data Source=/app/data/comments.db
       RabbitMq__Enabled: 'true'
       RabbitMq__HostName: rabbitmq
       Elasticsearch__Enabled: 'true'
       Elasticsearch__Uri: http://elasticsearch:9200
     depends_on:
-      # Старт API відкладаємо до моменту, коли інфраструктурні сервіси пройдуть базову перевірку готовності.
-      mysql:
-        condition: service_healthy
       rabbitmq:
         condition: service_started
       elasticsearch:
         condition: service_started
     ports:
       - '5000:5000'
-
-  mysql:
-    image: mysql:8.4
-    environment:
-      MYSQL_DATABASE: comments
-      MYSQL_USER: comments_user
-      MYSQL_PASSWORD: comments_password
-      MYSQL_ROOT_PASSWORD: root_password
-    ports:
-      - '3306:3306'
-    # mysqladmin ping дозволяє docker-compose коректно визначити готовність MySQL до прийому конектів.
-    healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 20s
+    volumes:
+      # Зберігає SQLite-файл між перезапусками контейнера API.
+      - comments_data:/app/data
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -56,3 +37,6 @@ services:
       ES_JAVA_OPTS: -Xms512m -Xmx512m
     ports:
       - '9200:9200'
+
+volumes:
+  comments_data:
