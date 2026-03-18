@@ -9,7 +9,7 @@ const tinyPngBuffer = Buffer.from(
 );
 
 /**
- * Витягує captcha-вираз із SVG data-url та повертає обчислену суму.
+ * Витягує captcha-код із SVG data-url для smoke-прогону.
  */
 function resolveCaptchaAnswerFromDataUrl(captchaDataUrl: string): string {
   const base64Prefix = 'base64,';
@@ -20,14 +20,18 @@ function resolveCaptchaAnswerFromDataUrl(captchaDataUrl: string): string {
 
   const payload = captchaDataUrl.slice(base64Index + base64Prefix.length);
   const svgMarkup = Buffer.from(payload, 'base64').toString('utf8');
-  const expressionMatch = svgMarkup.match(/(\d+)\s*\+\s*(\d+)\s*=\s*\?/);
-  if (!expressionMatch) {
-    throw new Error('Не вдалося розпізнати captcha-вираз у SVG.');
+  const weightedChars = [...svgMarkup.matchAll(/font-weight="700"[^>]*>([A-Z0-9])<\/text>/g)].map((match) => match[1]);
+
+  if (weightedChars.length > 0) {
+    return weightedChars.join('');
   }
 
-  const left = Number.parseInt(expressionMatch[1], 10);
-  const right = Number.parseInt(expressionMatch[2], 10);
-  return String(left + right);
+  const fallback = svgMarkup.replace(/<[^>]+>/g, '').match(/[A-Z0-9]{6}/);
+  if (!fallback) {
+    throw new Error('Не вдалося розпізнати captcha-код у SVG.');
+  }
+
+  return fallback[0];
 }
 
 /**

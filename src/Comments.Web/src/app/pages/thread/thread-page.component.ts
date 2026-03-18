@@ -126,7 +126,7 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
           <div class="reply-modal-backdrop" (click)="closeReplyModal()">
             <div class="reply-modal" (click)="$event.stopPropagation()">
               <h3>Нова відповідь</h3>
-              <p class="meta">Відповідь на: <strong>{{ activeReplyTarget.userName }}</strong> · #{{ activeReplyTarget.id }}</p>
+              <p class="meta">Відповідь на: <strong>{{ activeReplyTarget.userName }}</strong></p>
 
               <form class="form-grid" [formGroup]="replyForm" (ngSubmit)="submitReply()" data-testid="thread-reply-form">
                 <label>
