@@ -29,7 +29,7 @@
 
 ## Що ще потрібно зробити у проєкті
 
-- 🔜 Додати і застосувати EF Core migration для MySQL (замість покладання лише на `EnsureCreated`) для контрольованих оновлень схеми.
+- ✅ Додано початкову EF Core migration для MySQL і перемкнуто ініціалізацію БД на `Database.Migrate()` для реляційних провайдерів.
 - 🔜 Перевірити запуск у `docker-compose` end-to-end: API + MySQL + RabbitMQ + Elasticsearch.
 - 🔜 Оновити розділ deployment-конфігів (prod/stage) під MySQL connection string та секрети.
 - 🔜 Провести ручну перевірку сценаріїв: створення root-коментаря, reply, перезавантаження API, повторне читання даних з БД.
