@@ -1,6 +1,6 @@
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { Component, OnDestroy, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 
 import {
@@ -52,24 +52,40 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
               <button type="button" class="modal-close-button" (click)="closeCreateModal()">Закрити</button>
             </div>
             <form class="form-grid" [formGroup]="createForm" (ngSubmit)="submitComment()" data-testid="root-create-form">
+              @if (submitMessage) {
+                <div class="wide form-error-top" data-testid="root-submit-message">
+                  <p class="error">{{ submitMessage }}</p>
+                  @if (showRetryHint) {
+                    <p class="meta">Можна повторити запит без зміни даних форми.</p>
+                  }
+                  @if (submitValidationErrors.length > 0) {
+                    <ul class="error-list">
+                      @for (validationError of submitValidationErrors; track validationError.field) {
+                        <li><strong>{{ validationError.field }}</strong>: {{ validationError.messages.join('; ') }}</li>
+                      }
+                    </ul>
+                  }
+                </div>
+              }
+
               <label>
                 Ім'я
-                <input type="text" formControlName="userName" data-testid="root-user-name-input" />
+                <input type="text" formControlName="userName" [class.field-invalid]="shouldHighlightInvalid(createForm.controls.userName)" data-testid="root-user-name-input" />
               </label>
 
               <label>
                 Email
-                <input type="email" formControlName="email" data-testid="root-email-input" />
+                <input type="email" formControlName="email" [class.field-invalid]="shouldHighlightInvalid(createForm.controls.email)" data-testid="root-email-input" />
               </label>
 
               <label>
                 Homepage
-                <input type="url" formControlName="homePage" placeholder="https://example.com" data-testid="root-home-page-input" />
+                <input type="url" formControlName="homePage" [class.field-invalid]="shouldHighlightInvalid(createForm.controls.homePage)" placeholder="https://example.com" data-testid="root-home-page-input" />
               </label>
 
               <label class="wide">
                 Текст
-                <textarea #rootTextArea rows="5" formControlName="text" (input)="previewText()" data-testid="root-text-input"></textarea>
+                <textarea #rootTextArea rows="5" formControlName="text" [class.field-invalid]="shouldHighlightInvalid(createForm.controls.text)" (input)="previewText()" data-testid="root-text-input"></textarea>
               </label>
               @if (getTextValidationMessage(createForm.controls.text)) {
                 <p class="error wide">{{ getTextValidationMessage(createForm.controls.text) }}</p>
@@ -116,8 +132,8 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
                   <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" data-testid="root-captcha-image" />
                 }
                 <label class="captcha-answer-label">
-                  CAPTCHA (цифри і букви латинського алфавіту)
-                  <input type="text" formControlName="captchaAnswer" data-testid="root-captcha-answer-input" />
+                    CAPTCHA (цифри і букви латинського алфавіту)
+                  <input type="text" formControlName="captchaAnswer" [class.field-invalid]="shouldHighlightInvalid(createForm.controls.captchaAnswer)" data-testid="root-captcha-answer-input" />
                 </label>
               </div>
 
@@ -126,22 +142,8 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
               }
 
               <div class="actions wide">
-                <button type="submit" [disabled]="createForm.invalid || isSubmitting" data-testid="root-submit-button">Створити коментар</button>
+                <button type="submit" [disabled]="createForm.invalid || isSubmitting || hasBlockingErrors(createForm)" data-testid="root-submit-button">Створити коментар</button>
               </div>
-
-              @if (submitMessage) {
-                <p data-testid="root-submit-message">{{ submitMessage }}</p>
-                @if (showRetryHint) {
-                  <p class="meta">Можна повторити запит без зміни даних форми.</p>
-                }
-                @if (submitValidationErrors.length > 0) {
-                  <ul class="error-list">
-                    @for (validationError of submitValidationErrors; track validationError.field) {
-                      <li><strong>{{ validationError.field }}</strong>: {{ validationError.messages.join('; ') }}</li>
-                    }
-                  </ul>
-                }
-              }
             </form>
           </div>
         </div>
@@ -229,19 +231,35 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
               <p class="meta">Відповідь для: <strong>{{ activeReplyTarget?.userName }}</strong></p>
 
               <form class="form-grid" [formGroup]="replyForm" (ngSubmit)="submitReplyComment()">
+                @if (replySubmitMessage) {
+                  <div class="wide form-error-top">
+                    <p class="error">{{ replySubmitMessage }}</p>
+                    @if (replyShowRetryHint) {
+                      <p class="meta">Можна повторити запит без зміни даних форми.</p>
+                    }
+                    @if (replySubmitValidationErrors.length > 0) {
+                      <ul class="error-list">
+                        @for (validationError of replySubmitValidationErrors; track validationError.field) {
+                          <li><strong>{{ validationError.field }}</strong>: {{ validationError.messages.join('; ') }}</li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                }
+
                 <label>
                   Ім'я
-                  <input type="text" formControlName="userName" />
+                  <input type="text" formControlName="userName" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.userName)" />
                 </label>
 
                 <label>
                   Email
-                  <input type="email" formControlName="email" />
+                  <input type="email" formControlName="email" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.email)" />
                 </label>
 
                 <label class="wide">
                   Текст
-                  <textarea #replyTextArea rows="5" formControlName="text" (input)="previewReplyText()"></textarea>
+                  <textarea #replyTextArea rows="5" formControlName="text" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.text)" (input)="previewReplyText()"></textarea>
                 </label>
                 @if (getTextValidationMessage(replyForm.controls.text)) {
                   <p class="error wide">{{ getTextValidationMessage(replyForm.controls.text) }}</p>
@@ -289,7 +307,7 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
                   }
                   <label class="captcha-answer-label">
                     CAPTCHA (цифри і букви латинського алфавіту)
-                    <input type="text" formControlName="captchaAnswer" />
+                    <input type="text" formControlName="captchaAnswer" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.captchaAnswer)" />
                   </label>
                 </div>
 
@@ -298,22 +316,8 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
                 }
 
                 <div class="actions wide">
-                  <button type="submit" [disabled]="replyForm.invalid || isReplySubmitting">Створити коментар</button>
+                  <button type="submit" [disabled]="replyForm.invalid || isReplySubmitting || hasBlockingErrors(replyForm)">Створити коментар</button>
                 </div>
-
-                @if (replySubmitMessage) {
-                  <p>{{ replySubmitMessage }}</p>
-                  @if (replyShowRetryHint) {
-                    <p class="meta">Можна повторити запит без зміни даних форми.</p>
-                  }
-                  @if (replySubmitValidationErrors.length > 0) {
-                    <ul class="error-list">
-                      @for (validationError of replySubmitValidationErrors; track validationError.field) {
-                        <li><strong>{{ validationError.field }}</strong>: {{ validationError.messages.join('; ') }}</li>
-                      }
-                    </ul>
-                  }
-                }
               </form>
             </div>
           </div>
@@ -341,6 +345,8 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
       .attachment-remove { margin-top: 0; font-size: 12px; padding: 4px 8px; background: #b42318; color: #fff; border: 1px solid #912018; border-radius: 6px; cursor: pointer; }
       .attachment-remove:hover { background: #912018; }
       .error-list { color: #b42318; margin: 6px 0 0; }
+      .form-error-top { border: 1px solid #fecdca; background: #fef3f2; border-radius: 8px; padding: 10px; }
+      .field-invalid { border-color: #d92d20; box-shadow: 0 0 0 1px #d92d20 inset; }
       .captcha { width: 160px; height: 60px; border: 1px solid #d9e0ec; border-radius: 6px; }
       .captcha-block { display: flex; align-items: flex-start; gap: 12px; }
       .captcha-answer-label { flex: 1; min-width: 240px; }
@@ -467,6 +473,16 @@ export class RootListPageComponent implements OnDestroy {
   }
 
   constructor() {
+    this.setupServerValidationReset(this.createForm.controls.userName);
+    this.setupServerValidationReset(this.createForm.controls.email);
+    this.setupServerValidationReset(this.createForm.controls.homePage);
+    this.setupServerValidationReset(this.createForm.controls.text);
+    this.setupServerValidationReset(this.createForm.controls.captchaAnswer);
+    this.setupServerValidationReset(this.replyForm.controls.userName);
+    this.setupServerValidationReset(this.replyForm.controls.email);
+    this.setupServerValidationReset(this.replyForm.controls.text);
+    this.setupServerValidationReset(this.replyForm.controls.captchaAnswer);
+
     this.load();
     this.reloadCaptcha();
     this.initializeSignalR();
@@ -527,6 +543,20 @@ export class RootListPageComponent implements OnDestroy {
   /** Загальна кількість сторінок для кореневих коментарів. */
   get totalPages(): number {
     return Math.max(1, Math.ceil(this.totalCount / this.pageSize));
+  }
+
+  /**
+   * Повертає true, якщо конкретне поле потрібно підсвітити червоним як помилкове.
+   */
+  shouldHighlightInvalid(control: AbstractControl): boolean {
+    return control.invalid && (control.touched || control.dirty);
+  }
+
+  /**
+   * Повертає true, якщо форма містить blocking-помилки для submit.
+   */
+  hasBlockingErrors(form: { invalid: boolean }): boolean {
+    return form.invalid;
   }
 
   /** Оновлює поле сортування і перезавантажує першу сторінку. */
@@ -691,6 +721,7 @@ export class RootListPageComponent implements OnDestroy {
           this.submitMessage = uiError.summary;
           this.submitValidationErrors = uiError.validationErrors;
           this.showRetryHint = uiError.canRetry;
+          this.applyServerValidationErrors(this.createForm.controls, uiError.validationErrors);
           this.reloadCaptcha();
           this.isSubmitting = false;
         }
@@ -841,6 +872,7 @@ export class RootListPageComponent implements OnDestroy {
           this.replySubmitMessage = uiError.summary;
           this.replySubmitValidationErrors = uiError.validationErrors;
           this.replyShowRetryHint = uiError.canRetry;
+          this.applyServerValidationErrors(this.replyForm.controls, uiError.validationErrors);
           this.reloadReplyCaptcha();
           this.isReplySubmitting = false;
         }
@@ -960,6 +992,69 @@ export class RootListPageComponent implements OnDestroy {
       setMessage(`Вкладення готове: ${file.name}`);
     };
     reader.readAsDataURL(file);
+  }
+
+  /**
+   * Позначає поля форми як помилкові на основі server-side validation ключів.
+   */
+  private applyServerValidationErrors(
+    controls: Record<string, AbstractControl>,
+    validationErrors: ReadonlyArray<UiValidationError>
+  ): void {
+    for (const validationError of validationErrors) {
+      const normalizedField = validationError.field.toLowerCase();
+      const mappedControl = this.mapServerFieldToControl(controls, normalizedField);
+      if (!mappedControl) {
+        continue;
+      }
+
+      const existingErrors = mappedControl.errors ?? {};
+      mappedControl.setErrors({ ...existingErrors, server: true });
+      mappedControl.markAsTouched();
+    }
+  }
+
+  /**
+   * Повертає FormControl для заданого server-side поля, якщо мапінг відомий.
+   */
+  private mapServerFieldToControl(
+    controls: Record<string, AbstractControl>,
+    normalizedField: string
+  ): AbstractControl | null {
+    const mapping: Record<string, string> = {
+      'request.username': 'userName',
+      username: 'userName',
+      'request.email': 'email',
+      email: 'email',
+      'request.homepage': 'homePage',
+      homepage: 'homePage',
+      'request.text': 'text',
+      text: 'text',
+      'request.captchatoken': 'captchaAnswer',
+      captchatoken: 'captchaAnswer',
+      captchaanswer: 'captchaAnswer'
+    };
+
+    const controlName = mapping[normalizedField];
+    if (!controlName) {
+      return null;
+    }
+
+    return controls[controlName] ?? null;
+  }
+
+  /**
+   * Автоматично очищає server-помилку конкретного поля при зміні його значення.
+   */
+  private setupServerValidationReset(control: AbstractControl): void {
+    control.valueChanges.subscribe(() => {
+      if (!control.errors || !control.errors['server']) {
+        return;
+      }
+
+      const { server: _server, ...restErrors } = control.errors;
+      control.setErrors(Object.keys(restErrors).length > 0 ? restErrors : null);
+    });
   }
 
   /**

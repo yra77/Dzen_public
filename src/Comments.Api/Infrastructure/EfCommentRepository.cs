@@ -51,7 +51,9 @@ public sealed class EfCommentRepository : ICommentRepository
         string? filter,
         CancellationToken cancellationToken)
     {
-        var rootsQuery = _dbContext.Comments.Where(x => x.ParentId == null);
+        var rootsQuery = _dbContext.Comments
+            .AsNoTracking()
+            .Where(x => x.ParentId == null);
 
         if (!string.IsNullOrWhiteSpace(filter))
         {
@@ -76,6 +78,7 @@ public sealed class EfCommentRepository : ICommentRepository
         }
 
         var pageRootIds = rootPage.Select(x => x.Id).ToHashSet();
+        var sortedRootIds = rootPage.Select(x => x.Id).ToArray();
         var allComments = await _dbContext.Comments
             .AsNoTracking()
             .OrderBy(x => x.CreatedAtUtc)
@@ -90,8 +93,13 @@ public sealed class EfCommentRepository : ICommentRepository
             }
         }
 
-        var pageRoots = allComments
+        var pageRootsById = allComments
             .Where(x => x.ParentId is null && pageRootIds.Contains(x.Id))
+            .ToDictionary(x => x.Id);
+
+        var pageRoots = sortedRootIds
+            .Where(pageRootsById.ContainsKey)
+            .Select(rootId => pageRootsById[rootId])
             .ToArray();
 
         return (pageRoots, totalCount);
