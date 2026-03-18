@@ -4,6 +4,7 @@ using Comments.Application.Abstractions;
 using Comments.Api.GraphQL;
 using Comments.Api.Realtime;
 using Comments.Application.Services;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using MediatR;
 using FluentValidation;
@@ -27,8 +28,9 @@ builder.Services.AddDbContext<CommentsDbContext>(options =>
     {
         var connectionString = builder.Configuration.GetConnectionString("CommentsDb")
                                ?? throw new InvalidOperationException("Connection string 'CommentsDb' is required for Sqlite provider.");
+        var normalizedConnectionString = EnsureSqliteDatabasePath(connectionString, builder.Environment.ContentRootPath);
 
-        options.UseSqlite(connectionString);
+        options.UseSqlite(normalizedConnectionString);
         return;
     }
 
@@ -179,5 +181,35 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 app.MapFallbackToFile("index.html");
 app.Run();
+
+/// <summary>
+/// Normalizes SQLite file path and ensures the parent directory exists before EF opens a connection.
+/// </summary>
+/// <param name="connectionString">Raw SQLite connection string from configuration.</param>
+/// <param name="contentRootPath">Application content root used for resolving relative paths.</param>
+/// <returns>Connection string with normalized absolute path for file-based SQLite databases.</returns>
+static string EnsureSqliteDatabasePath(string connectionString, string contentRootPath)
+{
+    var sqliteBuilder = new SqliteConnectionStringBuilder(connectionString);
+    var dataSource = sqliteBuilder.DataSource;
+
+    if (string.IsNullOrWhiteSpace(dataSource) || dataSource.Equals(":memory:", StringComparison.Ordinal))
+    {
+        return connectionString;
+    }
+
+    var normalizedDataSource = Path.IsPathRooted(dataSource)
+        ? dataSource
+        : Path.GetFullPath(Path.Combine(contentRootPath, dataSource));
+
+    var directoryPath = Path.GetDirectoryName(normalizedDataSource);
+    if (!string.IsNullOrWhiteSpace(directoryPath))
+    {
+        Directory.CreateDirectory(directoryPath);
+    }
+
+    sqliteBuilder.DataSource = normalizedDataSource;
+    return sqliteBuilder.ToString();
+}
 
 public partial class Program { }
