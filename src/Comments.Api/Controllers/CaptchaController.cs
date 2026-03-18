@@ -1,5 +1,6 @@
 using Comments.Api.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
+using System.Globalization;
 using System.Text;
 
 namespace Comments.Api.Controllers;
@@ -39,38 +40,137 @@ public sealed class CaptchaController : ControllerBase
     [ProducesResponseType(typeof(CaptchaImageResponse), StatusCodes.Status200OK)]
     public IActionResult GetImage()
     {
-        var random = Random.Shared;
-        var left = random.Next(1, 10);
-        var right = random.Next(1, 10);
-        var answer = (left + right).ToString();
-
-        var challengeId = _challengeStore.CreateChallenge(answer);
-        var svg = BuildSvg($"{left} + {right} = ?");
+        var challengeText = GenerateCaptchaText(6);
+        var challengeId = _challengeStore.CreateChallenge(challengeText);
+        var svg = BuildSvg(challengeText);
         var imageBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(svg));
 
         return Ok(new CaptchaImageResponse(challengeId, imageBase64, "image/svg+xml", 300));
     }
 
+
     /// <summary>
-    /// Будує SVG-розмітку captcha із візуальним шумом.
+    /// Генерує captcha-рядок із латинських літер та цифр.
     /// </summary>
-    /// <param name="text">Текст математичного прикладу.</param>
+    /// <param name="length">Довжина рядка captcha.</param>
+    /// <returns>Випадковий captcha-рядок.</returns>
+    private static string GenerateCaptchaText(int length)
+    {
+        const string alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        var chars = new char[length];
+
+        for (var index = 0; index < length; index++)
+        {
+            chars[index] = alphabet[Random.Shared.Next(alphabet.Length)];
+        }
+
+        return new string(chars);
+    }
+
+    /// <summary>
+    /// Будує SVG-розмітку captcha із шумом, деформаціями та псевдо-символами,
+    /// щоб ускладнити машинне OCR-розпізнавання.
+    /// </summary>
+    /// <param name="text">Текст CAPTCHA, який має ввести користувач.</param>
     /// <returns>Рядок SVG-документу.</returns>
     private static string BuildSvg(string text)
     {
-        var escaped = System.Security.SecurityElement.Escape(text) ?? text;
-        var noise1 = Random.Shared.Next(10, 130);
-        var noise2 = Random.Shared.Next(10, 130);
-        var noise3 = Random.Shared.Next(10, 130);
-        var noise4 = Random.Shared.Next(10, 130);
+        var svgBuilder = new StringBuilder();
+        var turbulenceSeed = Random.Shared.Next(1, 5000);
 
-        return $"""
-<svg xmlns="http://www.w3.org/2000/svg" width="160" height="60" viewBox="0 0 160 60">
-  <rect width="160" height="60" fill="#f3f4f6"/>
-  <line x1="0" y1="{noise1}" x2="160" y2="{noise2}" stroke="#9ca3af" stroke-width="1"/>
-  <line x1="0" y1="{noise3}" x2="160" y2="{noise4}" stroke="#d1d5db" stroke-width="1"/>
-  <text x="80" y="38" text-anchor="middle" font-size="28" font-family="Arial, sans-serif" fill="#111827">{escaped}</text>
-</svg>
-""";
+        svgBuilder.AppendLine("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"60\" viewBox=\"0 0 160 60\">");
+        svgBuilder.AppendLine("  <defs>");
+        svgBuilder.AppendLine("    <filter id=\"roughen\" x=\"-20%\" y=\"-20%\" width=\"140%\" height=\"140%\">");
+        svgBuilder.AppendLine($"      <feTurbulence type=\"fractalNoise\" baseFrequency=\"0.8\" numOctaves=\"1\" seed=\"{turbulenceSeed}\" result=\"noise\"/>");
+        svgBuilder.AppendLine("      <feDisplacementMap in=\"SourceGraphic\" in2=\"noise\" scale=\"2.6\" xChannelSelector=\"R\" yChannelSelector=\"G\"/>");
+        svgBuilder.AppendLine("    </filter>");
+        svgBuilder.AppendLine("  </defs>");
+        svgBuilder.AppendLine("  <rect width=\"160\" height=\"60\" fill=\"#f3f4f6\"/>");
+
+        AppendNoiseLines(svgBuilder);
+        AppendNoiseDots(svgBuilder);
+        AppendDecoyCharacters(svgBuilder);
+
+        svgBuilder.AppendLine("  <g filter=\"url(#roughen)\">");
+
+        for (var index = 0; index < text.Length; index++)
+        {
+            var character = System.Security.SecurityElement.Escape(text[index].ToString()) ?? text[index].ToString();
+            var x = 18 + (index * 22) + Random.Shared.Next(-2, 3);
+            var y = 36 + Random.Shared.Next(-8, 9);
+            var rotation = Random.Shared.Next(-30, 31);
+            var fontSize = Random.Shared.Next(24, 31);
+            var opacity = Random.Shared.NextDouble() * 0.30 + 0.70;
+
+            svgBuilder.AppendLine(
+                $"    <text x=\"{x}\" y=\"{y}\" transform=\"rotate({rotation} {x} {y})\" font-size=\"{fontSize}\" font-family=\"Arial, Helvetica, sans-serif\" font-weight=\"700\" fill=\"#111827\" fill-opacity=\"{opacity.ToString("0.00", CultureInfo.InvariantCulture)}\" letter-spacing=\"1\">{character}</text>");
+        }
+
+        svgBuilder.AppendLine("  </g>");
+        svgBuilder.AppendLine("</svg>");
+        return svgBuilder.ToString();
+    }
+
+    /// <summary>
+    /// Додає набір випадкових кривих та ліній як візуальні перешкоди для OCR.
+    /// </summary>
+    /// <param name="svgBuilder">Builder поточного SVG-документу.</param>
+    private static void AppendNoiseLines(StringBuilder svgBuilder)
+    {
+        for (var index = 0; index < 12; index++)
+        {
+            var x1 = Random.Shared.Next(0, 161);
+            var y1 = Random.Shared.Next(0, 61);
+            var x2 = Random.Shared.Next(0, 161);
+            var y2 = Random.Shared.Next(0, 61);
+            var controlX = Random.Shared.Next(0, 161);
+            var controlY = Random.Shared.Next(0, 61);
+            var strokeWidth = Random.Shared.NextDouble() * 1.2 + 0.6;
+            var opacity = Random.Shared.NextDouble() * 0.35 + 0.25;
+
+            svgBuilder.AppendLine(
+                $"  <path d=\"M{x1},{y1} Q{controlX},{controlY} {x2},{y2}\" stroke=\"#6b7280\" stroke-opacity=\"{opacity.ToString("0.00", CultureInfo.InvariantCulture)}\" stroke-width=\"{strokeWidth.ToString("0.00", CultureInfo.InvariantCulture)}\" fill=\"none\"/>");
+        }
+    }
+
+    /// <summary>
+    /// Додає дрібні точки-шум, які ускладнюють сегментацію символів для OCR-движків.
+    /// </summary>
+    /// <param name="svgBuilder">Builder поточного SVG-документу.</param>
+    private static void AppendNoiseDots(StringBuilder svgBuilder)
+    {
+        for (var index = 0; index < 90; index++)
+        {
+            var cx = Random.Shared.Next(0, 161);
+            var cy = Random.Shared.Next(0, 61);
+            var radius = Random.Shared.NextDouble() * 1.4 + 0.2;
+            var opacity = Random.Shared.NextDouble() * 0.30 + 0.08;
+
+            svgBuilder.AppendLine(
+                $"  <circle cx=\"{cx}\" cy=\"{cy}\" r=\"{radius.ToString("0.00", CultureInfo.InvariantCulture)}\" fill=\"#4b5563\" fill-opacity=\"{opacity.ToString("0.00", CultureInfo.InvariantCulture)}\"/>");
+        }
+    }
+
+    /// <summary>
+    /// Додає псевдо-символи, які не входять до правильної відповіді,
+    /// щоб ускладнити автоматичне виділення цільового тексту.
+    /// </summary>
+    /// <param name="svgBuilder">Builder поточного SVG-документу.</param>
+    private static void AppendDecoyCharacters(StringBuilder svgBuilder)
+    {
+        const string decoyAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+        for (var index = 0; index < 7; index++)
+        {
+            var decoyCharacter = decoyAlphabet[Random.Shared.Next(decoyAlphabet.Length)];
+            var x = Random.Shared.Next(4, 155);
+            var y = Random.Shared.Next(12, 54);
+            var fontSize = Random.Shared.Next(12, 22);
+            var rotation = Random.Shared.Next(-70, 71);
+            var opacity = Random.Shared.NextDouble() * 0.22 + 0.10;
+
+            svgBuilder.AppendLine(
+                $"  <text x=\"{x}\" y=\"{y}\" transform=\"rotate({rotation} {x} {y})\" font-size=\"{fontSize}\" font-family=\"Arial, Helvetica, sans-serif\" fill=\"#1f2937\" fill-opacity=\"{opacity.ToString("0.00", CultureInfo.InvariantCulture)}\">{decoyCharacter}</text>");
+        }
     }
 }

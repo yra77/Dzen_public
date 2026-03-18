@@ -410,6 +410,33 @@ public sealed class ValidationIntegrationTests : IClassFixture<WebApplicationFac
     }
 
     /// <summary>
+    /// Verifies REST validation rejects malformed XHTML fragments in comment text.
+    /// </summary>
+    [Fact]
+    public async Task CreateComment_WithMalformedXhtmlText_ReturnsBadRequestValidationProblem()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/comments", new
+        {
+            userName = "User123",
+            email = "user@example.com",
+            homePage = "https://example.com",
+            text = "<strong>broken",
+            parentId = (Guid?)null,
+            captchaToken = "1234",
+            attachment = (object?)null
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<ValidationProblemPayload>();
+        Assert.NotNull(payload);
+        Assert.Equal(400, payload!.Status);
+        Assert.True(payload.Errors.ContainsKey("Request.Text"));
+    }
+
+    /// <summary>
     /// Verifies REST validation returns field-level attachment content-type errors for unsupported MIME.
     /// </summary>
     [Fact]

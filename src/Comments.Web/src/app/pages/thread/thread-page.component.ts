@@ -1,6 +1,6 @@
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 
@@ -11,6 +11,7 @@ import {
 } from '../../core/comments-api.service';
 import { environment } from '../../../environments/environment';
 import { ApiErrorPresenterService, UiValidationError } from '../../core/api-error-presenter.service';
+import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
 
 @Component({
   selector: 'app-thread-page',
@@ -32,7 +33,7 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
         }
       } @else if (thread) {
         <div class="thread-node">
-          <p class="meta"><strong>{{ thread.userName }}</strong> · {{ thread.createdAtUtc | date: 'short' }}</p>
+          <p class="comment-header"><strong>{{ thread.userName }}</strong><span>{{ thread.email }}</span><span>{{ thread.createdAtUtc | date: 'dd.MM.yy HH:mm' }}</span></p>
           <p>{{ thread.text }}</p>
           @if (thread.attachment) {
             <div class="attachment-inline">
@@ -79,7 +80,7 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
             @for (reply of replies; track reply.id) {
               <li>
                 <article class="thread-node">
-                  <p class="meta"><strong>{{ reply.userName }}</strong> · {{ reply.createdAtUtc | date: 'short' }}</p>
+                  <p class="comment-header"><strong>{{ reply.userName }}</strong><span>{{ reply.email }}</span><span>{{ reply.createdAtUtc | date: 'dd.MM.yy HH:mm' }}</span></p>
                   <p>{{ reply.text }}</p>
                   @if (reply.attachment) {
                     <div class="attachment-inline">
@@ -125,24 +126,46 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
         @if (isReplyModalOpen && activeReplyTarget) {
           <div class="reply-modal-backdrop" (click)="closeReplyModal()">
             <div class="reply-modal" (click)="$event.stopPropagation()">
-              <h3>Нова відповідь</h3>
-              <p class="meta">Відповідь на: <strong>{{ activeReplyTarget.userName }}</strong> · #{{ activeReplyTarget.id }}</p>
+              <div class="modal-header">
+                <h3>Нова відповідь</h3>
+                <button type="button" class="modal-close-button" (click)="closeReplyModal()">Закрити</button>
+              </div>
+              <p class="meta">Відповідь на: <strong>{{ activeReplyTarget.userName }}</strong></p>
 
               <form class="form-grid" [formGroup]="replyForm" (ngSubmit)="submitReply()" data-testid="thread-reply-form">
+                @if (submitMessage) {
+                  <div class="wide form-error-top" data-testid="thread-submit-message">
+                    <p class="error">{{ submitMessage }}</p>
+                    @if (showRetryHint) {
+                      <p class="meta">Можна повторити запит без зміни даних форми.</p>
+                    }
+                    @if (submitValidationErrors.length > 0) {
+                      <ul class="error-list">
+                        @for (validationError of submitValidationErrors; track validationError.field) {
+                          <li><strong>{{ validationError.field }}</strong>: {{ validationError.messages.join('; ') }}</li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                }
+
                 <label>
                   Ім'я
-                  <input type="text" formControlName="userName" data-testid="thread-user-name-input" />
+                  <input type="text" formControlName="userName" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.userName)" data-testid="thread-user-name-input" />
                 </label>
 
                 <label>
                   Email
-                  <input type="email" formControlName="email" data-testid="thread-email-input" />
+                  <input type="email" formControlName="email" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.email)" data-testid="thread-email-input" />
                 </label>
 
                 <label class="wide">
                   Текст
-                  <textarea #threadTextArea rows="5" formControlName="text" (input)="previewText()" data-testid="thread-text-input"></textarea>
+                  <textarea #threadTextArea rows="5" formControlName="text" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.text)" (input)="previewText()" data-testid="thread-text-input"></textarea>
                 </label>
+                @if (getTextValidationMessage(replyForm.controls.text)) {
+                  <p class="error wide">{{ getTextValidationMessage(replyForm.controls.text) }}</p>
+                }
 
                 <div class="wide text-toolbar" role="group" aria-label="Швидкі теги форматування" data-testid="thread-quick-tags">
                   <span class="text-toolbar-label">Швидкі теги:</span>
@@ -171,43 +194,34 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
                   <p class="meta">{{ attachmentMessage }}</p>
                 }
                 @if (attachmentImagePreviewDataUrl) {
-                  <figure class="attachment-selection-preview" data-testid="thread-selected-image-preview">
-                    <img [src]="attachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
-                    <figcaption class="meta">Preview вибраного зображення</figcaption>
-                  </figure>
+                  <div class="attachment-selection-block">
+                    <figure class="attachment-selection-preview" data-testid="thread-selected-image-preview">
+                      <img [src]="attachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
+                      <figcaption class="meta">Preview вибраного зображення</figcaption>
+                    </figure>
+                    <button type="button" class="attachment-remove" (click)="clearReplyAttachment()">Видалити зображення</button>
+                  </div>
                 }
 
-                @if (captchaImageDataUrl) {
-                  <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" data-testid="thread-captcha-image" />
-                }
+                <div class="captcha-block wide">
+                  @if (captchaImageDataUrl) {
+                    <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" data-testid="thread-captcha-image" />
+                  }
+                  <label class="captcha-answer-label">
+                    CAPTCHA (цифри і букви латинського алфавіту)
+                    <input type="text" formControlName="captchaAnswer" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.captchaAnswer)" data-testid="thread-captcha-answer-input" />
+                  </label>
+                </div>
 
                 @if (captchaMessage) {
-                  <p class="error">{{ captchaMessage }}</p>
+                  <p class="error wide">{{ captchaMessage }}</p>
                 }
-
-                <label>
-                  CAPTCHA (сума чисел)
-                  <input type="text" formControlName="captchaAnswer" data-testid="thread-captcha-answer-input" />
-                </label>
 
                 <div class="actions wide">
                   <button type="button" (click)="closeReplyModal()">Закрити</button>
                   <button type="submit" [disabled]="replyForm.invalid || isSubmitting" data-testid="thread-submit-button">Створити коментар</button>
+                  <button type="submit" [disabled]="replyForm.invalid || isSubmitting || hasBlockingErrors(replyForm)" data-testid="thread-submit-button">Створити коментар</button>
                 </div>
-
-                @if (submitMessage) {
-                  <p data-testid="thread-submit-message">{{ submitMessage }}</p>
-                  @if (showRetryHint) {
-                    <p class="meta">Можна повторити запит без зміни даних форми.</p>
-                  }
-                  @if (submitValidationErrors.length > 0) {
-                    <ul class="error-list">
-                      @for (validationError of submitValidationErrors; track validationError.field) {
-                        <li><strong>{{ validationError.field }}</strong>: {{ validationError.messages.join('; ') }}</li>
-                      }
-                    </ul>
-                  }
-                }
               </form>
             </div>
           </div>
@@ -223,17 +237,28 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
       .attachment-thumb { max-width: 260px; max-height: 180px; border: 1px solid #d0d7de; border-radius: 8px; }
       .attachment-text { white-space: pre-wrap; background: #f8fafc; border: 1px solid #d9e0ec; border-radius: 8px; padding: 8px; }
       .attachment-selection-preview { margin: 0; }
+      .attachment-selection-block { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+      .attachment-remove { margin-top: 0; font-size: 12px; padding: 4px 8px; background: #b42318; color: #fff; border: 1px solid #912018; border-radius: 6px; cursor: pointer; }
+      .attachment-remove:hover { background: #912018; }
       .thread-node { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; margin-top: 10px; background: #fcfcfd; }
+      .comment-header { display: flex; gap: 10px; flex-wrap: wrap; background: #e5e7eb; padding: 6px 8px; border-radius: 8px; margin: 0 0 8px; }
       .thread-actions { margin-top: 8px; display: flex; justify-content: flex-end; }
       .tree { list-style: none; margin: 0; padding-left: 14px; }
       .captcha { width: 160px; height: 60px; border: 1px solid #d9e0ec; border-radius: 6px; }
+      .captcha-block { display: flex; align-items: flex-start; gap: 12px; }
+      .captcha-answer-label { flex: 1; min-width: 240px; }
       .reply-modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
       .reply-modal { width: min(760px, 100%); max-height: 92vh; overflow-y: auto; background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25); }
+      .modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+      .modal-header h3 { margin: 0; }
+      .modal-close-button { margin-left: auto; }
       .text-preview { border: 1px dashed #d0d5dd; border-radius: 8px; padding: 8px; background: #f8fafc; }
       .text-preview-title { color: #344054; font-size: 14px; margin-bottom: 6px; font-weight: 600; }
       .text-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
       .text-toolbar-label { color: #344054; font-size: 14px; }
       .error-list { color: #b42318; margin: 6px 0 0; }
+      .form-error-top { border: 1px solid #fecdca; background: #fef3f2; border-radius: 8px; padding: 10px; }
+      .field-invalid { border-color: #d92d20; box-shadow: 0 0 0 1px #d92d20 inset; }
       @media (max-width: 900px) { .actions { flex-direction: column; } }
     `
   ]
@@ -281,9 +306,64 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   readonly replyForm = this.formBuilder.nonNullable.group({
     userName: ['', [Validators.required, Validators.maxLength(100)]],
     email: ['', [Validators.required, Validators.email]],
-    text: ['', [Validators.required, Validators.maxLength(5000)]],
+    text: ['', [Validators.required, Validators.maxLength(5000), xhtmlFragmentValidator()]],
     captchaAnswer: ['', [Validators.required]]
   });
+
+  constructor() {
+    this.setupServerValidationReset(this.replyForm.controls.userName);
+    this.setupServerValidationReset(this.replyForm.controls.email);
+    this.setupServerValidationReset(this.replyForm.controls.text);
+    this.setupServerValidationReset(this.replyForm.controls.captchaAnswer);
+  }
+
+  /**
+   * Повертає локалізований текст помилки XHTML-валидації для textarea відповіді.
+   */
+  getTextValidationMessage(control: { errors: Record<string, unknown> | null; touched: boolean; dirty: boolean }): string {
+    const shouldShow = control.touched || control.dirty;
+    if (!shouldShow || !control.errors) {
+      return '';
+    }
+
+    if (control.errors['xhtmlFragment']) {
+      return 'Текст повинен бути валідним XHTML (теги мають бути коректно закриті).';
+    }
+
+    if (control.errors['unsupportedTag']) {
+      const tagName = String(control.errors['unsupportedTag']);
+      return `Тег <${tagName}> заборонений. Дозволено лише: <a>, <code>, <i>, <strong>.`;
+    }
+
+    if (control.errors['invalidAnchorAttributes']) {
+      return 'Для тегу <a> дозволено тільки атрибут href.';
+    }
+
+    if (control.errors['invalidAnchorHref']) {
+      return 'У <a href> потрібно вказати абсолютний URL з протоколом http або https.';
+    }
+
+    if (control.errors['disallowedAttributes']) {
+      const tagName = String(control.errors['disallowedAttributes']);
+      return `Атрибути заборонені для тегу <${tagName}>.`;
+    }
+
+    return '';
+  }
+
+  /**
+   * Повертає true, якщо конкретне поле потрібно підсвітити як помилкове.
+   */
+  shouldHighlightInvalid(control: AbstractControl): boolean {
+    return control.invalid && (control.touched || control.dirty);
+  }
+
+  /**
+   * Повертає true, якщо submit має бути заблокований через помилки форми.
+   */
+  hasBlockingErrors(form: { invalid: boolean }): boolean {
+    return form.invalid;
+  }
 
   /**
    * Ініціалізує стан сторінки та realtime-підписку.
@@ -406,6 +486,14 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     this.previewText();
   }
 
+
+  /** Очищає вибране вкладення у формі відповіді. */
+  clearReplyAttachment(): void {
+    this.attachment = null;
+    this.attachmentImagePreviewDataUrl = '';
+    this.attachmentMessage = '';
+  }
+
   /**
    * Перезавантажує CAPTCHA для форми відповіді.
    */
@@ -469,6 +557,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
           this.submitMessage = uiError.summary;
           this.submitValidationErrors = uiError.validationErrors;
           this.showRetryHint = uiError.canRetry;
+          this.applyServerValidationErrors(this.replyForm.controls, uiError.validationErrors);
           this.reloadCaptcha();
           this.isSubmitting = false;
         }
@@ -594,6 +683,67 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
         this.loadCanRetry = uiError.canRetry;
         this.isLoading = false;
       }
+    });
+  }
+
+  /**
+   * Позначає поля форми як помилкові на основі server-side validation ключів.
+   */
+  private applyServerValidationErrors(
+    controls: Record<string, AbstractControl>,
+    validationErrors: ReadonlyArray<UiValidationError>
+  ): void {
+    for (const validationError of validationErrors) {
+      const normalizedField = validationError.field.toLowerCase();
+      const mappedControl = this.mapServerFieldToControl(controls, normalizedField);
+      if (!mappedControl) {
+        continue;
+      }
+
+      const existingErrors = mappedControl.errors ?? {};
+      mappedControl.setErrors({ ...existingErrors, server: true });
+      mappedControl.markAsTouched();
+    }
+  }
+
+  /**
+   * Повертає FormControl для server-side поля, якщо підтримується мапінг.
+   */
+  private mapServerFieldToControl(
+    controls: Record<string, AbstractControl>,
+    normalizedField: string
+  ): AbstractControl | null {
+    const mapping: Record<string, string> = {
+      'request.username': 'userName',
+      username: 'userName',
+      'request.email': 'email',
+      email: 'email',
+      'request.text': 'text',
+      text: 'text',
+      'request.captchatoken': 'captchaAnswer',
+      captchatoken: 'captchaAnswer',
+      captchaanswer: 'captchaAnswer'
+    };
+
+    const controlName = mapping[normalizedField];
+    if (!controlName) {
+      return null;
+    }
+
+    return controls[controlName] ?? null;
+  }
+
+  /**
+   * Автоматично прибирає server-помилку поля після зміни значення користувачем.
+   */
+  private setupServerValidationReset(control: AbstractControl): void {
+    control.valueChanges.subscribe(() => {
+      if (!control.errors || !control.errors['server']) {
+        return;
+      }
+
+      const { server: _server, ...restErrors } = control.errors;
+      control.setErrors(Object.keys(restErrors).length > 0 ? restErrors : null);
     });
   }
 }

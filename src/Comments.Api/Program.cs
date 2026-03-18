@@ -11,7 +11,8 @@ using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var provider = builder.Configuration["Persistence:Provider"] ?? "InMemory";
+// Визначає провайдер persistence; за замовчуванням використовуємо MySql для реального збереження коментарів.
+var provider = builder.Configuration["Persistence:Provider"] ?? "MySql";
 var rabbitMqOptions = builder.Configuration.GetSection("RabbitMq").Get<RabbitMqOptions>() ?? new RabbitMqOptions();
 var captchaOptions = builder.Configuration.GetSection("Captcha").Get<CaptchaOptions>() ?? new CaptchaOptions();
 var attachmentStorageOptions = builder.Configuration.GetSection("Attachments").Get<LocalAttachmentStorageOptions>() ?? new LocalAttachmentStorageOptions();
@@ -21,6 +22,7 @@ var processedMessageCleanupOptions = builder.Configuration.GetSection(ProcessedM
 
 builder.Services.AddDbContext<CommentsDbContext>(options =>
 {
+    // Підтримка сумісності з існуючим сценарієм запуску через SQL Server.
     if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
     {
         var connectionString = builder.Configuration.GetConnectionString("CommentsDb")
@@ -30,6 +32,20 @@ builder.Services.AddDbContext<CommentsDbContext>(options =>
         return;
     }
 
+    // Основний production/dev сценарій: зберігання коментарів та даних автора в MySQL.
+    if (provider.Equals("MySql", StringComparison.OrdinalIgnoreCase))
+    {
+        var connectionString = builder.Configuration.GetConnectionString("CommentsDb")
+                               ?? throw new InvalidOperationException("Connection string 'CommentsDb' is required for MySql provider.");
+
+        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+        // AutoDetect робить мережеве підключення під час старту; задаємо версію явно,
+        // щоб застосунок коректно стартував навіть коли БД тимчасово недоступна.
+        options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 36)));
+        return;
+    }
+
+    // Fallback для тестових локальних сценаріїв без зовнішньої БД.
     options.UseInMemoryDatabase("CommentsDb");
 });
 
@@ -125,7 +141,17 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<CommentsDbContext>();
-    await dbContext.Database.EnsureCreatedAsync();
+
+    // Для реляційних провайдерів застосовуємо migration-процес, для InMemory лишаємось на EnsureCreated.
+    if (provider.Equals("MySql", StringComparison.OrdinalIgnoreCase) ||
+        provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+    {
+        await dbContext.Database.MigrateAsync();
+    }
+    else
+    {
+        await dbContext.Database.EnsureCreatedAsync();
+    }
 }
 
 app.UseMiddleware<ValidationExceptionHandlingMiddleware>();

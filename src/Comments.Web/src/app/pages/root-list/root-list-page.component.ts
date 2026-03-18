@@ -1,15 +1,18 @@
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { Component, OnDestroy, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 
 import {
   CommentNode,
   CommentsApiService,
-  CreateCommentAttachmentRequest
+  CreateCommentAttachmentRequest,
+  RootCommentsSortDirection,
+  RootCommentsSortField
 } from '../../core/comments-api.service';
 import { ApiErrorPresenterService, UiValidationError } from '../../core/api-error-presenter.service';
 import { environment } from '../../../environments/environment';
+import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
 
 @Component({
   selector: 'app-root-list-page',
@@ -21,6 +24,25 @@ import { environment } from '../../../environments/environment';
       @if (signalRStatusMessage) {
         <p class="meta">{{ signalRStatusMessage }}</p>
       }
+      <div class="list-controls">
+        <label>
+          Сортувати за
+          <select [value]="sortBy" (change)="onSortByChanged($event)" data-testid="root-sort-by">
+            <option value="CreatedAtUtc">Дата</option>
+            <option value="UserName">User Name</option>
+            <option value="Email">E-mail</option>
+          </select>
+        </label>
+
+        <label>
+          Напрям
+          <select [value]="sortDirection" (change)="onSortDirectionChanged($event)" data-testid="root-sort-direction">
+            <option value="Desc">Спадання</option>
+            <option value="Asc">Зростання</option>
+          </select>
+        </label>
+      </div>
+
 
       @if (isCreateModalOpen) {
         <div class="reply-modal-backdrop" (click)="closeCreateModal()">
@@ -30,16 +52,42 @@ import { environment } from '../../../environments/environment';
               <label>
                 Ім'я
                 <input type="text" formControlName="userName" data-testid="root-user-name-input" />
+            <div class="modal-header">
+              <h3>Новий коментар</h3>
+              <button type="button" class="modal-close-button" (click)="closeCreateModal()">Закрити</button>
+            </div>
+            <form class="form-grid" [formGroup]="createForm" (ngSubmit)="submitComment()" data-testid="root-create-form">
+              @if (submitMessage) {
+                <div class="wide form-error-top" data-testid="root-submit-message">
+                  <p class="error">{{ submitMessage }}</p>
+                  @if (showRetryHint) {
+                    <p class="meta">Можна повторити запит без зміни даних форми.</p>
+                  }
+                  @if (submitValidationErrors.length > 0) {
+                    <ul class="error-list">
+                      @for (validationError of submitValidationErrors; track validationError.field) {
+                        <li><strong>{{ validationError.field }}</strong>: {{ validationError.messages.join('; ') }}</li>
+                      }
+                    </ul>
+                  }
+                </div>
+              }
+
+              <label>
+                Ім'я
+                <input type="text" formControlName="userName" [class.field-invalid]="shouldHighlightInvalid(createForm.controls.userName)" data-testid="root-user-name-input" />
               </label>
 
               <label>
                 Email
                 <input type="email" formControlName="email" data-testid="root-email-input" />
+                <input type="email" formControlName="email" [class.field-invalid]="shouldHighlightInvalid(createForm.controls.email)" data-testid="root-email-input" />
               </label>
 
               <label>
                 Homepage
                 <input type="url" formControlName="homePage" placeholder="https://example.com" data-testid="root-home-page-input" />
+                <input type="url" formControlName="homePage" [class.field-invalid]="shouldHighlightInvalid(createForm.controls.homePage)" placeholder="https://example.com" data-testid="root-home-page-input" />
               </label>
 
               <label class="wide">
@@ -111,6 +159,65 @@ import { environment } from '../../../environments/environment';
                   </ul>
                 }
               }
+                <textarea #rootTextArea rows="5" formControlName="text" [class.field-invalid]="shouldHighlightInvalid(createForm.controls.text)" (input)="previewText()" data-testid="root-text-input"></textarea>
+              </label>
+              @if (getTextValidationMessage(createForm.controls.text)) {
+                <p class="error wide">{{ getTextValidationMessage(createForm.controls.text) }}</p>
+              }
+
+              <div class="wide text-toolbar" role="group" aria-label="Швидкі теги форматування" data-testid="root-quick-tags">
+                <span class="text-toolbar-label">Швидкі теги:</span>
+                <button type="button" (click)="insertQuickTag('i', rootTextArea)">[i]</button>
+                <button type="button" (click)="insertQuickTag('strong', rootTextArea)">[strong]</button>
+                <button type="button" (click)="insertQuickTag('code', rootTextArea)">[code]</button>
+                <button type="button" (click)="insertQuickTag('a', rootTextArea)">[a]</button>
+              </div>
+
+              @if (textPreviewHtml) {
+                  <div class="text-preview" data-testid="root-preview-container">
+                  <div class="text-preview-title">Preview повідомлення</div>
+                  <div [innerHTML]="textPreviewHtml"></div>
+                </div>
+              }
+
+              @if (previewMessage) {
+                <p class="meta">{{ previewMessage }}</p>
+              }
+
+              <label class="wide">
+                Вкладення (png/jpg/gif/txt, до 1MB)
+                <input type="file" (change)="onAttachmentSelected($event)" accept=".txt,image/png,image/jpeg,image/gif,text/plain" data-testid="root-attachment-input" />
+              </label>
+              @if (attachmentMessage) {
+                <p class="meta">{{ attachmentMessage }}</p>
+              }
+              @if (attachmentImagePreviewDataUrl) {
+                <div class="attachment-selection-block">
+                  <figure class="attachment-selection-preview" data-testid="root-selected-image-preview">
+                    <img [src]="attachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
+                    <figcaption class="meta">Preview вибраного зображення</figcaption>
+                  </figure>
+                  <button type="button" class="attachment-remove" (click)="clearCreateAttachment()">Видалити зображення</button>
+                </div>
+              }
+
+              <div class="captcha-block wide">
+                @if (captchaImageDataUrl) {
+                  <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" data-testid="root-captcha-image" />
+                }
+                <label class="captcha-answer-label">
+                    CAPTCHA (цифри і букви латинського алфавіту)
+                  <input type="text" formControlName="captchaAnswer" [class.field-invalid]="shouldHighlightInvalid(createForm.controls.captchaAnswer)" data-testid="root-captcha-answer-input" />
+                </label>
+              </div>
+
+              @if (captchaMessage) {
+                <p class="error wide">{{ captchaMessage }}</p>
+              }
+
+              <div class="actions wide">
+                <button type="submit" [disabled]="createForm.invalid || isSubmitting || hasBlockingErrors(createForm)" data-testid="root-submit-button">Створити коментар</button>
+              </div>
             </form>
           </div>
         </div>
@@ -134,9 +241,15 @@ import { environment } from '../../../environments/environment';
           }
         </ul>
 
+        <div class="pagination">
+          <button type="button" (click)="goToPreviousPage()" [disabled]="page <= 1 || isLoading">← Попередня</button>
+          <span>Сторінка {{ page }} з {{ totalPages }}</span>
+          <button type="button" (click)="goToNextPage()" [disabled]="page >= totalPages || isLoading">Наступна →</button>
+        </div>
+
         <ng-template #commentTreeNode let-node>
           <article class="comment thread-node">
-            <p class="meta"><strong>#{{ node.id }} {{ node.userName }}</strong> · {{ node.createdAtUtc | date: 'short' }}</p>
+            <p class="comment-header"><strong>{{ node.userName }}</strong><span>{{ node.email }}</span><span>{{ node.createdAtUtc | date: 'dd.MM.yy HH:mm' }}</span></p>
             <p>{{ node.text }}</p>
             @if (node.attachment) {
               <div class="attachment-inline">
@@ -185,24 +298,46 @@ import { environment } from '../../../environments/environment';
         @if (isReplyModalOpen) {
           <div class="reply-modal-backdrop" (click)="closeReplyModal()">
             <div class="reply-modal" (click)="$event.stopPropagation()">
-              <h3>Нова відповідь</h3>
+              <div class="modal-header">
+                <h3>Нова відповідь</h3>
+                <button type="button" class="modal-close-button" (click)="closeReplyModal()">Закрити</button>
+              </div>
               <p class="meta">Відповідь для: <strong>{{ activeReplyTarget?.userName }}</strong></p>
 
               <form class="form-grid" [formGroup]="replyForm" (ngSubmit)="submitReplyComment()">
+                @if (replySubmitMessage) {
+                  <div class="wide form-error-top">
+                    <p class="error">{{ replySubmitMessage }}</p>
+                    @if (replyShowRetryHint) {
+                      <p class="meta">Можна повторити запит без зміни даних форми.</p>
+                    }
+                    @if (replySubmitValidationErrors.length > 0) {
+                      <ul class="error-list">
+                        @for (validationError of replySubmitValidationErrors; track validationError.field) {
+                          <li><strong>{{ validationError.field }}</strong>: {{ validationError.messages.join('; ') }}</li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                }
+
                 <label>
                   Ім'я
-                  <input type="text" formControlName="userName" />
+                  <input type="text" formControlName="userName" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.userName)" />
                 </label>
 
                 <label>
                   Email
-                  <input type="email" formControlName="email" />
+                  <input type="email" formControlName="email" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.email)" />
                 </label>
 
                 <label class="wide">
                   Текст
-                  <textarea #replyTextArea rows="5" formControlName="text" (input)="previewReplyText()"></textarea>
+                  <textarea #replyTextArea rows="5" formControlName="text" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.text)" (input)="previewReplyText()"></textarea>
                 </label>
+                @if (getTextValidationMessage(replyForm.controls.text)) {
+                  <p class="error wide">{{ getTextValidationMessage(replyForm.controls.text) }}</p>
+                }
 
                 <div class="wide text-toolbar" role="group" aria-label="Швидкі теги форматування для відповіді">
                   <span class="text-toolbar-label">Швидкі теги:</span>
@@ -231,43 +366,34 @@ import { environment } from '../../../environments/environment';
                   <p class="meta">{{ replyAttachmentMessage }}</p>
                 }
                 @if (replyAttachmentImagePreviewDataUrl) {
-                  <figure class="attachment-selection-preview">
-                    <img [src]="replyAttachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
-                    <figcaption class="meta">Preview вибраного зображення</figcaption>
-                  </figure>
+                  <div class="attachment-selection-block">
+                    <figure class="attachment-selection-preview">
+                      <img [src]="replyAttachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
+                      <figcaption class="meta">Preview вибраного зображення</figcaption>
+                    </figure>
+                    <button type="button" class="attachment-remove" (click)="clearReplyAttachment()">Видалити зображення</button>
+                  </div>
                 }
 
-                @if (replyCaptchaImageDataUrl) {
-                  <img [src]="replyCaptchaImageDataUrl" alt="Captcha" class="captcha" />
-                }
+                <div class="captcha-block wide">
+                  @if (replyCaptchaImageDataUrl) {
+                    <img [src]="replyCaptchaImageDataUrl" alt="Captcha" class="captcha" />
+                  }
+                  <label class="captcha-answer-label">
+                    CAPTCHA (цифри і букви латинського алфавіту)
+                    <input type="text" formControlName="captchaAnswer" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.captchaAnswer)" />
+                  </label>
+                </div>
 
                 @if (replyCaptchaMessage) {
-                  <p class="error">{{ replyCaptchaMessage }}</p>
+                  <p class="error wide">{{ replyCaptchaMessage }}</p>
                 }
-
-                <label>
-                  CAPTCHA (сума чисел)
-                  <input type="text" formControlName="captchaAnswer" />
-                </label>
 
                 <div class="actions wide">
                   <button type="button" (click)="closeReplyModal()">Закрити</button>
                   <button type="submit" [disabled]="replyForm.invalid || isReplySubmitting">Створити коментар</button>
+                  <button type="submit" [disabled]="replyForm.invalid || isReplySubmitting || hasBlockingErrors(replyForm)">Створити коментар</button>
                 </div>
-
-                @if (replySubmitMessage) {
-                  <p>{{ replySubmitMessage }}</p>
-                  @if (replyShowRetryHint) {
-                    <p class="meta">Можна повторити запит без зміни даних форми.</p>
-                  }
-                  @if (replySubmitValidationErrors.length > 0) {
-                    <ul class="error-list">
-                      @for (validationError of replySubmitValidationErrors; track validationError.field) {
-                        <li><strong>{{ validationError.field }}</strong>: {{ validationError.messages.join('; ') }}</li>
-                      }
-                    </ul>
-                  }
-                }
               </form>
             </div>
           </div>
@@ -279,8 +405,11 @@ import { environment } from '../../../environments/environment';
     `
       .error { color: #b42318; }
       .meta { color: #475467; }
+      .list-controls { display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0; }
+      .pagination { margin-top: 12px; display: flex; align-items: center; gap: 10px; }
       .comments-list { padding: 0; list-style: none; display: grid; gap: 10px; }
       .comment { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; background: #fcfcfd; }
+      .comment-header { display: flex; gap: 10px; flex-wrap: wrap; background: #e5e7eb; padding: 6px 8px; border-radius: 8px; margin: 0 0 8px; }
       .thread-node { margin-top: 10px; }
       .thread-actions { margin-top: 8px; display: flex; justify-content: flex-end; }
       .tree { list-style: none; margin: 0; padding-left: 14px; }
@@ -288,14 +417,24 @@ import { environment } from '../../../environments/environment';
       .attachment-thumb { max-width: 260px; max-height: 180px; border: 1px solid #d0d7de; border-radius: 8px; }
       .attachment-text { white-space: pre-wrap; background: #f8fafc; border: 1px solid #d9e0ec; border-radius: 8px; padding: 8px; }
       .attachment-selection-preview { margin: 0; }
+      .attachment-selection-block { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+      .attachment-remove { margin-top: 0; font-size: 12px; padding: 4px 8px; background: #b42318; color: #fff; border: 1px solid #912018; border-radius: 6px; cursor: pointer; }
+      .attachment-remove:hover { background: #912018; }
       .error-list { color: #b42318; margin: 6px 0 0; }
+      .form-error-top { border: 1px solid #fecdca; background: #fef3f2; border-radius: 8px; padding: 10px; }
+      .field-invalid { border-color: #d92d20; box-shadow: 0 0 0 1px #d92d20 inset; }
       .captcha { width: 160px; height: 60px; border: 1px solid #d9e0ec; border-radius: 6px; }
+      .captcha-block { display: flex; align-items: flex-start; gap: 12px; }
+      .captcha-answer-label { flex: 1; min-width: 240px; }
       .text-preview { border: 1px dashed #d0d5dd; border-radius: 8px; padding: 8px; background: #f8fafc; }
       .text-preview-title { color: #344054; font-size: 14px; margin-bottom: 6px; font-weight: 600; }
       .text-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
       .text-toolbar-label { color: #344054; font-size: 14px; }
       .reply-modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
       .reply-modal { width: min(760px, 100%); max-height: 92vh; overflow-y: auto; background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25); }
+      .modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+      .modal-header h3 { margin: 0; }
+      .modal-close-button { margin-left: auto; }
       @media (max-width: 900px) { .actions { flex-direction: column; } }
     `
   ]
@@ -311,6 +450,16 @@ export class RootListPageComponent implements OnDestroy {
   private signalRConnection: HubConnection | null = null;
 
   comments: ReadonlyArray<CommentNode> = [];
+  /** Поточна сторінка root-коментарів. */
+  page = 1;
+  /** Розмір сторінки згідно ТЗ: 25 кореневих повідомлень. */
+  readonly pageSize = 25;
+  /** Загальна кількість root-коментарів у системі. */
+  totalCount = 0;
+  /** Поточне поле сортування root-коментарів. */
+  sortBy: RootCommentsSortField = 'CreatedAtUtc';
+  /** Поточний напрям сортування root-коментарів. */
+  sortDirection: RootCommentsSortDirection = 'Desc';
   isLoading = false;
   isSubmitting = false;
   errorMessage = '';
@@ -354,18 +503,62 @@ export class RootListPageComponent implements OnDestroy {
     userName: ['', [Validators.required, Validators.maxLength(100)]],
     email: ['', [Validators.required, Validators.email]],
     homePage: ['', [Validators.pattern('https?://.+')]],
-    text: ['', [Validators.required, Validators.maxLength(5000)]],
+    text: ['', [Validators.required, Validators.maxLength(5000), xhtmlFragmentValidator()]],
     captchaAnswer: ['', [Validators.required]]
   });
 
   readonly replyForm = this.formBuilder.nonNullable.group({
     userName: ['', [Validators.required, Validators.maxLength(100)]],
     email: ['', [Validators.required, Validators.email]],
-    text: ['', [Validators.required, Validators.maxLength(5000)]],
+    text: ['', [Validators.required, Validators.maxLength(5000), xhtmlFragmentValidator()]],
     captchaAnswer: ['', [Validators.required]]
   });
 
+  /**
+   * Повертає локалізоване повідомлення про помилки XHTML-валидації поля тексту.
+   */
+  getTextValidationMessage(control: { errors: Record<string, unknown> | null; touched: boolean; dirty: boolean }): string {
+    const shouldShow = control.touched || control.dirty;
+    if (!shouldShow || !control.errors) {
+      return '';
+    }
+
+    if (control.errors['xhtmlFragment']) {
+      return 'Текст повинен бути валідним XHTML (теги мають бути коректно закриті).';
+    }
+
+    if (control.errors['unsupportedTag']) {
+      const tagName = String(control.errors['unsupportedTag']);
+      return `Тег <${tagName}> заборонений. Дозволено лише: <a>, <code>, <i>, <strong>.`;
+    }
+
+    if (control.errors['invalidAnchorAttributes']) {
+      return 'Для тегу <a> дозволено тільки атрибут href.';
+    }
+
+    if (control.errors['invalidAnchorHref']) {
+      return 'У <a href> потрібно вказати абсолютний URL з протоколом http або https.';
+    }
+
+    if (control.errors['disallowedAttributes']) {
+      const tagName = String(control.errors['disallowedAttributes']);
+      return `Атрибути заборонені для тегу <${tagName}>.`;
+    }
+
+    return '';
+  }
+
   constructor() {
+    this.setupServerValidationReset(this.createForm.controls.userName);
+    this.setupServerValidationReset(this.createForm.controls.email);
+    this.setupServerValidationReset(this.createForm.controls.homePage);
+    this.setupServerValidationReset(this.createForm.controls.text);
+    this.setupServerValidationReset(this.createForm.controls.captchaAnswer);
+    this.setupServerValidationReset(this.replyForm.controls.userName);
+    this.setupServerValidationReset(this.replyForm.controls.email);
+    this.setupServerValidationReset(this.replyForm.controls.text);
+    this.setupServerValidationReset(this.replyForm.controls.captchaAnswer);
+
     this.load();
     this.reloadCaptcha();
     this.initializeSignalR();
@@ -407,9 +600,10 @@ export class RootListPageComponent implements OnDestroy {
     this.errorMessage = '';
     this.loadCanRetry = false;
 
-    this.commentsApi.getRootComments().subscribe({
+    this.commentsApi.getRootComments(this.page, this.pageSize, this.sortBy, this.sortDirection).subscribe({
       next: (response) => {
         this.comments = response.items;
+        this.totalCount = response.totalCount;
         this.isLoading = false;
       },
       error: (error) => {
@@ -419,6 +613,62 @@ export class RootListPageComponent implements OnDestroy {
         this.isLoading = false;
       }
     });
+  }
+
+
+  /** Загальна кількість сторінок для кореневих коментарів. */
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.totalCount / this.pageSize));
+  }
+
+  /**
+   * Повертає true, якщо конкретне поле потрібно підсвітити червоним як помилкове.
+   */
+  shouldHighlightInvalid(control: AbstractControl): boolean {
+    return control.invalid && (control.touched || control.dirty);
+  }
+
+  /**
+   * Повертає true, якщо форма містить blocking-помилки для submit.
+   */
+  hasBlockingErrors(form: { invalid: boolean }): boolean {
+    return form.invalid;
+  }
+
+  /** Оновлює поле сортування і перезавантажує першу сторінку. */
+  onSortByChanged(event: Event): void {
+    const selected = (event.target as HTMLSelectElement).value as RootCommentsSortField;
+    this.sortBy = selected;
+    this.page = 1;
+    this.load();
+  }
+
+  /** Оновлює напрям сортування і перезавантажує першу сторінку. */
+  onSortDirectionChanged(event: Event): void {
+    const selected = (event.target as HTMLSelectElement).value as RootCommentsSortDirection;
+    this.sortDirection = selected;
+    this.page = 1;
+    this.load();
+  }
+
+  /** Переходить на попередню сторінку root-коментарів. */
+  goToPreviousPage(): void {
+    if (this.page <= 1) {
+      return;
+    }
+
+    this.page -= 1;
+    this.load();
+  }
+
+  /** Переходить на наступну сторінку root-коментарів. */
+  goToNextPage(): void {
+    if (this.page >= this.totalPages) {
+      return;
+    }
+
+    this.page += 1;
+    this.load();
   }
 
   /**
@@ -460,6 +710,14 @@ export class RootListPageComponent implements OnDestroy {
         this.attachmentImagePreviewDataUrl = preview;
       }
     );
+  }
+
+
+  /** Очищає вибране вкладення у формі створення кореневого коментаря. */
+  clearCreateAttachment(): void {
+    this.attachment = null;
+    this.attachmentImagePreviewDataUrl = '';
+    this.attachmentMessage = '';
   }
 
   /**
@@ -539,6 +797,7 @@ export class RootListPageComponent implements OnDestroy {
           this.submitMessage = uiError.summary;
           this.submitValidationErrors = uiError.validationErrors;
           this.showRetryHint = uiError.canRetry;
+          this.applyServerValidationErrors(this.createForm.controls, uiError.validationErrors);
           this.reloadCaptcha();
           this.isSubmitting = false;
         }
@@ -626,6 +885,14 @@ export class RootListPageComponent implements OnDestroy {
     );
   }
 
+
+  /** Очищає вибране вкладення у формі створення відповіді. */
+  clearReplyAttachment(): void {
+    this.replyAttachment = null;
+    this.replyAttachmentImagePreviewDataUrl = '';
+    this.replyAttachmentMessage = '';
+  }
+
   /**
    * Перезавантажує CAPTCHA для модального вікна відповіді.
    */
@@ -681,6 +948,7 @@ export class RootListPageComponent implements OnDestroy {
           this.replySubmitMessage = uiError.summary;
           this.replySubmitValidationErrors = uiError.validationErrors;
           this.replyShowRetryHint = uiError.canRetry;
+          this.applyServerValidationErrors(this.replyForm.controls, uiError.validationErrors);
           this.reloadReplyCaptcha();
           this.isReplySubmitting = false;
         }
@@ -800,6 +1068,69 @@ export class RootListPageComponent implements OnDestroy {
       setMessage(`Вкладення готове: ${file.name}`);
     };
     reader.readAsDataURL(file);
+  }
+
+  /**
+   * Позначає поля форми як помилкові на основі server-side validation ключів.
+   */
+  private applyServerValidationErrors(
+    controls: Record<string, AbstractControl>,
+    validationErrors: ReadonlyArray<UiValidationError>
+  ): void {
+    for (const validationError of validationErrors) {
+      const normalizedField = validationError.field.toLowerCase();
+      const mappedControl = this.mapServerFieldToControl(controls, normalizedField);
+      if (!mappedControl) {
+        continue;
+      }
+
+      const existingErrors = mappedControl.errors ?? {};
+      mappedControl.setErrors({ ...existingErrors, server: true });
+      mappedControl.markAsTouched();
+    }
+  }
+
+  /**
+   * Повертає FormControl для заданого server-side поля, якщо мапінг відомий.
+   */
+  private mapServerFieldToControl(
+    controls: Record<string, AbstractControl>,
+    normalizedField: string
+  ): AbstractControl | null {
+    const mapping: Record<string, string> = {
+      'request.username': 'userName',
+      username: 'userName',
+      'request.email': 'email',
+      email: 'email',
+      'request.homepage': 'homePage',
+      homepage: 'homePage',
+      'request.text': 'text',
+      text: 'text',
+      'request.captchatoken': 'captchaAnswer',
+      captchatoken: 'captchaAnswer',
+      captchaanswer: 'captchaAnswer'
+    };
+
+    const controlName = mapping[normalizedField];
+    if (!controlName) {
+      return null;
+    }
+
+    return controls[controlName] ?? null;
+  }
+
+  /**
+   * Автоматично очищає server-помилку конкретного поля при зміні його значення.
+   */
+  private setupServerValidationReset(control: AbstractControl): void {
+    control.valueChanges.subscribe(() => {
+      if (!control.errors || !control.errors['server']) {
+        return;
+      }
+
+      const { server: _server, ...restErrors } = control.errors;
+      control.setErrors(Object.keys(restErrors).length > 0 ? restErrors : null);
+    });
   }
 
   /**

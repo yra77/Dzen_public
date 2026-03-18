@@ -14,7 +14,7 @@
   - REST API `POST /api/comments`, `GET /api/comments` (пагінація + сортування),
   - REST API пошуку `GET /api/comments/search?q=...` через Elasticsearch,
   - GraphQL endpoint `POST /graphql` (query comments + mutation createComment),
-  - EF Core репозиторій (`InMemory` за замовчуванням + підтримка `SqlServer` через конфіг),
+  - EF Core репозиторій (MySQL за замовчуванням для персистентного збереження + підтримка `InMemory`/`SqlServer` через конфіг),
   - базовий HTML sanitizer,
   - Swagger в development-режимі.
 
