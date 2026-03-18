@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-18 (ітерація 92).
+Останнє оновлення: 2026-03-18 (ітерація 93).
 
 ## Підсумок перевірки відповідності ТЗ
 
@@ -125,9 +125,26 @@
 - ✅ У `Comments.Web` (thread reply modal) прибрано відображення `id` у підписі «Відповідь на», щоб у UI залишалися тільки `user`, `email`, `datetime`.
 - ✅ Оновлено Playwright smoke-helper для CAPTCHA: парсинг відповіді синхронізовано з новим SVG-форматом (алфавітно-цифровий код замість математичного виразу).
 
+
+## Оновлення в ітерації 93
+
+- ✅ У `Comments.Web` переведено формат відображення дати/часу з `short` (12-годинний, `MM/dd/yy, h:mm a`) на `dd.MM.yy HH:mm` (24-годинний) для root/tree/thread.
+- ✅ У модальних формах (root create, root reply, thread reply) кнопку **«Закрити»** перенесено у верхній правий кут (header модалки), а поле вводу CAPTCHA вирівняно лівіше — в один ряд із зображенням CAPTCHA.
+- ✅ Кнопку **«Видалити зображення»** зроблено меншою та червоною для кращого візуального розділення дії видалення.
+- ✅ Розділено блоки preview-вкладення і CAPTCHA у модалках, щоб кнопка **«Видалити зображення»** більше не «прилипала» до блоку CAPTCHA й мала окреме розташування.
+- ✅ Проведено звірку стеку з вашим списком:
+  - **Підтверджено реалізоване:** ASP.NET Core 8, EF Core + SQL Server, GraphQL (HotChocolate), CQRS + MediatR, RabbitMQ (через `RabbitMQ.Client`), Elasticsearch (HTTP-інтеграція), SignalR, Angular standalone, RxJS, Docker + Compose.
+  - ⚠️ **Не підтверджено як реалізоване саме у заявленому формулюванні:** `MassTransit`, `NEST`, `Apollo Client (GraphQL)`, `TailwindCSS`, `Redis` (опціонально).
+
 ## Що ще треба зробити у проєкті
 
 - 🔜 Додати e2e-перевірку нового CAPTCHA формату (латинські літери + цифри): позитивний submit і негативний сценарій із невалідною відповіддю.
+- 🔜 Якщо потрібно 100% відповідність заявленому стеку, додати окремий backlog-епік на міграцію:
+  - RabbitMQ `RabbitMQ.Client` → `MassTransit`,
+  - Elasticsearch HTTP-клієнт → `NEST`,
+  - Angular HTTP/REST-клієнт → `Apollo Client` для GraphQL-операцій,
+  - інтеграція `TailwindCSS` у build pipeline,
+  - (опціонально) `Redis` для кешу hot-path read/query.
 - 🔜 Розглянути server-side rate limiting / throttling на endpoint `GET /api/captcha/image`, щоб зменшити ризик масового автоматизованого brute-force CAPTCHA.
 - 🔜 Додати e2e-сценарій UX-скасування вибраного image-вкладення (кнопка **«Видалити зображення»**) для root і reply форм, включно з перевіркою очищення payload перед submit.
 - 🔜 Перевірити end-to-end CAPTCHA сценарії в Angular (особливо після релоаду CAPTCHA та повторного submit), щоб виключити `Captcha validation failed` у разі використання застарілого challenge token.
