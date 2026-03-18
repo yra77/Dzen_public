@@ -38,7 +38,9 @@ builder.Services.AddDbContext<CommentsDbContext>(options =>
         var connectionString = builder.Configuration.GetConnectionString("CommentsDb")
                                ?? throw new InvalidOperationException("Connection string 'CommentsDb' is required for MySql provider.");
 
-        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+        // AutoDetect робить мережеве підключення під час старту; задаємо версію явно,
+        // щоб застосунок коректно стартував навіть коли БД тимчасово недоступна.
+        options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 36)));
         return;
     }
 
@@ -138,7 +140,17 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<CommentsDbContext>();
-    await dbContext.Database.EnsureCreatedAsync();
+
+    // Для реляційних провайдерів застосовуємо migration-процес, для InMemory лишаємось на EnsureCreated.
+    if (provider.Equals("MySql", StringComparison.OrdinalIgnoreCase) ||
+        provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+    {
+        await dbContext.Database.MigrateAsync();
+    }
+    else
+    {
+        await dbContext.Database.EnsureCreatedAsync();
+    }
 }
 
 app.UseMiddleware<ValidationExceptionHandlingMiddleware>();
