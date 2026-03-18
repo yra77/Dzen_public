@@ -6,7 +6,9 @@ import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 import {
   CommentNode,
   CommentsApiService,
-  CreateCommentAttachmentRequest
+  CreateCommentAttachmentRequest,
+  RootCommentsSortDirection,
+  RootCommentsSortField
 } from '../../core/comments-api.service';
 import { ApiErrorPresenterService, UiValidationError } from '../../core/api-error-presenter.service';
 import { environment } from '../../../environments/environment';
@@ -21,6 +23,25 @@ import { environment } from '../../../environments/environment';
       @if (signalRStatusMessage) {
         <p class="meta">{{ signalRStatusMessage }}</p>
       }
+      <div class="list-controls">
+        <label>
+          Сортувати за
+          <select [value]="sortBy" (change)="onSortByChanged($event)" data-testid="root-sort-by">
+            <option value="CreatedAtUtc">Дата</option>
+            <option value="UserName">User Name</option>
+            <option value="Email">E-mail</option>
+          </select>
+        </label>
+
+        <label>
+          Напрям
+          <select [value]="sortDirection" (change)="onSortDirectionChanged($event)" data-testid="root-sort-direction">
+            <option value="Desc">Спадання</option>
+            <option value="Asc">Зростання</option>
+          </select>
+        </label>
+      </div>
+
 
       @if (isCreateModalOpen) {
         <div class="reply-modal-backdrop" (click)="closeCreateModal()">
@@ -78,6 +99,7 @@ import { environment } from '../../../environments/environment';
                   <img [src]="attachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
                   <figcaption class="meta">Preview вибраного зображення</figcaption>
                 </figure>
+                <button type="button" class="attachment-remove" (click)="clearCreateAttachment()">Видалити зображення</button>
               }
 
               @if (captchaImageDataUrl) {
@@ -89,7 +111,7 @@ import { environment } from '../../../environments/environment';
               }
 
               <label>
-                CAPTCHA (сума чисел)
+                CAPTCHA (цифри і букви латинського алфавіту)
                 <input type="text" formControlName="captchaAnswer" data-testid="root-captcha-answer-input" />
               </label>
 
@@ -134,9 +156,15 @@ import { environment } from '../../../environments/environment';
           }
         </ul>
 
+        <div class="pagination">
+          <button type="button" (click)="goToPreviousPage()" [disabled]="page <= 1 || isLoading">← Попередня</button>
+          <span>Сторінка {{ page }} з {{ totalPages }}</span>
+          <button type="button" (click)="goToNextPage()" [disabled]="page >= totalPages || isLoading">Наступна →</button>
+        </div>
+
         <ng-template #commentTreeNode let-node>
           <article class="comment thread-node">
-            <p class="meta"><strong>#{{ node.id }} {{ node.userName }}</strong> · {{ node.createdAtUtc | date: 'short' }}</p>
+            <p class="comment-header"><strong>{{ node.userName }}</strong><span>{{ node.email }}</span><span>{{ node.createdAtUtc | date: 'short' }}</span></p>
             <p>{{ node.text }}</p>
             @if (node.attachment) {
               <div class="attachment-inline">
@@ -235,6 +263,7 @@ import { environment } from '../../../environments/environment';
                     <img [src]="replyAttachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
                     <figcaption class="meta">Preview вибраного зображення</figcaption>
                   </figure>
+                  <button type="button" class="attachment-remove" (click)="clearReplyAttachment()">Видалити зображення</button>
                 }
 
                 @if (replyCaptchaImageDataUrl) {
@@ -246,7 +275,7 @@ import { environment } from '../../../environments/environment';
                 }
 
                 <label>
-                  CAPTCHA (сума чисел)
+                  CAPTCHA (цифри і букви латинського алфавіту)
                   <input type="text" formControlName="captchaAnswer" />
                 </label>
 
@@ -279,8 +308,11 @@ import { environment } from '../../../environments/environment';
     `
       .error { color: #b42318; }
       .meta { color: #475467; }
+      .list-controls { display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0; }
+      .pagination { margin-top: 12px; display: flex; align-items: center; gap: 10px; }
       .comments-list { padding: 0; list-style: none; display: grid; gap: 10px; }
       .comment { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; background: #fcfcfd; }
+      .comment-header { display: flex; gap: 10px; flex-wrap: wrap; background: #e5e7eb; padding: 6px 8px; border-radius: 8px; margin: 0 0 8px; }
       .thread-node { margin-top: 10px; }
       .thread-actions { margin-top: 8px; display: flex; justify-content: flex-end; }
       .tree { list-style: none; margin: 0; padding-left: 14px; }
@@ -288,6 +320,7 @@ import { environment } from '../../../environments/environment';
       .attachment-thumb { max-width: 260px; max-height: 180px; border: 1px solid #d0d7de; border-radius: 8px; }
       .attachment-text { white-space: pre-wrap; background: #f8fafc; border: 1px solid #d9e0ec; border-radius: 8px; padding: 8px; }
       .attachment-selection-preview { margin: 0; }
+      .attachment-remove { margin-top: 8px; }
       .error-list { color: #b42318; margin: 6px 0 0; }
       .captcha { width: 160px; height: 60px; border: 1px solid #d9e0ec; border-radius: 6px; }
       .text-preview { border: 1px dashed #d0d5dd; border-radius: 8px; padding: 8px; background: #f8fafc; }
@@ -311,6 +344,16 @@ export class RootListPageComponent implements OnDestroy {
   private signalRConnection: HubConnection | null = null;
 
   comments: ReadonlyArray<CommentNode> = [];
+  /** Поточна сторінка root-коментарів. */
+  page = 1;
+  /** Розмір сторінки згідно ТЗ: 25 кореневих повідомлень. */
+  readonly pageSize = 25;
+  /** Загальна кількість root-коментарів у системі. */
+  totalCount = 0;
+  /** Поточне поле сортування root-коментарів. */
+  sortBy: RootCommentsSortField = 'CreatedAtUtc';
+  /** Поточний напрям сортування root-коментарів. */
+  sortDirection: RootCommentsSortDirection = 'Desc';
   isLoading = false;
   isSubmitting = false;
   errorMessage = '';
@@ -407,9 +450,10 @@ export class RootListPageComponent implements OnDestroy {
     this.errorMessage = '';
     this.loadCanRetry = false;
 
-    this.commentsApi.getRootComments().subscribe({
+    this.commentsApi.getRootComments(this.page, this.pageSize, this.sortBy, this.sortDirection).subscribe({
       next: (response) => {
         this.comments = response.items;
+        this.totalCount = response.totalCount;
         this.isLoading = false;
       },
       error: (error) => {
@@ -419,6 +463,48 @@ export class RootListPageComponent implements OnDestroy {
         this.isLoading = false;
       }
     });
+  }
+
+
+  /** Загальна кількість сторінок для кореневих коментарів. */
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.totalCount / this.pageSize));
+  }
+
+  /** Оновлює поле сортування і перезавантажує першу сторінку. */
+  onSortByChanged(event: Event): void {
+    const selected = (event.target as HTMLSelectElement).value as RootCommentsSortField;
+    this.sortBy = selected;
+    this.page = 1;
+    this.load();
+  }
+
+  /** Оновлює напрям сортування і перезавантажує першу сторінку. */
+  onSortDirectionChanged(event: Event): void {
+    const selected = (event.target as HTMLSelectElement).value as RootCommentsSortDirection;
+    this.sortDirection = selected;
+    this.page = 1;
+    this.load();
+  }
+
+  /** Переходить на попередню сторінку root-коментарів. */
+  goToPreviousPage(): void {
+    if (this.page <= 1) {
+      return;
+    }
+
+    this.page -= 1;
+    this.load();
+  }
+
+  /** Переходить на наступну сторінку root-коментарів. */
+  goToNextPage(): void {
+    if (this.page >= this.totalPages) {
+      return;
+    }
+
+    this.page += 1;
+    this.load();
   }
 
   /**
@@ -460,6 +546,14 @@ export class RootListPageComponent implements OnDestroy {
         this.attachmentImagePreviewDataUrl = preview;
       }
     );
+  }
+
+
+  /** Очищає вибране вкладення у формі створення кореневого коментаря. */
+  clearCreateAttachment(): void {
+    this.attachment = null;
+    this.attachmentImagePreviewDataUrl = '';
+    this.attachmentMessage = '';
   }
 
   /**
@@ -624,6 +718,14 @@ export class RootListPageComponent implements OnDestroy {
         this.replyAttachmentImagePreviewDataUrl = preview;
       }
     );
+  }
+
+
+  /** Очищає вибране вкладення у формі створення відповіді. */
+  clearReplyAttachment(): void {
+    this.replyAttachment = null;
+    this.replyAttachmentImagePreviewDataUrl = '';
+    this.replyAttachmentMessage = '';
   }
 
   /**

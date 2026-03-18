@@ -39,16 +39,31 @@ public sealed class CaptchaController : ControllerBase
     [ProducesResponseType(typeof(CaptchaImageResponse), StatusCodes.Status200OK)]
     public IActionResult GetImage()
     {
-        var random = Random.Shared;
-        var left = random.Next(1, 10);
-        var right = random.Next(1, 10);
-        var answer = (left + right).ToString();
-
-        var challengeId = _challengeStore.CreateChallenge(answer);
-        var svg = BuildSvg($"{left} + {right} = ?");
+        var challengeText = GenerateCaptchaText(6);
+        var challengeId = _challengeStore.CreateChallenge(challengeText);
+        var svg = BuildSvg(challengeText);
         var imageBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(svg));
 
         return Ok(new CaptchaImageResponse(challengeId, imageBase64, "image/svg+xml", 300));
+    }
+
+
+    /// <summary>
+    /// Генерує captcha-рядок із латинських літер та цифр.
+    /// </summary>
+    /// <param name="length">Довжина рядка captcha.</param>
+    /// <returns>Випадковий captcha-рядок.</returns>
+    private static string GenerateCaptchaText(int length)
+    {
+        const string alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        var chars = new char[length];
+
+        for (var index = 0; index < length; index++)
+        {
+            chars[index] = alphabet[Random.Shared.Next(alphabet.Length)];
+        }
+
+        return new string(chars);
     }
 
     /// <summary>
@@ -69,7 +84,7 @@ public sealed class CaptchaController : ControllerBase
   <rect width="160" height="60" fill="#f3f4f6"/>
   <line x1="0" y1="{noise1}" x2="160" y2="{noise2}" stroke="#9ca3af" stroke-width="1"/>
   <line x1="0" y1="{noise3}" x2="160" y2="{noise4}" stroke="#d1d5db" stroke-width="1"/>
-  <text x="80" y="38" text-anchor="middle" font-size="28" font-family="Arial, sans-serif" fill="#111827">{escaped}</text>
+    <text x="80" y="38" text-anchor="middle" font-size="28" font-family="Arial, sans-serif" fill="#111827" letter-spacing="2">{escaped}</text>
 </svg>
 """;
     }
