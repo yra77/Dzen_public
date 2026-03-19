@@ -1,4 +1,4 @@
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Realtime;
 
 /// <summary>
 /// Налаштування realtime-каналу SignalR для push-оновлень коментарів.

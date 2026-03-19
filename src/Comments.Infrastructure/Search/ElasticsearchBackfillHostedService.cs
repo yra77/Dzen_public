@@ -1,7 +1,7 @@
 using Comments.Application.Abstractions;
 using Microsoft.Extensions.Hosting;
 
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Search;
 
 public sealed class ElasticsearchBackfillHostedService : IHostedService
 {

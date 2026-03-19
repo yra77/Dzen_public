@@ -1,4 +1,4 @@
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Search;
 
 /// <summary>
 /// Налаштування інтеграції з Elasticsearch для пошуку коментарів.

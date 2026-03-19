@@ -5,6 +5,7 @@ using Comments.Api.GraphQL;
 using Comments.Api.Realtime;
 using Comments.Infrastructure.Text;
 using Comments.Infrastructure.Search;
+using Comments.Infrastructure.Realtime;
 using Comments.Infrastructure.Captcha;
 using Comments.Infrastructure.Storage;
 using Comments.Infrastructure.Http;
