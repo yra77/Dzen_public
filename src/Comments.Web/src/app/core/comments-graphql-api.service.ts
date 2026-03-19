@@ -75,24 +75,99 @@ export class CommentsGraphqlApiService {
           pageSize
           totalCount
           items {
-            id
-            parentId
-            userName
-            email
-            homePage
-            text
-            createdAtUtc
-            attachment {
-              fileName
-              contentType
-              storagePath
-              sizeBytes
-            }
-            replies {
-              id
-            }
+            ...RootCommentLevel1
           }
         }
+      }
+
+      fragment RootAttachment on AttachmentDto {
+        fileName
+        contentType
+        storagePath
+        sizeBytes
+        __typename
+      }
+
+      fragment RootCommentLevel5 on CommentDto {
+        id
+        parentId
+        userName
+        email
+        homePage
+        text
+        createdAtUtc
+        attachment {
+          ...RootAttachment
+        }
+        __typename
+      }
+
+      fragment RootCommentLevel4 on CommentDto {
+        id
+        parentId
+        userName
+        email
+        homePage
+        text
+        createdAtUtc
+        attachment {
+          ...RootAttachment
+        }
+        replies {
+          ...RootCommentLevel5
+        }
+        __typename
+      }
+
+      fragment RootCommentLevel3 on CommentDto {
+        id
+        parentId
+        userName
+        email
+        homePage
+        text
+        createdAtUtc
+        attachment {
+          ...RootAttachment
+        }
+        replies {
+          ...RootCommentLevel4
+        }
+        __typename
+      }
+
+      fragment RootCommentLevel2 on CommentDto {
+        id
+        parentId
+        userName
+        email
+        homePage
+        text
+        createdAtUtc
+        attachment {
+          ...RootAttachment
+        }
+        replies {
+          ...RootCommentLevel3
+        }
+        __typename
+      }
+
+      fragment RootCommentLevel1 on CommentDto {
+        id
+        parentId
+        userName
+        email
+        homePage
+        text
+        createdAtUtc
+        attachment {
+          ...RootAttachment
+        }
+        replies {
+          ...RootCommentLevel2
+        }
+        __typename
       }
       `,
       { page, pageSize, sortBy: graphqlSortBy, sortDirection: graphqlSortDirection }
@@ -106,10 +181,8 @@ export class CommentsGraphqlApiService {
 
           return {
             ...payload,
-            // Для списку root-коментарів бекенд повертає `replies` як id-only заглушки.
-            // Вирівнюємо їх до порожнього масиву, щоб UI не рендерив пусті вузли дерева.
             items: payload.items
-              .map(comment => this.normalizeCommentNode(comment, { includeReplies: false }))
+              .map(comment => this.normalizeCommentNode(comment, { includeReplies: true }))
               .filter((comment): comment is CommentNode => comment !== null)
           };
         })
