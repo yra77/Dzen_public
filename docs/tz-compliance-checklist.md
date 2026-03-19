@@ -142,3 +142,15 @@
 1. Завершити повну деактивацію REST transport-шару у frontend: видалити або архівувати `CommentsApiService` після контрольної перевірки, що жоден runtime-сценарій його не використовує.
 2. Додати contract/integration перевірки GraphQL для сценаріїв `comments`, `commentThread`, `createComment`, `captchaImage`, `attachmentTextPreview`, включно з negative cases для enum/scalar валідації.
 3. Продовжити декомпозицію великих Angular-компонентів (`RootListPageComponent`, `ThreadPageComponent`) на дрібні standalone-блоки для зниження складності шаблонів і покращення підтримуваності.
+
+## 11) Зміни, внесені в поточній ітерації (2026-03-19, fix undefined `replies.length` у root-list)
+
+1. У `RootListPageComponent` додано безпечну обробку дерева відповідей у шаблоні: замість прямого доступу `node.replies.length` використано fallback `(node.replies ?? []).length`, а ітерацію `@for` переведено на `(node.replies ?? [])`; це прибирає runtime-помилку `Cannot read properties of undefined (reading 'length')` при неповних payload-вузлах.
+2. У `CommentsGraphqlApiService` додано рекурсивну нормалізацію comment tree (`normalizeCommentNode`), яка гарантує масив `replies` для кожного вузла (навіть якщо backend/GraphQL повернув `null` або неініціалізоване значення).
+3. У GraphQL data contracts frontend-клієнта посилено null-safety: для `comments/commentThread/createComment` додано явну перевірку порожнього payload з керованим `Error`, щоб уникати «тихих» збоїв у UI.
+
+### Що ще треба зробити далі (оновлено після цієї ітерації)
+
+1. Додати frontend unit/integration тести на рендер comment tree для кейсів `replies = undefined/null`, щоб зафіксувати regression-protection для Angular-шаблонів.
+2. Уніфікувати GraphQL selection sets для дерева коментарів (root/thread/create) і визначити контракт: `replies` завжди повертається як `[]`, навіть для leaf-вузлів.
+3. Продовжити декомпозицію `RootListPageComponent` (виділити tree-node у окремий standalone-компонент), щоб зменшити ризик template-runtime помилок у великих inline templates.

@@ -209,9 +209,9 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
             </div>
           </article>
 
-          @if (node.replies.length > 0) {
+          @if ((node.replies ?? []).length > 0) {
             <ul class="tree">
-              @for (childReply of node.replies; track childReply.id) {
+              @for (childReply of (node.replies ?? []); track childReply.id) {
                 <li>
                   <ng-container *ngTemplateOutlet="commentTreeNode; context: { $implicit: childReply }"></ng-container>
                 </li>
