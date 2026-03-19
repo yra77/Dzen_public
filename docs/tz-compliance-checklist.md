@@ -154,3 +154,15 @@
 1. Додати frontend unit/integration тести на рендер comment tree для кейсів `replies = undefined/null`, щоб зафіксувати regression-protection для Angular-шаблонів.
 2. Уніфікувати GraphQL selection sets для дерева коментарів (root/thread/create) і визначити контракт: `replies` завжди повертається як `[]`, навіть для leaf-вузлів.
 3. Продовжити декомпозицію `RootListPageComponent` (виділити tree-node у окремий standalone-компонент), щоб зменшити ризик template-runtime помилок у великих inline templates.
+
+## 12) Зміни, внесені в поточній ітерації (2026-03-19, fix thread-вузлів без контенту)
+
+1. У `CommentsGraphqlApiService.getThread` перероблено GraphQL selection set для `commentThread`: замість запиту лише `id` у вкладених `replies` додано фрагменти з полями `userName/email/text/createdAtUtc/attachment` до фіксованої глибини 5 рівнів. Це прибирає кейс, коли в thread-дереві рендерився лише «порожній графічний блок» без даних.
+2. У `ThreadPageComponent` прибрано зайві nullish-coalescing вирази `(thread.replies ?? [])` та `(reply.replies ?? [])` у шаблоні, бо `normalizeCommentNode` вже гарантує масив `replies`; це прибирає попередження Angular compiler `NG8102`.
+3. Додано пояснювальний inline-коментар у `getThread` щодо обмеження GraphQL на рекурсивні selection sets і обраної стратегії fixed-depth.
+
+### Що ще треба зробити далі (оновлено після цієї ітерації)
+
+1. Погодити на бекенді контракт для глибоких гілок (`replies`) без fixed-depth обмеження: або спеціальний flatten endpoint, або пагінація/expand для дочірніх вузлів.
+2. Додати frontend regression-тест для thread-сторінки з багаторівневими відповідями (мінімум 3 рівні), щоб гарантувати відображення контенту у всіх вузлах.
+3. Вирівняти `comments` (root-list) selection set із thread-контрактом або явно позначити, що в root-list завантажується скорочений payload для продуктивності.
