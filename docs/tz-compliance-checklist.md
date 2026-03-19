@@ -178,3 +178,15 @@
 1. Додати e2e/regression сценарій: перехід зі списку root-коментарів у thread не повинен втрачати `userName/email/text/createdAtUtc` у вузлах після попередніх GraphQL-запитів.
 2. Узгодити єдиний підхід до Apollo cache для thread-flow: або залишити `no-cache` як тимчасовий hotfix, або перейти на уніфіковані повні selection sets + type policies.
 3. Після стабілізації thread-flow винести GraphQL selection set дерева у спільний fragment-builder, щоб уникати розсинхрону між root-list/thread/create запитами.
+
+## 14) Зміни, внесені в поточній ітерації (2026-03-19, hotfix id-only reply вузлів у thread)
+
+1. У `CommentsGraphqlApiService.getThread` змінено найглибший thread-фрагмент (`ThreadCommentLevel5`): прибрано вкладений selection set `replies { id }`, який створював id-only дочірні вузли без `userName/email/text/createdAtUtc` у payload.
+2. Додано пояснювальні inline-коментарі біля `ThreadCommentLevel5`, чому на останньому рівні `replies` не запитуються (щоб не рендерити порожні картки); порожній список дочірніх вузлів тепер формується на frontend через `normalizeCommentNode`.
+3. У `ThreadPageComponent` прибрано зайві вирази nullish-coalescing (`?? []`) для `thread.replies/reply.replies`, бо після нормалізації ці поля типізовано як масиви; це усуває попередження компілятора Angular `NG8102`.
+
+### Що ще треба зробити далі (оновлено після цієї ітерації)
+
+1. Додати контрактну backend-перевірку для `commentThread`, щоб leaf-вузли повертали `replies: []` консистентно (без залежності від клієнтської нормалізації).
+2. Винести thread GraphQL fragments у спільний конструктор/утиліту та перевикористати між запитами, щоб зменшити ризик повторного додавання id-only selection set.
+3. Додати e2e-сценарій «deep thread (6+ рівнів)»: UI не повинен рендерити порожні reply-картки без контенту.
