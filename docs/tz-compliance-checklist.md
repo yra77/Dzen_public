@@ -214,3 +214,16 @@
 1. Перевірити backend-частину матриці відповідності з фокусом на невиконані пункти: міграція RabbitMQ шару на MassTransit і перехід Elasticsearch інтеграції на офіційний .NET client (NEST/Elastic).
 2. Додати контрактні GraphQL integration-перевірки для `comments`, `commentThread`, `createComment`, `captchaImage`, `attachmentTextPreview` (включно з негативними кейсами enum/scalar/path traversal).
 3. Винести великі GraphQL query/fragment-рядки у окремі `.graphql`-документи або fragment-builder утиліти для зниження ризику ручних помилок у template string.
+
+## 17) Зміни, внесені в поточній ітерації (2026-03-19, винесення GraphQL-документів у спільний builder)
+
+1. Додано новий frontend-модуль `comments-graphql-documents.ts` з документами GraphQL (`GET_ROOT_COMMENTS_QUERY`, `GET_COMMENT_THREAD_QUERY`, `CREATE_COMMENT_MUTATION`, `PREVIEW_COMMENT_QUERY`, `GET_CAPTCHA_IMAGE_QUERY`, `GET_ATTACHMENT_TEXT_PREVIEW_QUERY`).
+2. Реалізовано helper-утиліти `buildCommentFragment` і `buildCommentTreeFragments`, що генерують уніфіковані fragment-и дерева коментарів фіксованої глибини; це зменшує ризик ручного розсинхрону selection set між root-list і thread запитами.
+3. `CommentsGraphqlApiService` спрощено: великі inline template-string запити прибрані, сервіс тепер використовує централізовані GraphQL-константи з нового модуля.
+4. Для нових helper-методів і публічних констант додано пояснювальні коментарі згідно правила документування.
+
+### Що ще треба зробити далі (оновлено після цієї ітерації)
+
+1. Додати frontend integration/e2e regression-тести для перевірки, що згенеровані fragments коректно працюють для root-list/thread/create після майбутніх змін глибини дерева.
+2. За можливості перейти з inline string-констант на `.graphql` документи + codegen типів, щоб прибрати ризики runtime-помилок у назвах полів/типів.
+3. Закрити backend-пункти матриці відповідності ТЗ з найвищим пріоритетом: MassTransit для RabbitMQ і офіційний Elastic .NET client замість поточного `HttpClient`-адаптера.
