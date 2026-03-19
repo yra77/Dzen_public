@@ -29,10 +29,10 @@
 
 ## 2) Зміни, внесені в поточній ітерації (2026-03-19)
 
-1. Перенесено persistence-адаптери (`CommentsDbContext`, `EfCommentRepository`, `EfProcessedMessageRepository`, `InMemoryCommentRepository`) з `Comments.Api/Infrastructure` у `Comments.Infrastructure/Persistence`.
-2. Оновлено DI та посилання в `Program.cs` і GraphQL/EF migration файлах на новий namespace `Comments.Infrastructure.Persistence`.
-3. Вирівняно таргет `Comments.Infrastructure` на `net8.0` і додано `Microsoft.EntityFrameworkCore` dependency для нового persistence-шару.
-4. Актуалізовано чекліст — лишено лише дійсний стан і релевантний backlog.
+1. Виправлено помилку збірки в realtime-шарі: `CommentsHub` перенесено до `Comments.Infrastructure/Realtime`, щоб прибрати заборонену залежність `Comments.Infrastructure -> Comments.Api`.
+2. Оновлено `Program.cs` у `Comments.Api` — використовується `CommentsHub` з `Comments.Infrastructure.Realtime`.
+3. Прибрано неактуальний `Comments.Api/Realtime/CommentsHub.cs`, щоб уникнути дублювання Hub-типу.
+4. Секцію змін у цьому чеклісті синхронізовано з поточним станом коду (без застарілих проміжних записів).
 
 ## 3) Що ще треба зробити далі (актуальний план)
 
