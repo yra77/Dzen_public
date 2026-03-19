@@ -3,7 +3,7 @@ using Comments.Application.DTOs;
 using Microsoft.AspNetCore.SignalR;
 using Comments.Application.Abstractions;
 
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Realtime;
 
 /// <summary>
 /// Канал публікації створених коментарів у SignalR Hub для realtime-оновлень клієнтів.

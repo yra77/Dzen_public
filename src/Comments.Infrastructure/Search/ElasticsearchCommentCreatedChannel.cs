@@ -3,7 +3,7 @@ using System.Text.Json;
 using Comments.Application.DTOs;
 using Comments.Application.Abstractions;
 
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Search;
 
 /// <summary>
 /// Канал публікації створених коментарів у Elasticsearch-індекс.

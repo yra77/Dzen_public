@@ -16,9 +16,8 @@
 | CQRS + MediatR | ✅ Виконано | Команди/запити розділені, `ValidationBehavior` підключено. | Додати інтеграційні перевірки ключових CQRS-ланцюжків. |
 | RabbitMQ (MassTransit) | ⚠️ Частково | Є інтеграція через `RabbitMQ.Client`, без MassTransit. | Мігрувати publisher/consumer на MassTransit (retry, DLQ, outbox/idempotency). |
 | Elasticsearch (офіційний .NET client) | ⚠️ Частково | Поточний адаптер працює через `HttpClient`. | Перейти на офіційний Elastic .NET client + typed mappings/templates. |
-| SignalR | ✅ Виконано | `CommentsHub` + `/hubs/comments` активні. | Додати перевірки reconnect/backoff у e2e-сценаріях. |
-| Clean Architecture + SOLID | ⚠️ Частково | Винесені messaging/search адаптери та додатково перенесені captcha + processed-message cleanup сервіси в `Comments.Infrastructure`. | Завершити перенос решти адаптерів з `Comments.Api/Infrastructure` та залишити в API лише composition root. |
-| Clean Architecture + SOLID | ⚠️ Частково | Додатково винесені captcha, processed-message cleanup, attachment storage та validation middleware в `Comments.Infrastructure`. | Завершити перенос решти адаптерів з `Comments.Api/Infrastructure` та залишити в API лише composition root. |
+| SignalR | ✅ Виконано | `CommentsHub` + `/hubs/comments` активні, канал публікації винесений у `Comments.Infrastructure`. | Додати перевірки reconnect/backoff у e2e-сценаріях. |
+| Clean Architecture + SOLID | ⚠️ Частково | У `Comments.Infrastructure` винесені captcha, maintenance cleanup, attachment storage, validation middleware, Elasticsearch/SignalR адаптери. | Завершити перенос решти persistence/repository-адаптерів з `Comments.Api/Infrastructure` і залишити в API лише composition root. |
 
 ### Frontend
 
@@ -30,20 +29,16 @@
 
 ## 2) Зміни, внесені в поточній ітерації (2026-03-19)
 
-1. Перенесено captcha-інфраструктуру (`CaptchaOptions`, `BasicCaptchaChallengeStore`, `CaptchaChallengeService`, `BasicCaptchaValidator`, `RecaptchaCaptchaValidator`) з `Comments.Api/Infrastructure` у `Comments.Infrastructure/Captcha`.
-2. Перенесено background cleanup для ідемпотентності (`ProcessedMessageCleanupOptions`, `ProcessedMessageCleanupHostedService`) у `Comments.Infrastructure/Maintenance`.
-3. Оновлено DI/using у `Program.cs`, `CaptchaController` та `CommentQueries` на нові `Comments.Infrastructure.*` namespace.
-1. Перенесено `LocalAttachmentStorageOptions` і `LocalAttachmentStorage` з `Comments.Api/Infrastructure` у `Comments.Infrastructure/Storage`.
-2. Перенесено `ValidationExceptionHandlingMiddleware` з `Comments.Api/Infrastructure` у `Comments.Infrastructure/Http`.
-3. Оновлено DI/using у `Program.cs` та `CommentQueries` на нові `Comments.Infrastructure.*` namespace.
-4. Оновлено `Comments.Infrastructure.csproj`: додано `FrameworkReference` на `Microsoft.AspNetCore.App` і пакет `SixLabors.ImageSharp` для нових інфраструктурних модулів.
+1. Завершено перенесення Elasticsearch-адаптерів (`ElasticsearchOptions`, `ElasticsearchCommentCreatedChannel`, `ElasticsearchCommentSearchService`, `ElasticsearchBackfillHostedService`) з `Comments.Api/Infrastructure` у `Comments.Infrastructure/Search`.
+2. Перенесено SignalR-інфраструктуру (`SignalROptions`, `SignalRCommentCreatedChannel`) з `Comments.Api/Infrastructure` у `Comments.Infrastructure/Realtime`.
+3. Оновлено `Program.cs` на нові `Comments.Infrastructure.*` namespace для Search/Realtime модулів.
+4. Актуалізовано чекліст: прибрано дублікати проміжних записів і зафіксовано лише поточний стан та дійсний backlog.
 
 ## 3) Що ще треба зробити далі (актуальний план)
 
 1. **P0 — Messaging:** міграція RabbitMQ інтеграції на MassTransit (producer/consumer, retry, DLQ, idempotency/outbox).
 2. **P1 — Search:** перехід з `HttpClient`-інтеграції Elasticsearch на офіційний Elastic .NET client.
-3. **P1 — Architecture:** продовжити перенос решти адаптерів з `Comments.Api/Infrastructure` у `Comments.Infrastructure` (EF-репозиторії, storage, middleware).
-3. **P1 — Architecture:** продовжити перенос решти адаптерів з `Comments.Api/Infrastructure` у `Comments.Infrastructure` (EF-репозиторії, `CommentsDbContext`, realtime/search канали, hosted services індексації).
+3. **P1 — Architecture:** перенести решту persistence-адаптерів з `Comments.Api/Infrastructure` у `Comments.Infrastructure` (`CommentsDbContext`, `EfCommentRepository`, `EfProcessedMessageRepository`, in-memory репозиторій для dev/test).
 4. **P1 — GraphQL quality:** додати контрактні тести для `comments`, `commentThread`, `createComment`, `captchaImage`, `attachmentTextPreview` + негативні кейси (enum/scalar/path traversal).
 5. **P2 — Frontend maintainability:** декомпозувати великі Angular-компоненти (`RootListPageComponent`, `ThreadPageComponent`) у дрібні standalone-блоки.
 
