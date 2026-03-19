@@ -7,6 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="../Comments.Application/Comments.Application.csproj" />
     <ProjectReference Include="../Comments.Domain/Comments.Domain.csproj" />
+    <ProjectReference Include="../Comments.Infrastructure/Comments.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="HotChocolate.AspNetCore" Version="13.9.15" />

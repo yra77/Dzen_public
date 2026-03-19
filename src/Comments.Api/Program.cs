@@ -3,6 +3,7 @@ using Comments.Api.Infrastructure;
 using Comments.Application.Abstractions;
 using Comments.Api.GraphQL;
 using Comments.Api.Realtime;
+using Comments.Infrastructure.Text;
 using Comments.Application.Services;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;

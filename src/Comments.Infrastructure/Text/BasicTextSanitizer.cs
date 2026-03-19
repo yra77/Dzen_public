@@ -3,10 +3,17 @@ using System.Xml;
 using System.Xml.Linq;
 using Comments.Application.Abstractions;
 
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Text;
 
+/// <summary>
+/// Базова реалізація санітизатора XHTML для тексту коментарів.
+/// Дозволяє лише обмежений whitelist тегів та атрибутів.
+/// </summary>
 public sealed class BasicTextSanitizer : ITextSanitizer
 {
+    /// <summary>
+    /// Дозволений набір HTML/XHTML тегів у тілі коментаря.
+    /// </summary>
     private static readonly HashSet<string> AllowedTags = new(StringComparer.OrdinalIgnoreCase)
     {
         "a",
@@ -15,6 +22,11 @@ public sealed class BasicTextSanitizer : ITextSanitizer
         "strong"
     };
 
+    /// <summary>
+    /// Перевіряє та санітизує текст коментаря відповідно до whitelist-правил.
+    /// </summary>
+    /// <param name="source">Вхідний текст користувача.</param>
+    /// <returns>Санітизований XHTML-фрагмент без недозволених тегів/атрибутів.</returns>
     public string Sanitize(string source)
     {
         if (string.IsNullOrWhiteSpace(source))
@@ -49,6 +61,10 @@ public sealed class BasicTextSanitizer : ITextSanitizer
         return builder.ToString();
     }
 
+    /// <summary>
+    /// Валідовує, що всі елементи входять у whitelist дозволених тегів.
+    /// </summary>
+    /// <param name="root">Кореневий вузол документа.</param>
     private static void ValidateElements(XElement root)
     {
         foreach (var element in root.Descendants())
@@ -64,6 +80,10 @@ public sealed class BasicTextSanitizer : ITextSanitizer
         }
     }
 
+    /// <summary>
+    /// Валідовує атрибути елемента згідно правил безпеки.
+    /// </summary>
+    /// <param name="element">Елемент XHTML для перевірки.</param>
     private static void ValidateAttributes(XElement element)
     {
         if (element.Name.LocalName.Equals("a", StringComparison.OrdinalIgnoreCase))
