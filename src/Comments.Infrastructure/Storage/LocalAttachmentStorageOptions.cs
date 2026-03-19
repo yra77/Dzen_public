@@ -1,4 +1,4 @@
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Storage;
 
 /// <summary>
 /// Налаштування локального файлового сховища вкладень коментарів.

@@ -3,7 +3,7 @@ using Comments.Application.Features.Comments.Queries.GetCommentsPage;
 using Comments.Application.Features.Comments.Queries.GetCommentThread;
 using Comments.Application.Features.Comments.Queries.PreviewComment;
 using Comments.Application.Features.Comments.Queries.SearchComments;
-using Comments.Api.Infrastructure;
+using Comments.Infrastructure.Storage;
 using Comments.Infrastructure.Captcha;
 using MediatR;
 using System.Text;
