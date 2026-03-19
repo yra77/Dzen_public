@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Caching.Memory;
 
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Captcha;
 
 /// <summary>
 /// In-memory store for short-lived captcha challenges used by the basic captcha flow.

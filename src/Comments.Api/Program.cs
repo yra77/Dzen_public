@@ -5,6 +5,8 @@ using Comments.Api.GraphQL;
 using Comments.Api.Realtime;
 using Comments.Infrastructure.Text;
 using Comments.Infrastructure.Search;
+using Comments.Infrastructure.Captcha;
+using Comments.Infrastructure.Maintenance;
 using Comments.Infrastructure.Messaging;
 using Comments.Application.Services;
 using Microsoft.Data.Sqlite;
