@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-19 (оновлено після прибирання тестів та старту GraphQL client layer на фронтенді).
+Останнє оновлення: 2026-03-19 (оновлено після інтеграції feature-flag переходу root/thread flow на GraphQL client layer).
 
 > Цей чекліст оновлено після повторної верифікації коду проєкту проти заявленого стеку з ТЗ.
 > Неактуальні пункти про «повний перехід на SQLite як цільовий стек ТЗ» видалено.
@@ -25,7 +25,7 @@
 | Вимога ТЗ | Статус | Факт у проєкті | Що потрібно доробити |
 |---|---|---|---|
 | Angular (standalone components) | ✅ Виконано | Angular 19; компоненти оголошені через standalone-підхід (`imports` у `@Component`). | Уніфікувати component-level style/testing conventions. |
-| Apollo Client (GraphQL) | ⚠️ Частково | Додано окремий GraphQL client layer поверх `HttpClient` (`CommentsGraphqlApiService`) для query/mutation до `/graphql`; UI поки ще працює через REST-сервіс. | Додати Apollo Angular (`apollo-angular`, `@apollo/client`, cache policies) і поетапно переключити root list/thread/create flow на GraphQL. |
+| Apollo Client (GraphQL) | ⚠️ Частково | Додано GraphQL client layer поверх `HttpClient` (`CommentsGraphqlApiService`) і інтегровано у root list/thread/create flow через feature-flag `useGraphqlApi`; частина сценаріїв (captcha/preview/attachment text) лишається на REST. | Підключити Apollo Angular (`apollo-angular`, `@apollo/client`, cache policies) і завершити перехід допоміжних сценаріїв (captcha/preview/attachment text) на узгоджений GraphQL/API-контракт. |
 | RxJS | ✅ Виконано | `rxjs` присутній у залежностях та використовується у сервісах. | Розширити reactive state-патерни там, де зараз імперативна логіка у компонентах. |
 
 ## 2) Що вже внесено у цей чекліст
@@ -76,7 +76,14 @@
 
 ### Що ще треба зробити далі
 
-1. Інтегрувати `CommentsGraphqlApiService` у компоненти `root-list` і `thread` через feature-flag або поетапну заміну REST-викликів.
-2. Підключити Apollo Angular (cache + normalized entities), щоб отримати повноцінний GraphQL client stack згідно ТЗ.
+1. Підключити Apollo Angular (cache + normalized entities), щоб замінити тимчасовий HttpClient-based GraphQL client на повноцінний стек згідно ТЗ.
+2. Розширити GraphQL-покриття фронтенду: перевести preview/captcha-сценарії на узгоджений API-контракт (після затвердження схеми на бекенді).
 3. Завершити архітектурне рознесення: перенести інфраструктурні адаптери з `Comments.Api/Infrastructure` до `Comments.Infrastructure`.
 4. Мігрувати RabbitMQ інтеграцію на MassTransit і додати політики retry/DLQ/idempotency.
+
+## 6) Зміни, внесені в поточній ітерації (2026-03-19)
+
+1. Додано feature-flag `useGraphqlApi` у frontend environment-конфігурацію для керованого перемикання між REST і GraphQL.
+2. Інтегровано `CommentsGraphqlApiService` у `RootListPageComponent` для завантаження root-коментарів і створення коментарів/відповідей через GraphQL (за активного feature-flag).
+3. Інтегровано `CommentsGraphqlApiService` у `ThreadPageComponent` для завантаження гілки та створення відповіді через GraphQL (за активного feature-flag).
+4. Збережено REST-виклики для preview/captcha/attachment-text як тимчасовий сумісний шар до фіналізації GraphQL-контрактів для цих сценаріїв.
