@@ -128,3 +128,17 @@
 1. Довстановити Apollo-залежності у frontend-середовищі (`apollo-angular`, `@apollo/client`, `graphql`) і стабілізувати збірку `ng serve`/`ng build`.
 2. Після стабілізації залежностей прибрати фінальний REST fallback у runtime-потоці, залишивши GraphQL (HotChocolate + Apollo) єдиним transport-шаром.
 3. Продовжити декомпозицію `RootListPageComponent`/`ThreadPageComponent` на менші standalone-компоненти (modal/forms), щоб зменшити ризик повторних template regression.
+
+## 10) Зміни, внесені в поточній ітерації (2026-03-19, GraphQL-only runtime + fix завантаження коментарів)
+
+1. Frontend runtime-потік для root list і thread остаточно переведено на GraphQL-only: у `RootListPageComponent` і `ThreadPageComponent` прибрано REST fallback-вибір та helper-методи перемикання.
+2. Виправлено мапінг enum-значень сортування для HotChocolate: frontend значення `CreatedAtUtc/UserName/Email` і `Asc/Desc` тепер конвертуються у GraphQL enum-формат `CREATED_AT_UTC/USER_NAME/EMAIL` і `ASC/DESC`, щоб уникнути GraphQL validation error під час завантаження списку.
+3. У GraphQL query потоку гілки уточнено scalar тип ідентифікатора до `Uuid!` у `CommentsGraphqlApiService`, щоб узгодити клієнтський запит зі схемою HotChocolate.
+4. Прибрано застарілий feature-flag `useGraphqlApi` з frontend environment-конфігурації, оскільки transport-шар тепер єдиний (Apollo + GraphQL).
+5. Для чистоти Angular-компіляції оновлено імпорти `AppComponent`: використано `RouterModule` замість окремих директивних імпортів.
+
+### Що ще треба зробити далі (оновлено після цієї ітерації)
+
+1. Завершити повну деактивацію REST transport-шару у frontend: видалити або архівувати `CommentsApiService` після контрольної перевірки, що жоден runtime-сценарій його не використовує.
+2. Додати contract/integration перевірки GraphQL для сценаріїв `comments`, `commentThread`, `createComment`, `captchaImage`, `attachmentTextPreview`, включно з negative cases для enum/scalar валідації.
+3. Продовжити декомпозицію великих Angular-компонентів (`RootListPageComponent`, `ThreadPageComponent`) на дрібні standalone-блоки для зниження складності шаблонів і покращення підтримуваності.

@@ -11,6 +11,12 @@ import {
   RootCommentsSortField
 } from './comments-api.service';
 
+/** GraphQL-значення enum для сортування коментарів (HotChocolate naming convention). */
+type GraphqlCommentSortField = 'CREATED_AT_UTC' | 'USER_NAME' | 'EMAIL';
+
+/** GraphQL-значення enum для напряму сортування (HotChocolate naming convention). */
+type GraphqlCommentSortDirection = 'ASC' | 'DESC';
+
 interface RootCommentsQueryData {
   /** Пейджований список кореневих коментарів. */
   comments: PagedCommentsResponse;
@@ -56,6 +62,9 @@ export class CommentsGraphqlApiService {
     sortBy: RootCommentsSortField,
     sortDirection: RootCommentsSortDirection
   ): Observable<PagedCommentsResponse> {
+    const graphqlSortBy = this.mapSortFieldToGraphql(sortBy);
+    const graphqlSortDirection = this.mapSortDirectionToGraphql(sortDirection);
+
     return this.apollo
       .query<RootCommentsQueryData>({
         query: gql`
@@ -85,7 +94,7 @@ export class CommentsGraphqlApiService {
             }
           }
         `,
-        variables: { page, pageSize, sortBy, sortDirection },
+        variables: { page, pageSize, sortBy: graphqlSortBy, sortDirection: graphqlSortDirection },
         fetchPolicy: 'network-only'
       })
       .pipe(map(response => response.data.comments));
@@ -96,7 +105,7 @@ export class CommentsGraphqlApiService {
     return this.apollo
       .query<ThreadQueryData>({
         query: gql`
-          query GetCommentThread($rootCommentId: UUID!) {
+          query GetCommentThread($rootCommentId: Uuid!) {
             commentThread(rootCommentId: $rootCommentId) {
               id
               parentId
@@ -224,5 +233,30 @@ export class CommentsGraphqlApiService {
         fetchPolicy: 'no-cache'
       })
       .pipe(map(response => response.data.attachmentTextPreview));
+  }
+
+  /**
+   * Мапить frontend enum поля сортування до GraphQL enum (SCREAMING_SNAKE_CASE).
+   */
+  private mapSortFieldToGraphql(sortBy: RootCommentsSortField): GraphqlCommentSortField {
+    const mapping: Record<RootCommentsSortField, GraphqlCommentSortField> = {
+      CreatedAtUtc: 'CREATED_AT_UTC',
+      UserName: 'USER_NAME',
+      Email: 'EMAIL'
+    };
+
+    return mapping[sortBy];
+  }
+
+  /**
+   * Мапить frontend enum напряму сортування до GraphQL enum (SCREAMING_SNAKE_CASE).
+   */
+  private mapSortDirectionToGraphql(sortDirection: RootCommentsSortDirection): GraphqlCommentSortDirection {
+    const mapping: Record<RootCommentsSortDirection, GraphqlCommentSortDirection> = {
+      Asc: 'ASC',
+      Desc: 'DESC'
+    };
+
+    return mapping[sortDirection];
   }
 }

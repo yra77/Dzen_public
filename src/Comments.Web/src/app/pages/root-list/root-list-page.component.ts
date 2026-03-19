@@ -5,7 +5,6 @@ import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 
 import {
   CommentNode,
-  CommentsApiService,
   CreateCommentAttachmentRequest,
   RootCommentsSortDirection,
   RootCommentsSortField
@@ -367,7 +366,6 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
  * Сторінка списку кореневих коментарів з формою створення нового запису.
  */
 export class RootListPageComponent implements OnDestroy {
-  private readonly commentsApi = inject(CommentsApiService);
   private readonly commentsGraphqlApi = inject(CommentsGraphqlApiService);
   private readonly formBuilder = inject(FormBuilder);
   private readonly apiErrorPresenter = inject(ApiErrorPresenterService);
@@ -525,7 +523,7 @@ export class RootListPageComponent implements OnDestroy {
     this.errorMessage = '';
     this.loadCanRetry = false;
 
-    this.getRootCommentsRequest().getRootComments(this.page, this.pageSize, this.sortBy, this.sortDirection).subscribe({
+    this.commentsGraphqlApi.getRootComments(this.page, this.pageSize, this.sortBy, this.sortDirection).subscribe({
       next: (response) => {
         this.comments = response.items;
         this.totalCount = response.totalCount;
@@ -607,7 +605,7 @@ export class RootListPageComponent implements OnDestroy {
       return;
     }
 
-    this.getPreviewRequest().previewComment(text).subscribe({
+    this.commentsGraphqlApi.previewComment(text).subscribe({
       next: (preview) => {
         this.textPreviewHtml = preview;
         this.previewMessage = '';
@@ -659,7 +657,7 @@ export class RootListPageComponent implements OnDestroy {
   reloadCaptcha(): void {
     this.captchaMessage = '';
 
-    this.getCaptchaRequest().getCaptcha().subscribe({
+    this.commentsGraphqlApi.getCaptcha().subscribe({
       next: (response) => {
         this.captchaChallengeId = response.challengeId;
         this.captchaImageDataUrl = `data:${response.mimeType};base64,${response.imageBase64}`;
@@ -687,7 +685,7 @@ export class RootListPageComponent implements OnDestroy {
 
     const raw = this.createForm.getRawValue();
 
-    this.getCreateCommentRequest()
+    this.commentsGraphqlApi
       .createComment({
         userName: raw.userName,
         email: raw.email,
@@ -772,7 +770,7 @@ export class RootListPageComponent implements OnDestroy {
       return;
     }
 
-    this.getPreviewRequest().previewComment(text).subscribe({
+    this.commentsGraphqlApi.previewComment(text).subscribe({
       next: (preview) => {
         this.replyTextPreviewHtml = preview;
         this.replyPreviewMessage = '';
@@ -824,7 +822,7 @@ export class RootListPageComponent implements OnDestroy {
   reloadReplyCaptcha(): void {
     this.replyCaptchaMessage = '';
 
-    this.getCaptchaRequest().getCaptcha().subscribe({
+    this.commentsGraphqlApi.getCaptcha().subscribe({
       next: (response) => {
         this.replyCaptchaChallengeId = response.challengeId;
         this.replyCaptchaImageDataUrl = `data:${response.mimeType};base64,${response.imageBase64}`;
@@ -851,7 +849,7 @@ export class RootListPageComponent implements OnDestroy {
 
     const raw = this.replyForm.getRawValue();
 
-    this.getCreateCommentRequest()
+    this.commentsGraphqlApi
       .createComment({
         userName: raw.userName,
         email: raw.email,
@@ -882,42 +880,6 @@ export class RootListPageComponent implements OnDestroy {
 
 
   /**
-   * Повертає активний API-клієнт для списку root-коментарів (REST або GraphQL за feature-flag).
-   */
-  private getRootCommentsRequest(): Pick<CommentsApiService, 'getRootComments'> | Pick<CommentsGraphqlApiService, 'getRootComments'> {
-    return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
-  }
-
-  /**
-   * Повертає активний API-клієнт для створення коментарів (REST або GraphQL за feature-flag).
-   */
-  private getCreateCommentRequest(): Pick<CommentsApiService, 'createComment'> | Pick<CommentsGraphqlApiService, 'createComment'> {
-    return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
-  }
-
-  /**
-   * Повертає активний API-клієнт для HTML-preview (REST або GraphQL за feature-flag).
-   */
-  private getPreviewRequest(): Pick<CommentsApiService, 'previewComment'> | Pick<CommentsGraphqlApiService, 'previewComment'> {
-    return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
-  }
-
-
-  /**
-   * Повертає активний API-клієнт для CAPTCHA (REST або GraphQL за feature-flag).
-   */
-  private getCaptchaRequest(): Pick<CommentsApiService, 'getCaptcha'> | Pick<CommentsGraphqlApiService, 'getCaptcha'> {
-    return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
-  }
-
-  /**
-   * Повертає активний API-клієнт для txt-preview вкладень (REST або GraphQL за feature-flag).
-   */
-  private getAttachmentTextRequest(): Pick<CommentsApiService, 'getAttachmentText'> | Pick<CommentsGraphqlApiService, 'getAttachmentText'> {
-    return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
-  }
-
-  /**
    * Формує абсолютне посилання на файл вкладення.
    */
   getAttachmentUrl(storagePath: string): string {
@@ -934,7 +896,7 @@ export class RootListPageComponent implements OnDestroy {
     }
 
     this.attachmentTextLoadingByPath.add(storagePath);
-    this.getAttachmentTextRequest().getAttachmentText(storagePath).subscribe({
+    this.commentsGraphqlApi.getAttachmentText(storagePath).subscribe({
       next: (content) => {
         this.attachmentTextPreviewByPath[storagePath] = content;
         this.attachmentTextLoadingByPath.delete(storagePath);
