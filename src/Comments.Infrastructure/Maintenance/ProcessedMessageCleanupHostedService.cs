@@ -2,7 +2,7 @@ using Comments.Application.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Maintenance;
 
 /// <summary>
 /// Періодично очищає застарілі записи ідемпотентності з persistent-сховища.

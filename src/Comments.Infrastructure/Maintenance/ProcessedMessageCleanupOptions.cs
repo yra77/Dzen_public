@@ -1,4 +1,4 @@
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Maintenance;
 
 /// <summary>
 /// Налаштування фонової очистки таблиці ідемпотентності ProcessedMessages.

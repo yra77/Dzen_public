@@ -1,4 +1,4 @@
-using Comments.Api.Infrastructure;
+using Comments.Infrastructure.Captcha;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Comments.Api.Controllers;

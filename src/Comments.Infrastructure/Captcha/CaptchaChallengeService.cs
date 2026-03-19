@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Captcha;
 
 /// <summary>
 /// Генерує captcha-челендж і SVG-зображення для REST/GraphQL transport-шарів.

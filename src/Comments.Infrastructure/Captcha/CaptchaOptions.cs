@@ -1,4 +1,4 @@
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Captcha;
 
 /// <summary>
 /// Конфігурація CAPTCHA-провайдера для захисту endpoint-ів створення коментарів.
