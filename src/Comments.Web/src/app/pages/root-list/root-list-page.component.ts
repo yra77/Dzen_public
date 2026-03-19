@@ -20,12 +20,11 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
   imports: [DatePipe, ReactiveFormsModule, NgTemplateOutlet],
   template: `
     <section class="panel">
-      <h2>Останні кореневі коментарі</h2>
-      <button type="button" (click)="openCreateModal()" data-testid="root-open-create-modal-button">Відповісти</button>
+      <button class="btn-answer" type="button" (click)="openCreateModal()" data-testid="root-open-create-modal-button">Коментувати</button>
       @if (signalRStatusMessage) {
         <p class="meta">{{ signalRStatusMessage }}</p>
       }
-      <div class="list-controls">
+       <div class="list-controls">
         <label>
           Сортувати за
           <select [value]="sortBy" (change)="onSortByChanged($event)" data-testid="root-sort-by">
@@ -143,7 +142,6 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
               }
 
               <div class="actions wide">
-                <button type="button" (click)="closeCreateModal()">Закрити</button>
                 <button type="submit" [disabled]="createForm.invalid || isSubmitting || hasBlockingErrors(createForm)" data-testid="root-submit-button">Створити коментар</button>
               </div>
             </form>
@@ -208,7 +206,7 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
               </div>
             }
             <div class="thread-actions">
-              <button type="button" (click)="openReplyModal(node)">Відповісти</button>
+              <button class="btn-answer" type="button" (click)="openReplyModal(node)">Відповісти</button>
             </div>
           </article>
 
@@ -318,7 +316,6 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
                 }
 
                 <div class="actions wide">
-                  <button type="button" (click)="closeReplyModal()">Закрити</button>
                   <button type="submit" [disabled]="replyForm.invalid || isReplySubmitting || hasBlockingErrors(replyForm)">Створити коментар</button>
                 </div>
               </form>
