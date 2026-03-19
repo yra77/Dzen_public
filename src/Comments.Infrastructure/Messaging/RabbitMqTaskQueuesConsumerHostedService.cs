@@ -4,20 +4,19 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using Comments.Application.Abstractions;
 using Comments.Application.DTOs;
-using Comments.Infrastructure.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Messaging;
 
 /// <summary>
 /// Фоновий consumer RabbitMQ для черг індексації та обробки вкладень.
 /// </summary>
 public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, IDisposable
 {
-    private static readonly Meter ConsumerMeter = new("Comments.Api.RabbitMqConsumer");
+    private static readonly Meter ConsumerMeter = new("Comments.Infrastructure.RabbitMqConsumer");
     private static readonly Counter<long> SuccessCounter = ConsumerMeter.CreateCounter<long>(
         "comments_rabbitmq_consumer_success_total",
         unit: "messages",

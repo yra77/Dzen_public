@@ -17,7 +17,7 @@
 | RabbitMQ (MassTransit) | ⚠️ Частково | Є інтеграція через `RabbitMQ.Client`, без MassTransit. | Мігрувати publisher/consumer на MassTransit (retry, DLQ, outbox/idempotency). |
 | Elasticsearch (офіційний .NET client) | ⚠️ Частково | Поточний адаптер працює через `HttpClient`. | Перейти на офіційний Elastic .NET client + typed mappings/templates. |
 | SignalR | ✅ Виконано | `CommentsHub` + `/hubs/comments` активні. | Додати перевірки reconnect/backoff у e2e-сценаріях. |
-| Clean Architecture + SOLID | ⚠️ Частково | Продовжено винесення інфраструктурних компонентів у `Comments.Infrastructure` (search + messaging publisher + RabbitMQ options/publisher). | Завершити перенос адаптерів з `Comments.Api/Infrastructure` та залишити в API лише composition root. |
+| Clean Architecture + SOLID | ⚠️ Частково | Продовжено винесення інфраструктурних компонентів у `Comments.Infrastructure` (search + messaging publisher + RabbitMQ options + hosted RabbitMQ consumer). | Завершити перенос решти адаптерів з `Comments.Api/Infrastructure` та залишити в API лише composition root. |
 
 ### Frontend
 
@@ -29,19 +29,17 @@
 
 ## 2) Зміни, внесені в поточній ітерації (2026-03-19)
 
-1. Перенесено `RabbitMqCommentCreatedPublisher` з `Comments.Api/Infrastructure` у `Comments.Infrastructure/Messaging` без зміни контракту `ICommentCreatedChannel`.
-2. Перенесено `RabbitMqOptions` + `RabbitMqConsumerAlertOptions` у `Comments.Infrastructure/Messaging`, щоб сконцентрувати messaging-налаштування в інфраструктурному шарі.
-3. Оновлено DI/залежності: `Comments.Infrastructure` тепер має власний `PackageReference` на `RabbitMQ.Client`, а `RabbitMqTaskQueuesConsumerHostedService` в API використовує типи з `Comments.Infrastructure.Messaging`.
-4. Під час перенесення збережено XML-коментарі класів/властивостей (правило документування дотримано).
+1. Перенесено `RabbitMqTaskQueuesConsumerHostedService` з `Comments.Api/Infrastructure` у `Comments.Infrastructure/Messaging` (разом із логікою retry/DLQ та alert-метриками).
+2. Після перенесення API реєструє hosted consumer напряму з `Comments.Infrastructure.Messaging`.
+3. Неактуальні проміжні пункти по попередніх переносах видалено з цього розділу, щоб лишився лише поточний інкремент.
 
 ## 3) Що ще треба зробити далі (актуальний план)
 
 1. **P0 — Messaging:** міграція RabbitMQ інтеграції на MassTransit (producer/consumer, retry, DLQ, idempotency/outbox).
-2. **P1 — Architecture:** винести `RabbitMqTaskQueuesConsumerHostedService` (і пов’язану wiring-логіку) з `Comments.Api/Infrastructure` у `Comments.Infrastructure`.
-3. **P1 — Search:** перехід з `HttpClient`-інтеграції Elasticsearch на офіційний Elastic .NET client.
-4. **P1 — Architecture:** продовжити перенос решти адаптерів з `Comments.Api/Infrastructure` у `Comments.Infrastructure` (captcha, storage, cleanup services).
-5. **P1 — GraphQL quality:** додати контрактні тести для `comments`, `commentThread`, `createComment`, `captchaImage`, `attachmentTextPreview` + негативні кейси (enum/scalar/path traversal).
-6. **P2 — Frontend maintainability:** декомпозувати великі Angular-компоненти (`RootListPageComponent`, `ThreadPageComponent`) у дрібні standalone-блоки.
+2. **P1 — Search:** перехід з `HttpClient`-інтеграції Elasticsearch на офіційний Elastic .NET client.
+3. **P1 — Architecture:** продовжити перенос решти адаптерів з `Comments.Api/Infrastructure` у `Comments.Infrastructure` (captcha, storage, cleanup services).
+4. **P1 — GraphQL quality:** додати контрактні тести для `comments`, `commentThread`, `createComment`, `captchaImage`, `attachmentTextPreview` + негативні кейси (enum/scalar/path traversal).
+5. **P2 — Frontend maintainability:** декомпозувати великі Angular-компоненти (`RootListPageComponent`, `ThreadPageComponent`) у дрібні standalone-блоки.
 
 ## 4) Правило документування при розробці
 
