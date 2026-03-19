@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Comments.Application.Abstractions;
 
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Captcha;
 
 public sealed class RecaptchaCaptchaValidator : ICaptchaValidator
 {

@@ -1,6 +1,6 @@
 using Comments.Application.Abstractions;
 
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Captcha;
 
 /// <summary>
 /// Validates captcha token using either static expected token or dynamic challenge-response mode.
