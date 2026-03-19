@@ -87,3 +87,16 @@
 2. Інтегровано `CommentsGraphqlApiService` у `RootListPageComponent` для завантаження root-коментарів і створення коментарів/відповідей через GraphQL (за активного feature-flag).
 3. Інтегровано `CommentsGraphqlApiService` у `ThreadPageComponent` для завантаження гілки та створення відповіді через GraphQL (за активного feature-flag).
 4. Збережено REST-виклики для preview/captcha/attachment-text як тимчасовий сумісний шар до фіналізації GraphQL-контрактів для цих сценаріїв.
+
+## 7) Зміни, внесені в поточній ітерації (2026-03-19, продовження)
+
+1. У `CommentsGraphqlApiService` додано метод `previewComment(text)` для отримання санітизованого HTML-preview через GraphQL query `previewComment`.
+2. `RootListPageComponent` переведено на feature-flag вибір джерела preview: за `useGraphqlApi=true` використовується GraphQL preview, інакше лишається REST fallback.
+3. `ThreadPageComponent` аналогічно переведено на feature-flag вибір preview-клієнта (GraphQL/REST), щоб вирівняти поведінку root/thread форм.
+
+### Що ще треба зробити далі (оновлено)
+
+1. Підключити Apollo Angular (`apollo-angular`, `@apollo/client`) і замінити поточний HttpClient-based GraphQL transport на Apollo link/cache.
+2. Перевести CAPTCHA workflow на узгоджений GraphQL-контракт (отримання challenge + валідація токена), або зафіксувати REST як виняток у ТЗ.
+3. Визначити та реалізувати єдину стратегію для `attachment-text preview` (GraphQL endpoint або окремий захищений REST download API з ACL/ttl).
+4. Виконати структурне очищення великих Angular-компонентів (виділити modal/forms у standalone дочірні компоненти) для спрощення підтримки та подальшого покриття тестами.

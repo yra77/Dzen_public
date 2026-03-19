@@ -396,7 +396,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.commentsApi.previewComment(text).subscribe({
+    this.getPreviewRequest().previewComment(text).subscribe({
       next: (preview) => {
         this.textPreviewHtml = preview;
         this.previewMessage = '';
@@ -700,6 +700,13 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
    * Повертає активний API-клієнт для створення коментарів (REST або GraphQL за feature-flag).
    */
   private getCreateCommentRequest(): Pick<CommentsApiService, 'createComment'> | Pick<CommentsGraphqlApiService, 'createComment'> {
+    return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
+  }
+
+  /**
+   * Повертає активний API-клієнт для HTML-preview (REST або GraphQL за feature-flag).
+   */
+  private getPreviewRequest(): Pick<CommentsApiService, 'previewComment'> | Pick<CommentsGraphqlApiService, 'previewComment'> {
     return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
   }
 
