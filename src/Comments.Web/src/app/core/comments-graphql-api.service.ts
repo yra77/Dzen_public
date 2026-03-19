@@ -125,11 +125,12 @@ export class CommentsGraphqlApiService {
             }
           }
 
-          fragment ThreadAttachment on CommentAttachmentDto {
+          fragment ThreadAttachment on AttachmentDto {
             fileName
             contentType
             storagePath
             sizeBytes
+            __typename
           }
 
           fragment ThreadCommentLevel5 on CommentDto {
@@ -157,7 +158,9 @@ export class CommentsGraphqlApiService {
               replies {
                 id
               }
+              __typename
             }
+            __typename
           }
 
           fragment ThreadCommentLevel4 on CommentDto {
@@ -174,6 +177,7 @@ export class CommentsGraphqlApiService {
             replies {
               ...ThreadCommentLevel5
             }
+            __typename
           }
 
           fragment ThreadCommentLevel3 on CommentDto {
@@ -190,6 +194,7 @@ export class CommentsGraphqlApiService {
             replies {
               ...ThreadCommentLevel4
             }
+            __typename
           }
 
           fragment ThreadCommentLevel2 on CommentDto {
@@ -206,6 +211,7 @@ export class CommentsGraphqlApiService {
             replies {
               ...ThreadCommentLevel3
             }
+            __typename
           }
 
           fragment ThreadCommentLevel1 on CommentDto {
@@ -222,10 +228,12 @@ export class CommentsGraphqlApiService {
             replies {
               ...ThreadCommentLevel2
             }
+            __typename
           }
         `,
         variables: { rootCommentId },
-        fetchPolicy: 'network-only'
+        // no-cache ізолює thread-відповідь від partial cache merge, коли інші запити містять скорочені payload-вузли.
+        fetchPolicy: 'no-cache'
       })
       .pipe(
         map(response => {
