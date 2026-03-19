@@ -121,7 +121,6 @@ export class CommentsGraphqlApiService {
     // GraphQL не підтримує truly-recursive selection set, тому задаємо фіксовану глибину дерева (5 рівнів).
     return this.executeGraphql<ThreadQueryData>(
       `
-          query GetCommentThread($rootCommentId: Uuid!) {
           query GetCommentThread($rootCommentId: UUID!) {
             commentThread(rootCommentId: $rootCommentId) {
               ...ThreadCommentLevel1

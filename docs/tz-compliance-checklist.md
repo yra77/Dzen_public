@@ -190,3 +190,15 @@
 1. Додати контрактну backend-перевірку для `commentThread`, щоб leaf-вузли повертали `replies: []` консистентно (без залежності від клієнтської нормалізації).
 2. Винести thread GraphQL fragments у спільний конструктор/утиліту та перевикористати між запитами, щоб зменшити ризик повторного додавання id-only selection set.
 3. Додати e2e-сценарій «deep thread (6+ рівнів)»: UI не повинен рендерити порожні reply-картки без контенту.
+
+## 15) Зміни, внесені в поточній ітерації (2026-03-19, fix незавантаження thread у Angular)
+
+1. У `CommentsGraphqlApiService.getThread` виправлено GraphQL query-документ: прибрано дубльоване вкладене оголошення `query GetCommentThread(...)`, яке формувало невалідний GraphQL запит і блокувало завантаження гілки коментарів у Angular SPA.
+2. Для `commentThread` залишено єдине коректне оголошення операції `GetCommentThread($rootCommentId: UUID!)`, синхронізоване зі схемою HotChocolate backend.
+3. Оновлено чекліст відповідності ТЗ з фіксацією факту, що проблема «в Angular завантажуються лише root-коментарі» локалізована у frontend GraphQL query string і виправлена.
+
+### Що ще треба зробити далі (оновлено після цієї ітерації)
+
+1. Додати frontend integration/e2e regression-кейс: перехід зі списку root у thread має завжди завантажувати повне дерево (а не лише root-вузол), включно з перевіркою GraphQL error-state.
+2. Винести великі GraphQL query/fragment-рядки у окремі `.graphql`-документи або builder-утиліти, щоб уникнути повторного ручного дублювання операторів у template string.
+3. Після стабілізації thread-flow повернутися до декомпозиції `RootListPageComponent`/`ThreadPageComponent` на менші standalone-компоненти, щоб знизити ризик регресій у великих inline template/string-блоках.
