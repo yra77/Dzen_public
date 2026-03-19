@@ -19,17 +19,17 @@ type GraphqlCommentSortDirection = 'ASC' | 'DESC';
 
 interface RootCommentsQueryData {
   /** Пейджований список кореневих коментарів. */
-  comments: PagedCommentsResponse;
+  comments: PagedCommentsResponse | null;
 }
 
 interface ThreadQueryData {
   /** Повне дерево гілки для конкретного root-коментаря. */
-  commentThread: CommentNode;
+  commentThread: CommentNode | null;
 }
 
 interface CreateCommentMutationData {
   /** Створений коментар після успішної мутації. */
-  createComment: CommentNode;
+  createComment: CommentNode | null;
 }
 
 interface PreviewCommentQueryData {
@@ -97,7 +97,20 @@ export class CommentsGraphqlApiService {
         variables: { page, pageSize, sortBy: graphqlSortBy, sortDirection: graphqlSortDirection },
         fetchPolicy: 'network-only'
       })
-      .pipe(map(response => response.data.comments));
+      .pipe(
+        map(response => {
+          const payload = response.data.comments;
+          if (!payload) {
+            throw new Error('GraphQL query comments returned empty payload.');
+          }
+
+          return {
+            ...payload,
+            // Нормалізуємо replies, щоб шаблони Angular не падали на `undefined.length`.
+            items: payload.items.map(comment => this.normalizeCommentNode(comment))
+          };
+        })
+      );
   }
 
   /** Отримує дерево гілки за id кореневого коментаря. */
@@ -144,7 +157,15 @@ export class CommentsGraphqlApiService {
         variables: { rootCommentId },
         fetchPolicy: 'network-only'
       })
-      .pipe(map(response => response.data.commentThread));
+      .pipe(
+        map(response => {
+          if (!response.data.commentThread) {
+            throw new Error('GraphQL query commentThread returned empty payload.');
+          }
+
+          return this.normalizeCommentNode(response.data.commentThread);
+        })
+      );
   }
 
   /** Створює новий коментар або відповідь через GraphQL mutation. */
@@ -181,7 +202,11 @@ export class CommentsGraphqlApiService {
             throw new Error('GraphQL mutation createComment returned empty payload.');
           }
 
-          return response.data.createComment;
+          if (!response.data.createComment) {
+            throw new Error('GraphQL mutation createComment returned empty comment node.');
+          }
+
+          return this.normalizeCommentNode(response.data.createComment);
         })
       );
   }
@@ -258,5 +283,16 @@ export class CommentsGraphqlApiService {
     };
 
     return mapping[sortDirection];
+  }
+
+  /**
+   * Гарантує, що в кожному вузлі дерева `replies` завжди масив, а не `undefined/null`.
+   */
+  private normalizeCommentNode(comment: CommentNode): CommentNode {
+    const replies = (comment.replies ?? []).map(reply => this.normalizeCommentNode(reply));
+    return {
+      ...comment,
+      replies
+    };
   }
 }
