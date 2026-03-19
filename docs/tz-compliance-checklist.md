@@ -2,52 +2,49 @@
 
 Останнє оновлення: 2026-03-19.
 
-> Чекліст містить лише актуальний стан реалізації та поточний backlog без застарілих проміжних записів.
+> Документ містить тільки актуальний стан реалізації та поточний план робіт.
 
-## 1) Матриця відповідності ТЗ (поточний стан)
+## 1) Матриця відповідності ТЗ (актуально)
 
 ### Backend
 
-| Вимога ТЗ | Статус | Факт у проєкті | Що потрібно доробити |
+| Вимога ТЗ | Статус | Факт у проєкті | Наступна дія |
 |---|---|---|---|
-| ASP.NET Core 8.0 (LTS) | ✅ Виконано | `Comments.Api` і `Comments.Infrastructure` таргетують `net8.0`. | Підтримувати patch-оновлення .NET 8. |
-| Entity Framework Core + SQLite | ✅ Виконано | Налаштовано `UseSqlite`, є міграції EF Core. | Підтримувати міграції та backup/restore-процедури SQLite. |
-| GraphQL (HotChocolate) | ✅ Виконано | Працює endpoint `/graphql`, реалізовані query/mutation. | Додати GraphQL contract/integration тести (включно з error-shape). |
-| CQRS + MediatR | ✅ Виконано | Команди/запити розділені, `ValidationBehavior` підключено. | Додати інтеграційні перевірки ключових CQRS-ланцюжків. |
-| RabbitMQ (MassTransit) | ⚠️ Частково | Є інтеграція через `RabbitMQ.Client`, без MassTransit. | Мігрувати publisher/consumer на MassTransit (retry, DLQ, outbox/idempotency). |
-| Elasticsearch (офіційний .NET client) | ⚠️ Частково | Поточний адаптер працює через `HttpClient`. | Перейти на офіційний Elastic .NET client + typed mappings/templates. |
-| SignalR | ✅ Виконано | `CommentsHub` + `/hubs/comments` активні, канал публікації винесений у `Comments.Infrastructure`. | Додати перевірки reconnect/backoff у e2e-сценаріях. |
-| Clean Architecture + SOLID | ✅ Виконано (базовий шар) | EF DbContext, EF/InMemory repositories, captcha/search/realtime/messaging/maintenance/attachments винесені в `Comments.Infrastructure`. | Наступний крок: додати тестові перевірки залежностей між шарами (architecture tests). |
+| ASP.NET Core 8.0 (LTS) | ✅ Виконано | `Comments.Api` та інші backend-проєкти таргетують `net8.0`. | Підтримувати patch-оновлення .NET 8. |
+| Entity Framework Core + SQLite | ✅ Виконано | У `Program.cs` активний провайдер `Sqlite` + автозастосування міграцій на старті. | Тримати міграції SQLite в актуальному стані. |
+| GraphQL (HotChocolate) | ✅ Виконано | Працює endpoint `/graphql`, реалізовані `Query`/`Mutation` для коментарів. | Додати контрактні перевірки GraphQL-схеми (локально/CI). |
+| CQRS + MediatR | ✅ Виконано | Команди/запити винесені у `Comments.Application`, підключено `ValidationBehavior`. | Додати інтеграційні перевірки CQRS-ланцюжків (без фіксації тестів у репозиторії до окремого рішення). |
+| RabbitMQ (MassTransit) | ⚠️ Частково | Є робоча інтеграція через `RabbitMQ.Client` (publisher/consumer), MassTransit ще не підключено. | Міграція на MassTransit: retry/DLQ/outbox/idempotency. |
+| Elasticsearch (офіційний .NET client) | ⚠️ Частково | Є інтеграція через `HttpClient`, пошук вмикається конфігурацією `Elasticsearch.Enabled`. | Перейти на офіційний Elastic .NET client + typed mappings/templates. |
+| SignalR | ✅ Виконано | Налаштовано `CommentsHub` та endpoint `/hubs/comments` для realtime-оновлень. | Закрити сценарії reconnect/backoff у перевірках якості. |
+| Clean Architecture + SOLID | ✅ Базово виконано | Шари Domain/Application/Infrastructure/Api розділені, інфраструктурні адаптери винесені в Infrastructure. | Додати automated architecture-guard перевірки залежностей між шарами. |
 
 ### Frontend
 
-| Вимога ТЗ | Статус | Факт у проєкті | Що потрібно доробити |
+| Вимога ТЗ | Статус | Факт у проєкті | Наступна дія |
 |---|---|---|---|
-| Angular (standalone components) | ✅ Виконано | Angular 19, standalone-компоненти. | Продовжити декомпозицію великих сторінок на менші компоненти. |
-| Apollo Client (GraphQL) | ✅ Виконано | Apollo Angular підключено; runtime працює через GraphQL. | Налаштувати стабільну cache-стратегію та contract-тести. |
-| RxJS | ✅ Виконано | `rxjs` активно використовується в сервісах/компонентах. | Розширити реактивні патерни там, де є імперативні блоки. |
+| Angular (standalone components) | ✅ Виконано | `Comments.Web` побудований на Angular standalone-компонентах. | Продовжити декомпозицію великих page-компонентів. |
+| Apollo Client (GraphQL) | ✅ Виконано | Apollo Angular підключено, запити/мутації працюють через GraphQL API. | Стабілізувати cache-policy і помилки мережі на UI. |
+| RxJS | ✅ Виконано | RxJS використовується в сервісах та компонентах UI. | Уніфікувати reactive-патерни в довгих UI-сценаріях. |
 
-## 2) Зміни, внесені в поточній ітерації (2026-03-19)
+## 2) Що зроблено в цій ітерації
 
-1. Виправлено помилку збірки в realtime-шарі: `CommentsHub` перенесено до `Comments.Infrastructure/Realtime`, щоб прибрати заборонену залежність `Comments.Infrastructure -> Comments.Api`.
-2. Оновлено `Program.cs` у `Comments.Api` — використовується `CommentsHub` з `Comments.Infrastructure.Realtime`.
-3. Прибрано неактуальний `Comments.Api/Realtime/CommentsHub.cs`, щоб уникнути дублювання Hub-типу.
-4. Секцію змін у цьому чеклісті синхронізовано з поточним станом коду (без застарілих проміжних записів).
+1. Очищено чекліст від застарілих проміжних записів і залишено тільки релевантні пункти по фактичному стану репозиторію.
+2. Синхронізовано формулювання backend-вимог з поточною конфігурацією (`Sqlite` за замовчуванням, `RabbitMQ.Client`, `HttpClient` для Elasticsearch).
+3. Уточнено формат наступних кроків як короткий executable backlog без історичних нотаток.
 
-## 3) Що ще треба зробити далі (актуальний план)
+## 3) Що далі робити в проєкті (пріоритет)
 
-1. **P0 — Messaging:** міграція RabbitMQ інтеграції на MassTransit (producer/consumer, retry, DLQ, idempotency/outbox).
-2. **P1 — Search:** перехід з `HttpClient`-інтеграції Elasticsearch на офіційний Elastic .NET client.
-3. **P1 — GraphQL quality:** додати контрактні тести для `comments`, `commentThread`, `createComment`, `captchaImage`, `attachmentTextPreview` + негативні кейси (enum/scalar/path traversal).
-4. **P1 — Architecture quality:** додати architecture tests, що контролюють напрям залежностей між Domain/Application/Infrastructure/Api.
-5. **P2 — Frontend maintainability:** декомпозувати великі Angular-компоненти (`RootListPageComponent`, `ThreadPageComponent`) у дрібні standalone-блоки.
+1. **P0 — Messaging:** перевести RabbitMQ інтеграцію на MassTransit (producer + consumer + retry + DLQ + outbox/idempotency).
+2. **P1 — Search:** замінити поточний `HttpClient`-підхід на офіційний Elastic .NET client.
+3. **P1 — Frontend maintainability:** декомпозувати великі Angular-сторінки (`RootListPageComponent`, `ThreadPageComponent`) на менші standalone-компоненти.
+4. **P1 — GraphQL quality:** додати contract-перевірки запитів/мутацій і негативних кейсів в окремому узгодженому форматі.
+5. **P2 — Architecture quality:** додати перевірки напрямків залежностей між шарами.
 
-## 4) Правило документування при розробці
+## 4) Примітка щодо перевірок під час розробки
 
-- При створенні або редагуванні нових класів/методів додаємо коментарі:
-  - для C# публічних елементів — XML-коментарі `///`;
-  - для складної логіки — короткі пояснювальні inline-коментарі.
+- Локальні перевірки/тимчасові тести для самоперевірки виконуються за потреби, але без додавання тестових артефактів у репозиторій до окремого узгодження.
 
 ---
 
-Файл ведеться як актуальний робочий чекліст відповідності ТЗ і має оновлюватися у тому ж PR, де змінюється стан реалізації.
+Файл підтримується як робочий актуальний чекліст відповідності ТЗ і оновлюється разом зі змінами стану реалізації.
