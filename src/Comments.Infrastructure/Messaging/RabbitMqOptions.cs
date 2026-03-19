@@ -1,4 +1,4 @@
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Messaging;
 
 /// <summary>
 /// Параметри інтеграції з RabbitMQ для publisher/consumer пайплайнів.
