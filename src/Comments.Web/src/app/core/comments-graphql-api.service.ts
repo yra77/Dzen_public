@@ -27,6 +27,11 @@ interface CreateCommentMutationData {
   createComment: CommentNode;
 }
 
+interface PreviewCommentQueryData {
+  /** Санітизований HTML-preview для введеного тексту. */
+  previewComment: string;
+}
+
 /**
  * Базовий GraphQL-клієнт поверх HttpClient для поступового переходу фронтенда з REST на GraphQL.
  */
@@ -152,6 +157,21 @@ export class CommentsGraphqlApiService {
 
     return this.execute<CreateCommentMutationData>(mutation, { input: request }).pipe(
       map(response => response.createComment)
+    );
+  }
+
+  /**
+   * Повертає санітизований HTML preview для введеного тексту через GraphQL.
+   */
+  previewComment(text: string): Observable<string> {
+    const query = `
+      query PreviewComment($text: String!) {
+        previewComment(text: $text)
+      }
+    `;
+
+    return this.execute<PreviewCommentQueryData>(query, { text }).pipe(
+      map(response => response.previewComment)
     );
   }
 
