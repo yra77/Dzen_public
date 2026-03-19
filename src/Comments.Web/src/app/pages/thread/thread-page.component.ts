@@ -9,6 +9,7 @@ import {
   CommentsApiService,
   CreateCommentAttachmentRequest
 } from '../../core/comments-api.service';
+import { CommentsGraphqlApiService } from '../../core/comments-graphql-api.service';
 import { environment } from '../../../environments/environment';
 import { ApiErrorPresenterService, UiValidationError } from '../../core/api-error-presenter.service';
 import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
@@ -269,6 +270,7 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
 export class ThreadPageComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly commentsApi = inject(CommentsApiService);
+  private readonly commentsGraphqlApi = inject(CommentsGraphqlApiService);
   private readonly formBuilder = inject(FormBuilder);
   private readonly apiErrorPresenter = inject(ApiErrorPresenterService);
 
@@ -528,7 +530,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
 
     const raw = this.replyForm.getRawValue();
 
-    this.commentsApi
+    this.getCreateCommentRequest()
       .createComment({
         userName: raw.userName,
         email: raw.email,
@@ -672,7 +674,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.loadCanRetry = false;
 
-    this.commentsApi.getThread(commentId).subscribe({
+    this.getThreadRequest().getThread(commentId).subscribe({
       next: (response) => {
         this.thread = response;
         this.isLoading = false;
@@ -684,6 +686,21 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
         this.isLoading = false;
       }
     });
+  }
+
+
+  /**
+   * Повертає активний API-клієнт для читання гілки (REST або GraphQL за feature-flag).
+   */
+  private getThreadRequest(): Pick<CommentsApiService, 'getThread'> | Pick<CommentsGraphqlApiService, 'getThread'> {
+    return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
+  }
+
+  /**
+   * Повертає активний API-клієнт для створення коментарів (REST або GraphQL за feature-flag).
+   */
+  private getCreateCommentRequest(): Pick<CommentsApiService, 'createComment'> | Pick<CommentsGraphqlApiService, 'createComment'> {
+    return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
   }
 
   /**

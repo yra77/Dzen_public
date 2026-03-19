@@ -10,6 +10,7 @@ import {
   RootCommentsSortDirection,
   RootCommentsSortField
 } from '../../core/comments-api.service';
+import { CommentsGraphqlApiService } from '../../core/comments-graphql-api.service';
 import { ApiErrorPresenterService, UiValidationError } from '../../core/api-error-presenter.service';
 import { environment } from '../../../environments/environment';
 import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
@@ -444,6 +445,7 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
  */
 export class RootListPageComponent implements OnDestroy {
   private readonly commentsApi = inject(CommentsApiService);
+  private readonly commentsGraphqlApi = inject(CommentsGraphqlApiService);
   private readonly formBuilder = inject(FormBuilder);
   private readonly apiErrorPresenter = inject(ApiErrorPresenterService);
 
@@ -600,7 +602,7 @@ export class RootListPageComponent implements OnDestroy {
     this.errorMessage = '';
     this.loadCanRetry = false;
 
-    this.commentsApi.getRootComments(this.page, this.pageSize, this.sortBy, this.sortDirection).subscribe({
+    this.getRootCommentsRequest().getRootComments(this.page, this.pageSize, this.sortBy, this.sortDirection).subscribe({
       next: (response) => {
         this.comments = response.items;
         this.totalCount = response.totalCount;
@@ -762,7 +764,7 @@ export class RootListPageComponent implements OnDestroy {
 
     const raw = this.createForm.getRawValue();
 
-    this.commentsApi
+    this.getCreateCommentRequest()
       .createComment({
         userName: raw.userName,
         email: raw.email,
@@ -926,7 +928,7 @@ export class RootListPageComponent implements OnDestroy {
 
     const raw = this.replyForm.getRawValue();
 
-    this.commentsApi
+    this.getCreateCommentRequest()
       .createComment({
         userName: raw.userName,
         email: raw.email,
@@ -953,6 +955,21 @@ export class RootListPageComponent implements OnDestroy {
           this.isReplySubmitting = false;
         }
       });
+  }
+
+
+  /**
+   * Повертає активний API-клієнт для списку root-коментарів (REST або GraphQL за feature-flag).
+   */
+  private getRootCommentsRequest(): Pick<CommentsApiService, 'getRootComments'> | Pick<CommentsGraphqlApiService, 'getRootComments'> {
+    return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
+  }
+
+  /**
+   * Повертає активний API-клієнт для створення коментарів (REST або GraphQL за feature-flag).
+   */
+  private getCreateCommentRequest(): Pick<CommentsApiService, 'createComment'> | Pick<CommentsGraphqlApiService, 'createComment'> {
+    return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
   }
 
   /**
