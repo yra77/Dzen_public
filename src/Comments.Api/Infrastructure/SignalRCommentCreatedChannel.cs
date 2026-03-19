@@ -1,6 +1,7 @@
 using Comments.Api.Realtime;
 using Comments.Application.DTOs;
 using Microsoft.AspNetCore.SignalR;
+using Comments.Application.Abstractions;
 
 namespace Comments.Api.Infrastructure;
 

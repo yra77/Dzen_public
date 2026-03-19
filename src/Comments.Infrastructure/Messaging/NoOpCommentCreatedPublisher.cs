@@ -1,7 +1,7 @@
 using Comments.Application.Abstractions;
 using Comments.Application.DTOs;
 
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Messaging;
 
 /// <summary>
 /// Порожня реалізація публікації події створення коментаря.

@@ -1,7 +1,7 @@
 using Comments.Application.Abstractions;
 using Comments.Application.DTOs;
 
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Messaging;
 
 /// <summary>
 /// Паблішер, що делегує доставку події створення коментаря у всі зареєстровані канали.

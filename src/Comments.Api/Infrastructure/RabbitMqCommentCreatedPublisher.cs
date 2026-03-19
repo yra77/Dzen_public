@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using Comments.Application.DTOs;
 using RabbitMQ.Client;
+using Comments.Application.Abstractions;
 
 namespace Comments.Api.Infrastructure;
 
