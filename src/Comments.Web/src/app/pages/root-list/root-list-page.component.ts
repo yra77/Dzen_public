@@ -736,7 +736,7 @@ export class RootListPageComponent implements OnDestroy {
   reloadCaptcha(): void {
     this.captchaMessage = '';
 
-    this.commentsApi.getCaptcha().subscribe({
+    this.getCaptchaRequest().getCaptcha().subscribe({
       next: (response) => {
         this.captchaChallengeId = response.challengeId;
         this.captchaImageDataUrl = `data:${response.mimeType};base64,${response.imageBase64}`;
@@ -901,7 +901,7 @@ export class RootListPageComponent implements OnDestroy {
   reloadReplyCaptcha(): void {
     this.replyCaptchaMessage = '';
 
-    this.commentsApi.getCaptcha().subscribe({
+    this.getCaptchaRequest().getCaptcha().subscribe({
       next: (response) => {
         this.replyCaptchaChallengeId = response.challengeId;
         this.replyCaptchaImageDataUrl = `data:${response.mimeType};base64,${response.imageBase64}`;
@@ -979,6 +979,21 @@ export class RootListPageComponent implements OnDestroy {
     return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
   }
 
+
+  /**
+   * Повертає активний API-клієнт для CAPTCHA (REST або GraphQL за feature-flag).
+   */
+  private getCaptchaRequest(): Pick<CommentsApiService, 'getCaptcha'> | Pick<CommentsGraphqlApiService, 'getCaptcha'> {
+    return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
+  }
+
+  /**
+   * Повертає активний API-клієнт для txt-preview вкладень (REST або GraphQL за feature-flag).
+   */
+  private getAttachmentTextRequest(): Pick<CommentsApiService, 'getAttachmentText'> | Pick<CommentsGraphqlApiService, 'getAttachmentText'> {
+    return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
+  }
+
   /**
    * Формує абсолютне посилання на файл вкладення.
    */
@@ -996,7 +1011,7 @@ export class RootListPageComponent implements OnDestroy {
     }
 
     this.attachmentTextLoadingByPath.add(storagePath);
-    this.commentsApi.getAttachmentText(storagePath).subscribe({
+    this.getAttachmentTextRequest().getAttachmentText(storagePath).subscribe({
       next: (content) => {
         this.attachmentTextPreviewByPath[storagePath] = content;
         this.attachmentTextLoadingByPath.delete(storagePath);

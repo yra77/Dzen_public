@@ -40,6 +40,7 @@ builder.Services.AddDbContext<CommentsDbContext>(options =>
 
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<BasicCaptchaChallengeStore>();
+builder.Services.AddSingleton<CaptchaChallengeService>();
 builder.Services.AddScoped<ICommentRepository, EfCommentRepository>();
 builder.Services.AddScoped<IProcessedMessageRepository, EfProcessedMessageRepository>();
 builder.Services.AddSingleton<ITextSanitizer, BasicTextSanitizer>();
