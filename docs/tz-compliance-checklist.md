@@ -116,3 +116,15 @@
 2. Додати GraphQL contract tests (query/mutation/error-shape) для `captchaImage` та `attachmentTextPreview`, включно з негативними кейсами path traversal.
 3. Налаштувати робоче джерело npm-пакетів (internal mirror/allowlist) для стабільного встановлення Apollo-залежностей у CI/CD.
 4. Після стабілізації Apollo cache — запровадити нормалізацію сутностей і точкову інвалідацію cache після createComment/reply.
+
+## 9) Зміни, внесені в поточній ітерації (2026-03-19, виправлення Angular template parse error)
+
+1. У `RootListPageComponent` прибрано дубльовані фрагменти розмітки модалки створення root-коментаря, які ламали структуру `<label>/<form>` і викликали `NG5002: Unexpected closing tag "label"`.
+2. У reply-формі видалено дубль кнопки submit, щоб залишити один узгоджений стан блокування через `hasBlockingErrors(replyForm)`.
+3. Після правки шаблон коректно парситься Angular compiler (помилка `NG5002` більше не відтворюється).
+
+### Що ще треба зробити далі (оновлено після цієї ітерації)
+
+1. Довстановити Apollo-залежності у frontend-середовищі (`apollo-angular`, `@apollo/client`, `graphql`) і стабілізувати збірку `ng serve`/`ng build`.
+2. Після стабілізації залежностей прибрати фінальний REST fallback у runtime-потоці, залишивши GraphQL (HotChocolate + Apollo) єдиним transport-шаром.
+3. Продовжити декомпозицію `RootListPageComponent`/`ThreadPageComponent` на менші standalone-компоненти (modal/forms), щоб зменшити ризик повторних template regression.
