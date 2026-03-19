@@ -166,3 +166,15 @@
 1. Погодити на бекенді контракт для глибоких гілок (`replies`) без fixed-depth обмеження: або спеціальний flatten endpoint, або пагінація/expand для дочірніх вузлів.
 2. Додати frontend regression-тест для thread-сторінки з багаторівневими відповідями (мінімум 3 рівні), щоб гарантувати відображення контенту у всіх вузлах.
 3. Вирівняти `comments` (root-list) selection set із thread-контрактом або явно позначити, що в root-list завантажується скорочений payload для продуктивності.
+
+## 13) Зміни, внесені в поточній ітерації (2026-03-19, hotfix порожніх даних у thread після Apollo cache merge)
+
+1. У `CommentsGraphqlApiService.getThread` виправлено GraphQL-тип фрагмента вкладення: `CommentAttachmentDto` → `AttachmentDto`, щоб selection set відповідав реальній backend GraphQL-схемі для поля `attachment`.
+2. У thread-фрагменти додано `__typename` для вузлів коментарів та вкладень, що стабілізує нормалізацію/десеріалізацію payload у Apollo клієнті.
+3. Для thread-запиту увімкнено `fetchPolicy: 'no-cache'`, щоб ізолювати дерево гілки від partial cache-даних (коли в інших запитах `replies` завантажуються у скороченому вигляді).
+
+### Що ще треба зробити далі (оновлено після цієї ітерації)
+
+1. Додати e2e/regression сценарій: перехід зі списку root-коментарів у thread не повинен втрачати `userName/email/text/createdAtUtc` у вузлах після попередніх GraphQL-запитів.
+2. Узгодити єдиний підхід до Apollo cache для thread-flow: або залишити `no-cache` як тимчасовий hotfix, або перейти на уніфіковані повні selection sets + type policies.
+3. Після стабілізації thread-flow винести GraphQL selection set дерева у спільний fragment-builder, щоб уникати розсинхрону між root-list/thread/create запитами.
