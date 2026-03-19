@@ -2,7 +2,7 @@ using Comments.Application.Abstractions;
 using Comments.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Persistence;
 
 /// <summary>
 /// EF Core-реалізація сховища ідемпотентності оброблених повідомлень.

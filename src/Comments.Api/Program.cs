@@ -1,5 +1,5 @@
 using Comments.Application.Common.Behaviors;
-using Comments.Api.Infrastructure;
+using Comments.Infrastructure.Persistence;
 using Comments.Application.Abstractions;
 using Comments.Api.GraphQL;
 using Comments.Api.Realtime;

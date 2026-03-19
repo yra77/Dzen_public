@@ -1,7 +1,7 @@
 using Comments.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Persistence;
 
 /// <summary>
 /// EF Core DbContext for comments data and processed message idempotency records.
