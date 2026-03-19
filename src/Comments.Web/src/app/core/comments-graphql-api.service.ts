@@ -107,7 +107,9 @@ export class CommentsGraphqlApiService {
           return {
             ...payload,
             // Нормалізуємо replies, щоб шаблони Angular не падали на `undefined.length`.
-            items: payload.items.map(comment => this.normalizeCommentNode(comment))
+            items: payload.items
+              .map(comment => this.normalizeCommentNode(comment))
+              .filter((comment): comment is CommentNode => comment !== null)
           };
         })
       );
@@ -241,7 +243,12 @@ export class CommentsGraphqlApiService {
             throw new Error('GraphQL query commentThread returned empty payload.');
           }
 
-          return this.normalizeCommentNode(response.data.commentThread);
+          const normalizedThread = this.normalizeCommentNode(response.data.commentThread);
+          if (!normalizedThread) {
+            throw new Error('GraphQL query commentThread returned null root comment.');
+          }
+
+          return normalizedThread;
         })
       );
   }
@@ -284,7 +291,12 @@ export class CommentsGraphqlApiService {
             throw new Error('GraphQL mutation createComment returned empty comment node.');
           }
 
-          return this.normalizeCommentNode(response.data.createComment);
+          const normalizedComment = this.normalizeCommentNode(response.data.createComment);
+          if (!normalizedComment) {
+            throw new Error('GraphQL mutation createComment returned null comment node.');
+          }
+
+          return normalizedComment;
         })
       );
   }
@@ -366,8 +378,15 @@ export class CommentsGraphqlApiService {
   /**
    * Гарантує, що в кожному вузлі дерева `replies` завжди масив, а не `undefined/null`.
    */
-  private normalizeCommentNode(comment: CommentNode): CommentNode {
-    const replies = (comment.replies ?? []).map(reply => this.normalizeCommentNode(reply));
+  private normalizeCommentNode(comment: CommentNode | null | undefined): CommentNode | null {
+    if (!comment) {
+      return null;
+    }
+
+    const replies = (comment.replies ?? [])
+      .map(reply => this.normalizeCommentNode(reply))
+      .filter((reply): reply is CommentNode => reply !== null);
+
     return {
       ...comment,
       replies
