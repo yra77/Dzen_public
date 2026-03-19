@@ -4,7 +4,7 @@ using Comments.Application.DTOs;
 using RabbitMQ.Client;
 using Comments.Application.Abstractions;
 
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Messaging;
 
 /// <summary>
 /// Канал публікації події створення коментаря в RabbitMQ exchange/queues.
