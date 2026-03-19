@@ -6,7 +6,6 @@ import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 
 import {
   CommentNode,
-  CommentsApiService,
   CreateCommentAttachmentRequest
 } from '../../core/comments-api.service';
 import { CommentsGraphqlApiService } from '../../core/comments-graphql-api.service';
@@ -220,7 +219,6 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
 
                 <div class="actions wide">
                   <button type="button" (click)="closeReplyModal()">Закрити</button>
-                  <button type="submit" [disabled]="replyForm.invalid || isSubmitting" data-testid="thread-submit-button">Створити коментар</button>
                   <button type="submit" [disabled]="replyForm.invalid || isSubmitting || hasBlockingErrors(replyForm)" data-testid="thread-submit-button">Створити коментар</button>
                 </div>
               </form>
@@ -269,7 +267,6 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
  */
 export class ThreadPageComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
-  private readonly commentsApi = inject(CommentsApiService);
   private readonly commentsGraphqlApi = inject(CommentsGraphqlApiService);
   private readonly formBuilder = inject(FormBuilder);
   private readonly apiErrorPresenter = inject(ApiErrorPresenterService);
@@ -396,7 +393,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.getPreviewRequest().previewComment(text).subscribe({
+    this.commentsGraphqlApi.previewComment(text).subscribe({
       next: (preview) => {
         this.textPreviewHtml = preview;
         this.previewMessage = '';
@@ -502,7 +499,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   reloadCaptcha(): void {
     this.captchaMessage = '';
 
-    this.getCaptchaRequest().getCaptcha().subscribe({
+    this.commentsGraphqlApi.getCaptcha().subscribe({
       next: (response) => {
         this.captchaChallengeId = response.challengeId;
         this.captchaImageDataUrl = `data:${response.mimeType};base64,${response.imageBase64}`;
@@ -530,7 +527,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
 
     const raw = this.replyForm.getRawValue();
 
-    this.getCreateCommentRequest()
+    this.commentsGraphqlApi
       .createComment({
         userName: raw.userName,
         email: raw.email,
@@ -610,7 +607,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     }
 
     this.attachmentTextLoadingByPath.add(storagePath);
-    this.getAttachmentTextRequest().getAttachmentText(storagePath).subscribe({
+    this.commentsGraphqlApi.getAttachmentText(storagePath).subscribe({
       next: (content) => {
         this.attachmentTextPreviewByPath[storagePath] = content;
         this.attachmentTextLoadingByPath.delete(storagePath);
@@ -674,7 +671,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.loadCanRetry = false;
 
-    this.getThreadRequest().getThread(commentId).subscribe({
+    this.commentsGraphqlApi.getThread(commentId).subscribe({
       next: (response) => {
         this.thread = response;
         this.isLoading = false;
@@ -688,42 +685,6 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     });
   }
 
-
-  /**
-   * Повертає активний API-клієнт для читання гілки (REST або GraphQL за feature-flag).
-   */
-  private getThreadRequest(): Pick<CommentsApiService, 'getThread'> | Pick<CommentsGraphqlApiService, 'getThread'> {
-    return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
-  }
-
-  /**
-   * Повертає активний API-клієнт для створення коментарів (REST або GraphQL за feature-flag).
-   */
-  private getCreateCommentRequest(): Pick<CommentsApiService, 'createComment'> | Pick<CommentsGraphqlApiService, 'createComment'> {
-    return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
-  }
-
-  /**
-   * Повертає активний API-клієнт для HTML-preview (REST або GraphQL за feature-flag).
-   */
-  private getPreviewRequest(): Pick<CommentsApiService, 'previewComment'> | Pick<CommentsGraphqlApiService, 'previewComment'> {
-    return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
-  }
-
-
-  /**
-   * Повертає активний API-клієнт для CAPTCHA (REST або GraphQL за feature-flag).
-   */
-  private getCaptchaRequest(): Pick<CommentsApiService, 'getCaptcha'> | Pick<CommentsGraphqlApiService, 'getCaptcha'> {
-    return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
-  }
-
-  /**
-   * Повертає активний API-клієнт для txt-preview вкладень (REST або GraphQL за feature-flag).
-   */
-  private getAttachmentTextRequest(): Pick<CommentsApiService, 'getAttachmentText'> | Pick<CommentsGraphqlApiService, 'getAttachmentText'> {
-    return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
-  }
 
   /**
    * Позначає поля форми як помилкові на основі server-side validation ключів.
