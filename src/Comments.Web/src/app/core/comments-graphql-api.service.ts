@@ -146,22 +146,8 @@ export class CommentsGraphqlApiService {
             attachment {
               ...ThreadAttachment
             }
-            replies {
-              id
-              parentId
-              userName
-              email
-              homePage
-              text
-              createdAtUtc
-              attachment {
-                ...ThreadAttachment
-              }
-              replies {
-                id
-              }
-              __typename
-            }
+            # На найглибшому рівні не запитуємо `replies`, щоб не рендерити id-only вузли без контенту.
+            # За відсутності поля `replies` normalizeCommentNode встановить порожній масив.
             __typename
           }
 
