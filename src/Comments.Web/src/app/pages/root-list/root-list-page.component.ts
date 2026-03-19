@@ -8,7 +8,7 @@ import {
   CreateCommentAttachmentRequest,
   RootCommentsSortDirection,
   RootCommentsSortField
-} from '../../core/comments-api.service';
+} from '../../core/comments.models';
 import { CommentsGraphqlApiService } from '../../core/comments-graphql-api.service';
 import { ApiErrorPresenterService, UiValidationError } from '../../core/api-error-presenter.service';
 import { environment } from '../../../environments/environment';

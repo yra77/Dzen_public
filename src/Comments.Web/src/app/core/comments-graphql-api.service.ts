@@ -9,7 +9,7 @@ import {
   PagedCommentsResponse,
   RootCommentsSortDirection,
   RootCommentsSortField
-} from './comments-api.service';
+} from './comments.models';
 import { environment } from '../../environments/environment';
 
 /** GraphQL-значення enum для сортування коментарів (HotChocolate naming convention). */
