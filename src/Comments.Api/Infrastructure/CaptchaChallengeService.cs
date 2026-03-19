@@ -91,7 +91,7 @@ public sealed class CaptchaChallengeService
             var opacity = Random.Shared.NextDouble() * 0.30 + 0.70;
 
             svgBuilder.AppendLine(
-                $"    <text x=\"{x}\" y=\"{y}\" transform=\"rotate({rotation} {x} {y})\" font-size=\"{fontSize}\" font-family=\"Arial, Helvetica, sans-serif\" font-weight=\"700\" fill=\"#111827\" fill-opacity=\"{opacity.ToString(\"0.00\", CultureInfo.InvariantCulture)}\" letter-spacing=\"1\">{character}</text>");
+                $"    <text x=\"{x}\" y=\"{y}\" transform=\"rotate({rotation} {x} {y})\" font-size=\"{fontSize}\" font-family=\"Arial, Helvetica, sans-serif\" font-weight=\"700\" fill=\"#111827\" fill-opacity=\"{opacity.ToString("0.00", CultureInfo.InvariantCulture)}\" letter-spacing=\"1\">{character}</text>");
         }
 
         svgBuilder.AppendLine("  </g>");
@@ -115,8 +115,7 @@ public sealed class CaptchaChallengeService
             var strokeWidth = Random.Shared.NextDouble() * 1.2 + 0.6;
             var opacity = Random.Shared.NextDouble() * 0.35 + 0.25;
 
-            svgBuilder.AppendLine(
-                $"  <path d=\"M{x1},{y1} Q{controlX},{controlY} {x2},{y2}\" stroke=\"#6b7280\" stroke-opacity=\"{opacity.ToString(\"0.00\", CultureInfo.InvariantCulture)}\" stroke-width=\"{strokeWidth.ToString(\"0.00\", CultureInfo.InvariantCulture)}\" fill=\"none\"/>");
+            svgBuilder.AppendLine($"  <path d=\"M{x1},{y1} Q{controlX},{controlY} {x2},{y2}\" stroke=\"#6b7280\" stroke-opacity=\"{opacity.ToString("0.00", CultureInfo.InvariantCulture)}\" stroke-width=\"{strokeWidth.ToString("0.00", CultureInfo.InvariantCulture)}\" fill=\"none\"/>");
         }
     }
 
@@ -133,7 +132,7 @@ public sealed class CaptchaChallengeService
             var opacity = Random.Shared.NextDouble() * 0.30 + 0.08;
 
             svgBuilder.AppendLine(
-                $"  <circle cx=\"{cx}\" cy=\"{cy}\" r=\"{radius.ToString(\"0.00\", CultureInfo.InvariantCulture)}\" fill=\"#4b5563\" fill-opacity=\"{opacity.ToString(\"0.00\", CultureInfo.InvariantCulture)}\"/>");
+                $"  <circle cx=\"{cx}\" cy=\"{cy}\" r=\"{radius.ToString("0.00", CultureInfo.InvariantCulture)}\" fill=\"#4b5563\" fill-opacity=\"{opacity.ToString("0.00", CultureInfo.InvariantCulture)}\"/>");
         }
     }
 
@@ -153,8 +152,7 @@ public sealed class CaptchaChallengeService
             var rotation = Random.Shared.Next(-70, 71);
             var opacity = Random.Shared.NextDouble() * 0.22 + 0.10;
 
-            svgBuilder.AppendLine(
-                $"  <text x=\"{x}\" y=\"{y}\" transform=\"rotate({rotation} {x} {y})\" font-size=\"{fontSize}\" font-family=\"Arial, Helvetica, sans-serif\" fill=\"#1f2937\" fill-opacity=\"{opacity.ToString(\"0.00\", CultureInfo.InvariantCulture)}\">{decoyCharacter}</text>");
+            svgBuilder.AppendLine($"  <text x=\"{x}\" y=\"{y}\" transform=\"rotate({rotation} {x} {y})\" font-size=\"{fontSize}\" font-family=\"Arial, Helvetica, sans-serif\" fill=\"#1f2937\" fill-opacity=\"{opacity.ToString("0.00", CultureInfo.InvariantCulture)}\">{decoyCharacter}</text>");
         }
     }
 }
