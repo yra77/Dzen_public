@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Comments.Api", "src/Comment
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Comments.Infrastructure", "src/Comments.Infrastructure/Comments.Infrastructure.csproj", "{B8D78959-1DF1-4F3F-8AB3-B47A901CF7F0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Comments.ArchitectureTests", "tests/Comments.ArchitectureTests/Comments.ArchitectureTests.csproj", "{61E2583E-42E3-41B1-9CDA-CD348429E6D4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,5 +34,9 @@ Global
 		{B8D78959-1DF1-4F3F-8AB3-B47A901CF7F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B8D78959-1DF1-4F3F-8AB3-B47A901CF7F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B8D78959-1DF1-4F3F-8AB3-B47A901CF7F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{61E2583E-42E3-41B1-9CDA-CD348429E6D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{61E2583E-42E3-41B1-9CDA-CD348429E6D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{61E2583E-42E3-41B1-9CDA-CD348429E6D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{61E2583E-42E3-41B1-9CDA-CD348429E6D4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
