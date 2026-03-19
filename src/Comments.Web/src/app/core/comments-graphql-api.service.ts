@@ -115,11 +115,35 @@ export class CommentsGraphqlApiService {
 
   /** Отримує дерево гілки за id кореневого коментаря. */
   getThread(rootCommentId: string): Observable<CommentNode> {
+    // GraphQL не підтримує truly-recursive selection set, тому задаємо фіксовану глибину дерева (5 рівнів).
     return this.apollo
       .query<ThreadQueryData>({
         query: gql`
           query GetCommentThread($rootCommentId: Uuid!) {
             commentThread(rootCommentId: $rootCommentId) {
+              ...ThreadCommentLevel1
+            }
+          }
+
+          fragment ThreadAttachment on CommentAttachmentDto {
+            fileName
+            contentType
+            storagePath
+            sizeBytes
+          }
+
+          fragment ThreadCommentLevel5 on CommentDto {
+            id
+            parentId
+            userName
+            email
+            homePage
+            text
+            createdAtUtc
+            attachment {
+              ...ThreadAttachment
+            }
+            replies {
               id
               parentId
               userName
@@ -128,29 +152,75 @@ export class CommentsGraphqlApiService {
               text
               createdAtUtc
               attachment {
-                fileName
-                contentType
-                storagePath
-                sizeBytes
+                ...ThreadAttachment
               }
               replies {
                 id
-                parentId
-                userName
-                email
-                homePage
-                text
-                createdAtUtc
-                attachment {
-                  fileName
-                  contentType
-                  storagePath
-                  sizeBytes
-                }
-                replies {
-                  id
-                }
               }
+            }
+          }
+
+          fragment ThreadCommentLevel4 on CommentDto {
+            id
+            parentId
+            userName
+            email
+            homePage
+            text
+            createdAtUtc
+            attachment {
+              ...ThreadAttachment
+            }
+            replies {
+              ...ThreadCommentLevel5
+            }
+          }
+
+          fragment ThreadCommentLevel3 on CommentDto {
+            id
+            parentId
+            userName
+            email
+            homePage
+            text
+            createdAtUtc
+            attachment {
+              ...ThreadAttachment
+            }
+            replies {
+              ...ThreadCommentLevel4
+            }
+          }
+
+          fragment ThreadCommentLevel2 on CommentDto {
+            id
+            parentId
+            userName
+            email
+            homePage
+            text
+            createdAtUtc
+            attachment {
+              ...ThreadAttachment
+            }
+            replies {
+              ...ThreadCommentLevel3
+            }
+          }
+
+          fragment ThreadCommentLevel1 on CommentDto {
+            id
+            parentId
+            userName
+            email
+            homePage
+            text
+            createdAtUtc
+            attachment {
+              ...ThreadAttachment
+            }
+            replies {
+              ...ThreadCommentLevel2
             }
           }
         `,
