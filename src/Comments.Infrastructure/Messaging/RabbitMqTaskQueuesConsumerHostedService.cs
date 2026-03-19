@@ -1,21 +1,29 @@
+
+
+using Comments.Application.Abstractions;
+using Comments.Application.DTOs;
+
+using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
+
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
+
 using System.Text;
 using System.Text.Json;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
-using Comments.Application.Abstractions;
-using Comments.Application.DTOs;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
+
 
 namespace Comments.Infrastructure.Messaging;
-
 /// <summary>
 /// Фоновий consumer RabbitMQ для черг індексації та обробки вкладень.
 /// </summary>
 public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, IDisposable
 {
+
+
     private static readonly Meter ConsumerMeter = new("Comments.Infrastructure.RabbitMqConsumer");
     private static readonly Counter<long> SuccessCounter = ConsumerMeter.CreateCounter<long>(
         "comments_rabbitmq_consumer_success_total",
@@ -42,15 +50,16 @@ public sealed class RabbitMqTaskQueuesConsumerHostedService : IHostedService, ID
     private IModel? _channel;
     private readonly Dictionary<string, WorkerAlertWindow> _alertWindows = new();
 
-    public RabbitMqTaskQueuesConsumerHostedService(
-        RabbitMqOptions options,
-        ILogger<RabbitMqTaskQueuesConsumerHostedService> logger,
-        IServiceScopeFactory scopeFactory)
+
+    public RabbitMqTaskQueuesConsumerHostedService(RabbitMqOptions options,
+                                                   ILogger<RabbitMqTaskQueuesConsumerHostedService> logger,
+                                                   IServiceScopeFactory scopeFactory)
     {
         _options = options;
         _logger = logger;
         _scopeFactory = scopeFactory;
     }
+
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
