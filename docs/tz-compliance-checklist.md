@@ -17,7 +17,7 @@
 | RabbitMQ (MassTransit) | ⚠️ Частково | Є інтеграція через `RabbitMQ.Client`, без MassTransit. | Мігрувати publisher/consumer на MassTransit (retry, DLQ, outbox/idempotency). |
 | Elasticsearch (офіційний .NET client) | ⚠️ Частково | Поточний адаптер працює через `HttpClient`. | Перейти на офіційний Elastic .NET client + typed mappings/templates. |
 | SignalR | ✅ Виконано | `CommentsHub` + `/hubs/comments` активні. | Додати перевірки reconnect/backoff у e2e-сценаріях. |
-| Clean Architecture + SOLID | ⚠️ Частково | Іде перенесення інфраструктурних сервісів з `Comments.Api` у `Comments.Infrastructure`. | Завершити перенос адаптерів з `Comments.Api/Infrastructure` та залишити в API лише composition root. |
+| Clean Architecture + SOLID | ⚠️ Частково | Продовжено винесення інфраструктурних компонентів у `Comments.Infrastructure` (search + messaging publisher). | Завершити перенос адаптерів з `Comments.Api/Infrastructure` та залишити в API лише composition root. |
 
 ### Frontend
 
@@ -29,9 +29,10 @@
 
 ## 2) Зміни, внесені в поточній ітерації (2026-03-19)
 
-1. Продовжено винесення інфраструктури в окремий шар: `NoOpCommentSearchService` перенесено з `Comments.Api/Infrastructure` у `Comments.Infrastructure/Search`.
-2. Оновлено API-composition root (`Program.cs`) на використання `NoOpCommentSearchService` з `Comments.Infrastructure`.
-3. Збережено правило документування: при створенні/редагуванні класів та методів додаються XML-коментарі й короткі inline-коментарі для складних ділянок.
+1. Перенесено `CompositeCommentCreatedPublisher` з `Comments.Api/Infrastructure` у `Comments.Infrastructure/Messaging` для подальшого очищення API-шару до composition root.
+2. Контракт `ICommentCreatedChannel` перенесено в `Comments.Application/Abstractions`, щоб ізолювати прикладний контракт від API-проєкту.
+3. Перенесено `NoOpCommentCreatedPublisher` у `Comments.Infrastructure/Messaging`; застарілий дубль в `Comments.Api/Infrastructure` видалено.
+4. Дотримано правило документування: для нових/перенесених класів збережені XML-коментарі, а наявні описи оновлено до актуального стану.
 
 ## 3) Що ще треба зробити далі (актуальний план)
 
