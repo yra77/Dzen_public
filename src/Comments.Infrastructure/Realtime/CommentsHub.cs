@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 
-namespace Comments.Api.Realtime;
+namespace Comments.Infrastructure.Realtime;
 
 /// <summary>
 /// SignalR hub used by clients to subscribe to realtime comment creation events.

@@ -2,7 +2,6 @@ using Comments.Application.Common.Behaviors;
 using Comments.Infrastructure.Persistence;
 using Comments.Application.Abstractions;
 using Comments.Api.GraphQL;
-using Comments.Api.Realtime;
 using Comments.Infrastructure.Text;
 using Comments.Infrastructure.Search;
 using Comments.Infrastructure.Realtime;
