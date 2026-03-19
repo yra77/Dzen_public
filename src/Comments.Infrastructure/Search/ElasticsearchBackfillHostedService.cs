@@ -1,13 +1,22 @@
+
+
 using Comments.Application.Abstractions;
+
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+
 
 namespace Comments.Infrastructure.Search;
-
 public sealed class ElasticsearchBackfillHostedService : IHostedService
 {
+
+
     private readonly IServiceProvider _serviceProvider;
     private readonly ElasticsearchOptions _options;
     private readonly ILogger<ElasticsearchBackfillHostedService> _logger;
+
 
     public ElasticsearchBackfillHostedService(
         IServiceProvider serviceProvider,
@@ -18,6 +27,7 @@ public sealed class ElasticsearchBackfillHostedService : IHostedService
         _options = options;
         _logger = logger;
     }
+
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
