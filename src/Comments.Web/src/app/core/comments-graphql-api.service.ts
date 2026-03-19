@@ -106,9 +106,10 @@ export class CommentsGraphqlApiService {
 
           return {
             ...payload,
-            // Нормалізуємо replies, щоб шаблони Angular не падали на `undefined.length`.
+            // Для списку root-коментарів бекенд повертає `replies` як id-only заглушки.
+            // Вирівнюємо їх до порожнього масиву, щоб UI не рендерив пусті вузли дерева.
             items: payload.items
-              .map(comment => this.normalizeCommentNode(comment))
+              .map(comment => this.normalizeCommentNode(comment, { includeReplies: false }))
               .filter((comment): comment is CommentNode => comment !== null)
           };
         })
@@ -229,7 +230,7 @@ export class CommentsGraphqlApiService {
             throw new Error('GraphQL query commentThread returned empty payload.');
           }
 
-          const normalizedThread = this.normalizeCommentNode(response.data.commentThread);
+          const normalizedThread = this.normalizeCommentNode(response.data.commentThread, { includeReplies: true });
           if (!normalizedThread) {
             throw new Error('GraphQL query commentThread returned null root comment.');
           }
@@ -277,7 +278,7 @@ export class CommentsGraphqlApiService {
             throw new Error('GraphQL mutation createComment returned empty comment node.');
           }
 
-          const normalizedComment = this.normalizeCommentNode(response.data.createComment);
+          const normalizedComment = this.normalizeCommentNode(response.data.createComment, { includeReplies: false });
           if (!normalizedComment) {
             throw new Error('GraphQL mutation createComment returned null comment node.');
           }
@@ -364,14 +365,19 @@ export class CommentsGraphqlApiService {
   /**
    * Гарантує, що в кожному вузлі дерева `replies` завжди масив, а не `undefined/null`.
    */
-  private normalizeCommentNode(comment: CommentNode | null | undefined): CommentNode | null {
+  private normalizeCommentNode(
+    comment: CommentNode | null | undefined,
+    options: { includeReplies: boolean }
+  ): CommentNode | null {
     if (!comment) {
       return null;
     }
 
-    const replies = (comment.replies ?? [])
-      .map(reply => this.normalizeCommentNode(reply))
-      .filter((reply): reply is CommentNode => reply !== null);
+    const replies = options.includeReplies
+      ? (comment.replies ?? [])
+        .map(reply => this.normalizeCommentNode(reply, options))
+        .filter((reply): reply is CommentNode => reply !== null)
+      : [];
 
     return {
       ...comment,
