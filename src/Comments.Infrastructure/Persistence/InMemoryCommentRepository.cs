@@ -2,7 +2,7 @@ using Comments.Application.Abstractions;
 using Comments.Application.DTOs;
 using Comments.Domain.Entities;
 
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Persistence;
 
 /// <summary>
 /// In-memory repository implementation used by tests/local runs.

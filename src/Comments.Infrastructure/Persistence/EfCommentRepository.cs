@@ -3,7 +3,7 @@ using Comments.Application.DTOs;
 using Comments.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace Comments.Api.Infrastructure;
+namespace Comments.Infrastructure.Persistence;
 
 /// <summary>
 /// EF Core repository implementation for comments and thread loading.

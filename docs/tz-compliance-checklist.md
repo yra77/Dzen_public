@@ -10,14 +10,14 @@
 
 | Вимога ТЗ | Статус | Факт у проєкті | Що потрібно доробити |
 |---|---|---|---|
-| ASP.NET Core 8.0 (LTS) | ✅ Виконано | `Comments.Api` таргетує `net8.0`. | Підтримувати patch-оновлення .NET 8. |
+| ASP.NET Core 8.0 (LTS) | ✅ Виконано | `Comments.Api` і `Comments.Infrastructure` таргетують `net8.0`. | Підтримувати patch-оновлення .NET 8. |
 | Entity Framework Core + SQLite | ✅ Виконано | Налаштовано `UseSqlite`, є міграції EF Core. | Підтримувати міграції та backup/restore-процедури SQLite. |
 | GraphQL (HotChocolate) | ✅ Виконано | Працює endpoint `/graphql`, реалізовані query/mutation. | Додати GraphQL contract/integration тести (включно з error-shape). |
 | CQRS + MediatR | ✅ Виконано | Команди/запити розділені, `ValidationBehavior` підключено. | Додати інтеграційні перевірки ключових CQRS-ланцюжків. |
 | RabbitMQ (MassTransit) | ⚠️ Частково | Є інтеграція через `RabbitMQ.Client`, без MassTransit. | Мігрувати publisher/consumer на MassTransit (retry, DLQ, outbox/idempotency). |
 | Elasticsearch (офіційний .NET client) | ⚠️ Частково | Поточний адаптер працює через `HttpClient`. | Перейти на офіційний Elastic .NET client + typed mappings/templates. |
 | SignalR | ✅ Виконано | `CommentsHub` + `/hubs/comments` активні, канал публікації винесений у `Comments.Infrastructure`. | Додати перевірки reconnect/backoff у e2e-сценаріях. |
-| Clean Architecture + SOLID | ⚠️ Частково | У `Comments.Infrastructure` винесені captcha, maintenance cleanup, attachment storage, validation middleware, Elasticsearch/SignalR адаптери. | Завершити перенос решти persistence/repository-адаптерів з `Comments.Api/Infrastructure` і залишити в API лише composition root. |
+| Clean Architecture + SOLID | ✅ Виконано (базовий шар) | EF DbContext, EF/InMemory repositories, captcha/search/realtime/messaging/maintenance/attachments винесені в `Comments.Infrastructure`. | Наступний крок: додати тестові перевірки залежностей між шарами (architecture tests). |
 
 ### Frontend
 
@@ -29,17 +29,17 @@
 
 ## 2) Зміни, внесені в поточній ітерації (2026-03-19)
 
-1. Завершено перенесення Elasticsearch-адаптерів (`ElasticsearchOptions`, `ElasticsearchCommentCreatedChannel`, `ElasticsearchCommentSearchService`, `ElasticsearchBackfillHostedService`) з `Comments.Api/Infrastructure` у `Comments.Infrastructure/Search`.
-2. Перенесено SignalR-інфраструктуру (`SignalROptions`, `SignalRCommentCreatedChannel`) з `Comments.Api/Infrastructure` у `Comments.Infrastructure/Realtime`.
-3. Оновлено `Program.cs` на нові `Comments.Infrastructure.*` namespace для Search/Realtime модулів.
-4. Актуалізовано чекліст: прибрано дублікати проміжних записів і зафіксовано лише поточний стан та дійсний backlog.
+1. Перенесено persistence-адаптери (`CommentsDbContext`, `EfCommentRepository`, `EfProcessedMessageRepository`, `InMemoryCommentRepository`) з `Comments.Api/Infrastructure` у `Comments.Infrastructure/Persistence`.
+2. Оновлено DI та посилання в `Program.cs` і GraphQL/EF migration файлах на новий namespace `Comments.Infrastructure.Persistence`.
+3. Вирівняно таргет `Comments.Infrastructure` на `net8.0` і додано `Microsoft.EntityFrameworkCore` dependency для нового persistence-шару.
+4. Актуалізовано чекліст — лишено лише дійсний стан і релевантний backlog.
 
 ## 3) Що ще треба зробити далі (актуальний план)
 
 1. **P0 — Messaging:** міграція RabbitMQ інтеграції на MassTransit (producer/consumer, retry, DLQ, idempotency/outbox).
 2. **P1 — Search:** перехід з `HttpClient`-інтеграції Elasticsearch на офіційний Elastic .NET client.
-3. **P1 — Architecture:** перенести решту persistence-адаптерів з `Comments.Api/Infrastructure` у `Comments.Infrastructure` (`CommentsDbContext`, `EfCommentRepository`, `EfProcessedMessageRepository`, in-memory репозиторій для dev/test).
-4. **P1 — GraphQL quality:** додати контрактні тести для `comments`, `commentThread`, `createComment`, `captchaImage`, `attachmentTextPreview` + негативні кейси (enum/scalar/path traversal).
+3. **P1 — GraphQL quality:** додати контрактні тести для `comments`, `commentThread`, `createComment`, `captchaImage`, `attachmentTextPreview` + негативні кейси (enum/scalar/path traversal).
+4. **P1 — Architecture quality:** додати architecture tests, що контролюють напрям залежностей між Domain/Application/Infrastructure/Api.
 5. **P2 — Frontend maintainability:** декомпозувати великі Angular-компоненти (`RootListPageComponent`, `ThreadPageComponent`) у дрібні standalone-блоки.
 
 ## 4) Правило документування при розробці
