@@ -1,68 +1,72 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-18 (оновлено після аналізу помилки SQLite Error 14).
+Останнє оновлення: 2026-03-19.
 
-## Рішення по БД (актуально)
+> Цей чекліст оновлено після повторної верифікації коду проєкту проти заявленого стеку з ТЗ.
+> Неактуальні пункти про «повний перехід на SQLite як цільовий стек ТЗ» видалено.
 
-- ✅ У проєкті зафіксовано перехід з MS SQL/MySQL сценаріїв на SQLite як основний persistence-провайдер.
-- ✅ Для локальної розробки окремий сервер БД не потрібен: використовується файлова БД SQLite.
-- ✅ У контейнерному запуску використовується volume для збереження SQLite-файлу між рестартами.
+## 1) Матриця відповідності ТЗ (стан на зараз)
 
-## Що внесено у цій ітерації
+### Backend
 
-1. ✅ **Перехід API на SQLite**
-   - У `Program.cs` основним провайдером встановлено `Sqlite`.
-   - Видалено MySQL-specific startup preflight та обробку MySQL-помилок.
-   - Залишено fallback на `InMemory` для тестових сценаріїв.
+| Вимога ТЗ | Статус | Факт у проєкті | Що потрібно доробити |
+|---|---|---|---|
+| ASP.NET Core 8.0 (LTS) | ✅ Виконано | `Comments.Api` таргетує `net8.0`. | Підтримувати оновлення patch-релізів .NET 8. |
+| Entity Framework Core + **MS SQL Server** | ⚠️ Частково | EF Core є, але поточний production-like provider у коді/конфігу — **SQLite** (`UseSqlite`, `Microsoft.EntityFrameworkCore.Sqlite`). | Повернути/додати SQL Server provider (`UseSqlServer`), SQL Server-міграції та профіль запуску з MSSQL у docker-compose. |
+| GraphQL (HotChocolate) | ✅ Виконано | Підключено `HotChocolate.AspNetCore`, зареєстровані query/mutation, endpoint `/graphql`. | Додати контрактні інтеграційні тести GraphQL (query/mutation/error shape). |
+| CQRS + MediatR | ✅ Виконано | Є окремі `Commands`/`Queries`, використовується `MediatR` + pipeline validation behavior. | Покрити ключові CQRS-ланцюжки додатковими integration/e2e тестами. |
+| RabbitMQ (**MassTransit**) | ⚠️ Частково | RabbitMQ інтеграція є через `RabbitMQ.Client`, але **MassTransit** відсутній. | Мігрувати транспортний шар на MassTransit (publisher/consumer, retry, DLQ policy, idempotency). |
+| Elasticsearch (**NEST**) | ⚠️ Частково | Elasticsearch інтеграція реалізована через `HttpClient`, **NEST/Elastic .NET client** не використовується. | Замінити на офіційний клієнт (NEST/Elastic Client), додати typed mappings/index templates. |
+| SignalR | ✅ Виконано | `AddSignalR`, `CommentsHub`, endpoint `/hubs/comments` присутні. | Додати перевірки reconnect/backoff сценаріїв у фронтенд e2e. |
+| Clean Architecture + SOLID | ⚠️ Частково | Є поділ на `Domain / Application / Api / Web`, абстракції в `Application`. | Винести інфраструктурні реалізації з `Comments.Api` у `Comments.Infrastructure` (зараз шар лишається scaffold). |
 
-2. ✅ **Оновлено конфігурацію**
-   - У `appsettings.json` перемкнено `Persistence:Provider` на `Sqlite`.
-   - `ConnectionStrings:CommentsDb` переведено на формат `Data Source=...`.
-   - Видалено секцію `MySqlStartup` як неактуальну.
+### Frontend
 
-3. ✅ **Оновлено пакети та міграції EF Core**
-   - Додано пакет `Microsoft.EntityFrameworkCore.Sqlite`.
-   - Видалено MySQL/SqlServer-пакети як неактуальні для поточної архітектури.
-   - Початкову міграцію та `ModelSnapshot` оновлено під SQLite-типи.
+| Вимога ТЗ | Статус | Факт у проєкті | Що потрібно доробити |
+|---|---|---|---|
+| Angular (standalone components) | ✅ Виконано | Angular 19; компоненти оголошені через standalone-підхід (`imports` у `@Component`). | Уніфікувати component-level style/testing conventions. |
+| Apollo Client (GraphQL) | ❌ Не виконано | На фронтенді використовується `HttpClient`/REST, Apollo-залежності та GraphQL client layer відсутні. | Додати Apollo Angular (`apollo-angular`, `@apollo/client`, cache policies) і перевести критичні сценарії на GraphQL. |
+| RxJS | ✅ Виконано | `rxjs` присутній у залежностях та використовується у сервісах. | Розширити reactive state-патерни там, де зараз імперативна логіка у компонентах. |
 
-4. ✅ **Оновлено docker-compose**
-   - Видалено сервіс MySQL і залежності від нього.
-   - Для API використовується `ConnectionStrings__CommentsDb: Data Source=/app/data/comments.db;Mode=ReadWriteCreate`.
-   - Додано named volume `comments_data`.
+## 2) Що вже внесено у цей чекліст
 
-5. ✅ **Оновлено документацію**
-   - README синхронізовано з новим SQLite-сценарієм запуску.
+1. Видалено неактуальну частину, яка фіксувала SQLite як повну відповідність ТЗ по persistence.
+2. Додано нову матрицю відповідності по кожній вимозі з прозорими статусами: ✅ / ⚠️ / ❌.
+3. Додано concrete backlog-пункти: MSSQL, MassTransit, NEST/Apollo, а також архітектурне рознесення Infrastructure.
+4. Уточнено, що SQLite зараз — фактична реалізація, але не цільовий стан згідно стеку ТЗ.
 
-6. ✅ **Усунено ризик падіння на SQLite Error 14**
-   - Для SQLite-провайдера додано нормалізацію шляху до файлу БД відносно `ContentRootPath`.
-   - Перед відкриттям з'єднання виконується створення директорії для `Data Source`, якщо вона відсутня.
-   - Це покриває локальний запуск з відносним шляхом `data/comments.db` і контейнерний запуск з абсолютним `/app/data/comments.db`.
+## 3) Пріоритетний план робіт для доведення до повної відповідності ТЗ
 
-## Правило документування коду (обов'язково)
+1. **P0 — База даних під ТЗ:**
+   - Повернути SQL Server provider у `Program.cs` (через `UseSqlServer`) з конфігурацією `Persistence:Provider = SqlServer`.
+   - Додати SQL Server міграції та профіль локального/CI запуску MSSQL.
 
-- ✅ Підтверджено правило: при редагуванні/створенні класів і методів додаємо коментарі.
-- Для C# публічних елементів використовуємо XML-коментарі `///`, для важливих ділянок логіки — короткі пояснювальні inline-коментарі.
+2. **P0 — Транспорт подій:**
+   - Мігрувати з `RabbitMQ.Client` на **MassTransit**.
+   - Додати політики retry, outbox/idempotency та dead-letter handling.
 
-## Що ще потрібно зробити у проєкті
+3. **P1 — Elasticsearch client:**
+   - Перейти на **NEST/Elastic .NET client** з типізованими DTO для індексації/пошуку.
+   - Додати health-check і backfill-перевірки для індексу.
 
-1. 🔜 **Тести під SQLite**
-   - Додати/оновити інтеграційні тести запуску міграцій саме для SQLite (окремо для відносного та абсолютного `Data Source`).
-   - Перевірити сценарії конкурентного запису та обробки блокувань.
+4. **P1 — Frontend GraphQL:**
+   - Підключити Apollo Client.
+   - Реалізувати GraphQL query/mutation потік щонайменше для: список коментарів, thread, create comment.
 
-2. 🔜 **Операційна готовність**
-   - Описати backup/restore процедуру для `comments.db`.
-   - Додати перевірку дискового простору та ротацію/архівування для середовищ із довгим uptime.
+5. **P1 — Clean Architecture hardening:**
+   - Перенести всі infrastructure-адаптери з `Comments.Api/Infrastructure` до `Comments.Infrastructure`.
+   - Залишити в `Comments.Api` лише композиційний root і transport/web concerns.
 
-3. 🔜 **Production-обмеження SQLite**
-   - Зафіксувати критерії, коли потрібен перехід на серверну БД (навантаження, write-concurrency, HA-вимоги).
+6. **P2 — Якість та верифікація:**
+   - Розширити integration tests для MSSQL + GraphQL + messaging.
+   - Оновити QA/go-no-go скрипти під нову цільову конфігурацію.
 
-4. 🔜 **Синхронізація QA-скриптів**
-   - Перевірити `scripts/qa-stand-check.sh` і `scripts/go-no-go-check.sh` на відсутність неявної залежності від MySQL-сервісу.
+## 4) Нагадування про правило документування
 
-5. 🔜 **Документація по запуску**
-   - Додати в README окремий блок "Troubleshooting SQLite Error 14" із поясненням прав доступу на директорію БД.
-   - Для Windows-сценарію описати рекомендований запуск з кореня репозиторію та перевірку наявності папки `data/`.
+- При редагуванні або створенні **нових класів/методів** обов'язково додаємо коментарі:
+  - для C# публічних елементів — XML-коментарі `///`;
+  - для складних ділянок логіки — короткі пояснювальні inline-коментарі.
 
 ---
 
-Файл підтримується як робочий чекліст відповідності ТЗ і актуальний на 2026-03-18.
+Файл підтримується як живий чекліст відповідності ТЗ; після кожної суттєвої технічної зміни статуси в матриці мають бути оновлені в той же PR.
