@@ -26,7 +26,26 @@ public sealed class EfCommentRepository : ICommentRepository
     /// </summary>
     public async Task<Comment?> FindByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        return await _dbContext.Comments.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        var allComments = await _dbContext.Comments
+            .AsNoTracking()
+            .OrderBy(x => x.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+
+        if (allComments.Count == 0)
+        {
+            return null;
+        }
+
+        var commentById = allComments.ToDictionary(x => x.Id);
+        foreach (var comment in allComments)
+        {
+            if (comment.ParentId is Guid parentId && commentById.TryGetValue(parentId, out var parentComment))
+            {
+                parentComment.AddReply(comment);
+            }
+        }
+
+        return commentById.GetValueOrDefault(id);
     }
 
     /// <summary>
