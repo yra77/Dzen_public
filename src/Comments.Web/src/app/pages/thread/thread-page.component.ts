@@ -69,7 +69,7 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
         </div>
 
         <h3>Відповіді</h3>
-        @if (thread.replies.length === 0) {
+        @if (thread.replies.length < 1) {
           <p>Ще немає відповідей.</p>
         } @else {
           <ng-container *ngTemplateOutlet="replyTree; context: { $implicit: thread.replies }"></ng-container>
@@ -115,7 +115,7 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
                   </div>
                 </article>
 
-                @if (reply.replies.length > 0) {
+                @if (reply.replies.length !== 0) {
                   <ng-container *ngTemplateOutlet="replyTree; context: { $implicit: reply.replies }"></ng-container>
                 }
               </li>
