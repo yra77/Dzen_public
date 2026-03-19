@@ -7,7 +7,7 @@ import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 import {
   CommentNode,
   CreateCommentAttachmentRequest
-} from '../../core/comments-api.service';
+} from '../../core/comments.models';
 import { CommentsGraphqlApiService } from '../../core/comments-graphql-api.service';
 import { environment } from '../../../environments/environment';
 import { ApiErrorPresenterService, UiValidationError } from '../../core/api-error-presenter.service';

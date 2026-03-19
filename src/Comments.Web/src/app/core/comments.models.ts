@@ -1,9 +1,3 @@
-import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
-
-import { environment } from '../../environments/environment';
-
 export interface CommentAttachment {
   /** Оригінальна назва вкладення, яку ввів користувач. */
   fileName: string;
@@ -47,10 +41,10 @@ export interface PagedCommentsResponse {
   items: CommentNode[];
 }
 
-/** Доступні поля сортування root-коментарів у REST API. */
+/** Доступні поля сортування root-коментарів у frontend-контрактах. */
 export type RootCommentsSortField = 'CreatedAtUtc' | 'UserName' | 'Email';
 
-/** Доступні напрямки сортування root-коментарів у REST API. */
+/** Доступні напрямки сортування root-коментарів у frontend-контрактах. */
 export type RootCommentsSortDirection = 'Asc' | 'Desc';
 
 export interface CreateCommentAttachmentRequest {
@@ -88,54 +82,4 @@ export interface CaptchaImageResponse {
   mimeType: string;
   /** Час життя captcha у секундах. */
   ttlSeconds: number;
-}
-
-@Injectable({ providedIn: 'root' })
-export class CommentsApiService {
-  /** HTTP-клієнт для взаємодії з REST API. */
-  private readonly httpClient = inject(HttpClient);
-  private readonly apiBaseUrl = environment.apiBaseUrl;
-
-  /** Отримує сторінку root-коментарів з урахуванням пагінації та сортування. */
-  getRootComments(
-    page: number,
-    pageSize: number,
-    sortBy: RootCommentsSortField,
-    sortDirection: RootCommentsSortDirection
-  ): Observable<PagedCommentsResponse> {
-    return this.httpClient.get<PagedCommentsResponse>(`${this.apiBaseUrl}/api/comments`, {
-      params: {
-        page,
-        pageSize,
-        sortBy,
-        sortDirection
-      }
-    });
-  }
-
-  /** Отримує повне дерево гілки для root-коментаря. */
-  getThread(rootCommentId: string): Observable<CommentNode> {
-    return this.httpClient.get<CommentNode>(`${this.apiBaseUrl}/api/comments/${rootCommentId}/thread`);
-  }
-
-  /** Завантажує captcha-зображення для наступного submit. */
-  getCaptcha(): Observable<CaptchaImageResponse> {
-    return this.httpClient.get<CaptchaImageResponse>(`${this.apiBaseUrl}/api/captcha/image`);
-  }
-
-  /** Створює новий коментар або відповідь. */
-  createComment(request: CreateCommentRequest): Observable<CommentNode> {
-    return this.httpClient.post<CommentNode>(`${this.apiBaseUrl}/api/comments`, request);
-  }
-
-  /** Повертає санітизований HTML preview для введеного тексту. */
-  previewComment(text: string): Observable<string> {
-    return this.httpClient.post(`${this.apiBaseUrl}/api/comments/preview`, { text }, { responseType: 'text' });
-  }
-
-  /** Завантажує текстовий вміст txt-вкладення для inline preview. */
-  getAttachmentText(storagePath: string): Observable<string> {
-    const normalizedPath = storagePath.startsWith('/') ? storagePath : `/${storagePath}`;
-    return this.httpClient.get(`${this.apiBaseUrl}${normalizedPath}`, { responseType: 'text' });
-  }
 }

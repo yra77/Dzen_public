@@ -202,3 +202,15 @@
 1. Додати frontend integration/e2e regression-кейс: перехід зі списку root у thread має завжди завантажувати повне дерево (а не лише root-вузол), включно з перевіркою GraphQL error-state.
 2. Винести великі GraphQL query/fragment-рядки у окремі `.graphql`-документи або builder-утиліти, щоб уникнути повторного ручного дублювання операторів у template string.
 3. Після стабілізації thread-flow повернутися до декомпозиції `RootListPageComponent`/`ThreadPageComponent` на менші standalone-компоненти, щоб знизити ризик регресій у великих inline template/string-блоках.
+
+## 16) Зміни, внесені в поточній ітерації (2026-03-19, завершення деактивації REST transport у frontend)
+
+1. Винесено спільні frontend-контракти коментарів (`CommentNode`, `CreateCommentRequest`, `PagedCommentsResponse`, captcha/attachment DTO та enum-типи сортування) в окремий файл `comments.models.ts`, щоб розірвати залежність GraphQL runtime від legacy REST-сервісу.
+2. `CommentsGraphqlApiService`, `RootListPageComponent` і `ThreadPageComponent` переведено на імпорт типів з `comments.models.ts`; runtime-флоу продовжує працювати через єдиний GraphQL transport.
+3. Видалено застарілий `CommentsApiService`, який більше не використовувався у runtime після переходу UI на GraphQL-only сценарій.
+
+### Що ще треба зробити далі (оновлено після цієї ітерації)
+
+1. Перевірити backend-частину матриці відповідності з фокусом на невиконані пункти: міграція RabbitMQ шару на MassTransit і перехід Elasticsearch інтеграції на офіційний .NET client (NEST/Elastic).
+2. Додати контрактні GraphQL integration-перевірки для `comments`, `commentThread`, `createComment`, `captchaImage`, `attachmentTextPreview` (включно з негативними кейсами enum/scalar/path traversal).
+3. Винести великі GraphQL query/fragment-рядки у окремі `.graphql`-документи або fragment-builder утиліти для зниження ризику ручних помилок у template string.
