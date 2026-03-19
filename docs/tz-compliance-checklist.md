@@ -100,3 +100,19 @@
 2. Перевести CAPTCHA workflow на узгоджений GraphQL-контракт (отримання challenge + валідація токена), або зафіксувати REST як виняток у ТЗ.
 3. Визначити та реалізувати єдину стратегію для `attachment-text preview` (GraphQL endpoint або окремий захищений REST download API з ACL/ttl).
 4. Виконати структурне очищення великих Angular-компонентів (виділити modal/forms у standalone дочірні компоненти) для спрощення підтримки та подальшого покриття тестами.
+
+## 8) Зміни, внесені в поточній ітерації (2026-03-19, Apollo + GraphQL-only API flow)
+
+1. Додано backend GraphQL query `captchaImage`, що повертає challengeId/imageBase64/mimeType/ttlSeconds для SPA без REST-виклику `/api/captcha/image`.
+2. Додано backend GraphQL query `attachmentTextPreview(storagePath)` для читання `.txt` вкладень через GraphQL із валідацією шляху (`uploads/*`) і захистом від path traversal.
+3. Винесено генерацію captcha в окремий `CaptchaChallengeService`, щоб один і той самий доменний алгоритм використовувався і в REST, і в GraphQL transport.
+4. Frontend `CommentsGraphqlApiService` переведено на Apollo Angular API (`query`/`mutate`) та розширено методами `getCaptcha()` і `getAttachmentText(storagePath)`.
+5. `RootListPageComponent` і `ThreadPageComponent` оновлено так, щоб CAPTCHA/txt-preview також ішли через активний GraphQL-клієнт (REST лишено лише як fallback через feature-flag).
+6. Додано Apollo provider (`provideApollo + HttpLink + InMemoryCache`) у `app.config.ts` та оновлено frontend-залежності (`apollo-angular`, `@apollo/client`, `graphql`).
+
+### Що ще треба зробити далі (оновлено після цієї ітерації)
+
+1. Прибрати тимчасовий REST fallback у frontend повністю (прибрати `CommentsApiService` з runtime-флоу та feature-flag переключення), залишивши GraphQL як єдиний transport.
+2. Додати GraphQL contract tests (query/mutation/error-shape) для `captchaImage` та `attachmentTextPreview`, включно з негативними кейсами path traversal.
+3. Налаштувати робоче джерело npm-пакетів (internal mirror/allowlist) для стабільного встановлення Apollo-залежностей у CI/CD.
+4. Після стабілізації Apollo cache — запровадити нормалізацію сутностей і точкову інвалідацію cache після createComment/reply.

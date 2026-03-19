@@ -502,7 +502,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   reloadCaptcha(): void {
     this.captchaMessage = '';
 
-    this.commentsApi.getCaptcha().subscribe({
+    this.getCaptchaRequest().getCaptcha().subscribe({
       next: (response) => {
         this.captchaChallengeId = response.challengeId;
         this.captchaImageDataUrl = `data:${response.mimeType};base64,${response.imageBase64}`;
@@ -610,7 +610,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     }
 
     this.attachmentTextLoadingByPath.add(storagePath);
-    this.commentsApi.getAttachmentText(storagePath).subscribe({
+    this.getAttachmentTextRequest().getAttachmentText(storagePath).subscribe({
       next: (content) => {
         this.attachmentTextPreviewByPath[storagePath] = content;
         this.attachmentTextLoadingByPath.delete(storagePath);
@@ -707,6 +707,21 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
    * Повертає активний API-клієнт для HTML-preview (REST або GraphQL за feature-flag).
    */
   private getPreviewRequest(): Pick<CommentsApiService, 'previewComment'> | Pick<CommentsGraphqlApiService, 'previewComment'> {
+    return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
+  }
+
+
+  /**
+   * Повертає активний API-клієнт для CAPTCHA (REST або GraphQL за feature-flag).
+   */
+  private getCaptchaRequest(): Pick<CommentsApiService, 'getCaptcha'> | Pick<CommentsGraphqlApiService, 'getCaptcha'> {
+    return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
+  }
+
+  /**
+   * Повертає активний API-клієнт для txt-preview вкладень (REST або GraphQL за feature-flag).
+   */
+  private getAttachmentTextRequest(): Pick<CommentsApiService, 'getAttachmentText'> | Pick<CommentsGraphqlApiService, 'getAttachmentText'> {
     return environment.useGraphqlApi ? this.commentsGraphqlApi : this.commentsApi;
   }
 
