@@ -1,5 +1,5 @@
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Apollo, gql } from 'apollo-angular';
 import { map, Observable } from 'rxjs';
 
 import {
@@ -10,6 +10,7 @@ import {
   RootCommentsSortDirection,
   RootCommentsSortField
 } from './comments-api.service';
+import { environment } from '../../environments/environment';
 
 /** GraphQL-значення enum для сортування коментарів (HotChocolate naming convention). */
 type GraphqlCommentSortField = 'CREATED_AT_UTC' | 'USER_NAME' | 'EMAIL';
@@ -52,8 +53,9 @@ interface AttachmentTextPreviewQueryData {
  */
 @Injectable({ providedIn: 'root' })
 export class CommentsGraphqlApiService {
-  /** Apollo клієнт з link/cache, зареєстрованими в app.config. */
-  private readonly apollo = inject(Apollo);
+  /** HTTP-клієнт для прямих GraphQL POST-запитів без Apollo runtime. */
+  private readonly httpClient = inject(HttpClient);
+  private readonly graphqlEndpoint = `${environment.apiBaseUrl}/graphql`;
 
   /** Отримує сторінку root-коментарів через GraphQL query. */
   getRootComments(
@@ -65,41 +67,39 @@ export class CommentsGraphqlApiService {
     const graphqlSortBy = this.mapSortFieldToGraphql(sortBy);
     const graphqlSortDirection = this.mapSortDirectionToGraphql(sortDirection);
 
-    return this.apollo
-      .query<RootCommentsQueryData>({
-        query: gql`
-          query GetRootComments($page: Int!, $pageSize: Int!, $sortBy: CommentSortField!, $sortDirection: CommentSortDirection!) {
-            comments(page: $page, pageSize: $pageSize, sortBy: $sortBy, sortDirection: $sortDirection) {
-              page
-              pageSize
-              totalCount
-              items {
-                id
-                parentId
-                userName
-                email
-                homePage
-                text
-                createdAtUtc
-                attachment {
-                  fileName
-                  contentType
-                  storagePath
-                  sizeBytes
-                }
-                replies {
-                  id
-                }
-              }
+    return this.executeGraphql<RootCommentsQueryData>(
+      `
+      query GetRootComments($page: Int!, $pageSize: Int!, $sortBy: CommentSortField!, $sortDirection: CommentSortDirection!) {
+        comments(page: $page, pageSize: $pageSize, sortBy: $sortBy, sortDirection: $sortDirection) {
+          page
+          pageSize
+          totalCount
+          items {
+            id
+            parentId
+            userName
+            email
+            homePage
+            text
+            createdAtUtc
+            attachment {
+              fileName
+              contentType
+              storagePath
+              sizeBytes
+            }
+            replies {
+              id
             }
           }
-        `,
-        variables: { page, pageSize, sortBy: graphqlSortBy, sortDirection: graphqlSortDirection },
-        fetchPolicy: 'network-only'
-      })
+        }
+      }
+      `,
+      { page, pageSize, sortBy: graphqlSortBy, sortDirection: graphqlSortDirection }
+    )
       .pipe(
         map(response => {
-          const payload = response.data.comments;
+          const payload = response.comments;
           if (!payload) {
             throw new Error('GraphQL query comments returned empty payload.');
           }
@@ -119,9 +119,8 @@ export class CommentsGraphqlApiService {
   /** Отримує дерево гілки за id кореневого коментаря. */
   getThread(rootCommentId: string): Observable<CommentNode> {
     // GraphQL не підтримує truly-recursive selection set, тому задаємо фіксовану глибину дерева (5 рівнів).
-    return this.apollo
-      .query<ThreadQueryData>({
-        query: gql`
+    return this.executeGraphql<ThreadQueryData>(
+      `
           query GetCommentThread($rootCommentId: Uuid!) {
             commentThread(rootCommentId: $rootCommentId) {
               ...ThreadCommentLevel1
@@ -220,17 +219,15 @@ export class CommentsGraphqlApiService {
             __typename
           }
         `,
-        variables: { rootCommentId },
-        // no-cache ізолює thread-відповідь від partial cache merge, коли інші запити містять скорочені payload-вузли.
-        fetchPolicy: 'no-cache'
-      })
+      { rootCommentId }
+    )
       .pipe(
         map(response => {
-          if (!response.data.commentThread) {
+          if (!response.commentThread) {
             throw new Error('GraphQL query commentThread returned empty payload.');
           }
 
-          const normalizedThread = this.normalizeCommentNode(response.data.commentThread, { includeReplies: true });
+          const normalizedThread = this.normalizeCommentNode(response.commentThread, { includeReplies: true });
           if (!normalizedThread) {
             throw new Error('GraphQL query commentThread returned null root comment.');
           }
@@ -242,9 +239,8 @@ export class CommentsGraphqlApiService {
 
   /** Створює новий коментар або відповідь через GraphQL mutation. */
   createComment(request: CreateCommentRequest): Observable<CommentNode> {
-    return this.apollo
-      .mutate<CreateCommentMutationData>({
-        mutation: gql`
+    return this.executeGraphql<CreateCommentMutationData>(
+      `
           mutation CreateComment($input: CreateCommentInput!) {
             createComment(input: $input) {
               id
@@ -266,19 +262,15 @@ export class CommentsGraphqlApiService {
             }
           }
         `,
-        variables: { input: request }
-      })
+      { input: request }
+    )
       .pipe(
         map(response => {
-          if (!response.data) {
-            throw new Error('GraphQL mutation createComment returned empty payload.');
-          }
-
-          if (!response.data.createComment) {
+          if (!response.createComment) {
             throw new Error('GraphQL mutation createComment returned empty comment node.');
           }
 
-          const normalizedComment = this.normalizeCommentNode(response.data.createComment, { includeReplies: false });
+          const normalizedComment = this.normalizeCommentNode(response.createComment, { includeReplies: false });
           if (!normalizedComment) {
             throw new Error('GraphQL mutation createComment returned null comment node.');
           }
@@ -290,24 +282,20 @@ export class CommentsGraphqlApiService {
 
   /** Повертає санітизований HTML preview для введеного тексту через GraphQL. */
   previewComment(text: string): Observable<string> {
-    return this.apollo
-      .query<PreviewCommentQueryData>({
-        query: gql`
+    return this.executeGraphql<PreviewCommentQueryData>(
+      `
           query PreviewComment($text: String!) {
             previewComment(text: $text)
           }
         `,
-        variables: { text },
-        fetchPolicy: 'no-cache'
-      })
-      .pipe(map(response => response.data.previewComment));
+      { text }
+    ).pipe(map(response => response.previewComment));
   }
 
   /** Завантажує captcha-зображення для форми створення коментаря/відповіді. */
   getCaptcha(): Observable<CaptchaImageResponse> {
-    return this.apollo
-      .query<CaptchaImageQueryData>({
-        query: gql`
+    return this.executeGraphql<CaptchaImageQueryData>(
+      `
           query GetCaptchaImage {
             captchaImage {
               challengeId
@@ -317,24 +305,41 @@ export class CommentsGraphqlApiService {
             }
           }
         `,
-        fetchPolicy: 'no-cache'
-      })
-      .pipe(map(response => response.data.captchaImage));
+      {}
+    ).pipe(map(response => response.captchaImage));
   }
 
   /** Завантажує txt-вміст вкладення через GraphQL query. */
   getAttachmentText(storagePath: string): Observable<string> {
-    return this.apollo
-      .query<AttachmentTextPreviewQueryData>({
-        query: gql`
+    return this.executeGraphql<AttachmentTextPreviewQueryData>(
+      `
           query GetAttachmentTextPreview($storagePath: String!) {
             attachmentTextPreview(storagePath: $storagePath)
           }
         `,
-        variables: { storagePath },
-        fetchPolicy: 'no-cache'
-      })
-      .pipe(map(response => response.data.attachmentTextPreview));
+      { storagePath }
+    ).pipe(map(response => response.attachmentTextPreview));
+  }
+
+  /**
+   * Виконує типовий POST-запит до GraphQL endpoint і піднімає змістовну помилку для `errors`.
+   */
+  private executeGraphql<TData>(query: string, variables: Record<string, unknown>): Observable<TData> {
+    return this.httpClient
+      .post<GraphqlResponse<TData>>(this.graphqlEndpoint, { query, variables })
+      .pipe(
+        map(response => {
+          if (response.errors && response.errors.length > 0) {
+            throw new Error(response.errors.map(error => error.message).join('; '));
+          }
+
+          if (!response.data) {
+            throw new Error('GraphQL response did not include data payload.');
+          }
+
+          return response.data;
+        })
+      );
   }
 
   /**
@@ -384,4 +389,9 @@ export class CommentsGraphqlApiService {
       replies
     };
   }
+}
+
+interface GraphqlResponse<TData> {
+  data?: TData;
+  errors?: Array<{ message: string }>;
 }
