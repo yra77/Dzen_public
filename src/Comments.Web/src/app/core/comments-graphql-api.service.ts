@@ -122,6 +122,7 @@ export class CommentsGraphqlApiService {
     return this.executeGraphql<ThreadQueryData>(
       `
           query GetCommentThread($rootCommentId: Uuid!) {
+          query GetCommentThread($rootCommentId: UUID!) {
             commentThread(rootCommentId: $rootCommentId) {
               ...ThreadCommentLevel1
             }
