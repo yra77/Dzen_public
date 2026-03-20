@@ -67,7 +67,12 @@ import { CommentModalLayoutComponent } from '../../shared/comment-modal-layout/c
         }
 
         @if (isReplyModalOpen && activeReplyTarget) {
-          <app-comment-modal-layout (backdropClicked)="closeReplyModal()">
+          <app-comment-modal-layout
+            layoutTestId="thread-reply-modal-layout"
+            backdropTestId="thread-reply-modal-backdrop"
+            panelTestId="thread-reply-modal-panel"
+            closeMode="always"
+            (closeRequested)="closeReplyModal()">
               <app-comment-modal-header title="Нова відповідь" (closeClicked)="closeReplyModal()" />
               <p class="meta">Відповідь на: <strong>{{ activeReplyTarget.userName }}</strong></p>
 

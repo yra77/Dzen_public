@@ -53,7 +53,12 @@ import { CommentModalLayoutComponent } from '../../shared/comment-modal-layout/c
 
 
       @if (isCreateModalOpen) {
-        <app-comment-modal-layout (backdropClicked)="closeCreateModal()">
+        <app-comment-modal-layout
+          layoutTestId="root-create-modal-layout"
+          backdropTestId="root-create-modal-backdrop"
+          panelTestId="root-create-modal-panel"
+          closeMode="always"
+          (closeRequested)="closeCreateModal()">
             <app-comment-modal-header title="Новий коментар" (closeClicked)="closeCreateModal()" />
             <form class="form-grid" [formGroup]="createForm" (ngSubmit)="submitComment()" data-testid="root-create-form">
               <app-form-submit-feedback
@@ -136,7 +141,12 @@ import { CommentModalLayoutComponent } from '../../shared/comment-modal-layout/c
           <button type="button" (click)="goToNextPage()" [disabled]="page >= totalPages || isLoading">Наступна →</button>
         </div>
         @if (isReplyModalOpen) {
-          <app-comment-modal-layout (backdropClicked)="closeReplyModal()">
+          <app-comment-modal-layout
+            layoutTestId="root-reply-modal-layout"
+            backdropTestId="root-reply-modal-backdrop"
+            panelTestId="root-reply-modal-panel"
+            closeMode="always"
+            (closeRequested)="closeReplyModal()">
               <app-comment-modal-header title="Нова відповідь" (closeClicked)="closeReplyModal()" />
               <p class="meta">Відповідь для: <strong>{{ activeReplyTarget?.userName }}</strong></p>
 
