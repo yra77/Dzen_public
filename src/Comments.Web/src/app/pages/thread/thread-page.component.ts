@@ -12,10 +12,11 @@ import { CommentsGraphqlApiService } from '../../core/comments-graphql-api.servi
 import { environment } from '../../../environments/environment';
 import { ApiErrorPresenterService, UiValidationError } from '../../core/api-error-presenter.service';
 import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
+import { CommentAttachmentComponent } from '../../shared/comment-attachment/comment-attachment.component';
 
 @Component({
   selector: 'app-thread-page',
-  imports: [DatePipe, ReactiveFormsModule, RouterLink, NgTemplateOutlet],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink, NgTemplateOutlet, CommentAttachmentComponent],
   template: `
     <section class="panel">
       <h2>Гілка коментаря</h2>
@@ -36,32 +37,14 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
           <p class="comment-header"><strong>{{ thread.userName }}</strong><span>{{ thread.email }}</span><span>{{ thread.createdAtUtc | date: 'dd.MM.yy HH:mm' }}</span></p>
           <p>{{ thread.text }}</p>
           @if (thread.attachment) {
-            <div class="attachment-inline">
-              @if (thread.attachment.contentType.startsWith('image/')) {
-                <a [href]="getAttachmentUrl(thread.attachment.storagePath)" target="_blank" rel="noreferrer">
-                  <img
-                    class="attachment-thumb"
-                    [src]="getAttachmentUrl(thread.attachment.storagePath)"
-                    [alt]="thread.attachment.fileName"
-                  />
-                </a>
-              } @else if (thread.attachment.contentType === 'text/plain') {
-                <button
-                  type="button"
-                  (click)="loadTextAttachment(thread.attachment.storagePath)"
-                  [disabled]="attachmentTextLoadingByPath.has(thread.attachment.storagePath)"
-                >
-                  Показати txt preview
-                </button>
-                @if (attachmentTextLoadingByPath.has(thread.attachment.storagePath)) {
-                  <p class="meta">Завантаження txt preview...</p>
-                }
-                @if (attachmentTextPreviewByPath[thread.attachment.storagePath]) {
-                  <pre class="attachment-text">{{ attachmentTextPreviewByPath[thread.attachment.storagePath] }}</pre>
-                }
-              }
-              <p class="attachment-meta">📎 <a [href]="getAttachmentUrl(thread.attachment.storagePath)" target="_blank" rel="noreferrer">{{ thread.attachment.fileName }}</a> ({{ thread.attachment.contentType }})</p>
-            </div>
+            <app-comment-attachment
+              [attachment]="thread.attachment"
+              [attachmentUrl]="getAttachmentUrl(thread.attachment.storagePath)"
+              [textPreviewContent]="attachmentTextPreviewByPath[thread.attachment.storagePath] ?? ''"
+              [isTextPreviewLoading]="attachmentTextLoadingByPath.has(thread.attachment.storagePath)"
+              [showContentType]="true"
+              (requestTextPreview)="loadTextAttachment($event)"
+            />
           }
           <div class="thread-actions">
             <button type="button" (click)="openReplyModal(thread)">Відповісти</button>
@@ -83,32 +66,14 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
                   <p class="comment-header"><strong>{{ reply.userName }}</strong><span>{{ reply.email }}</span><span>{{ reply.createdAtUtc | date: 'dd.MM.yy HH:mm' }}</span></p>
                   <p>{{ reply.text }}</p>
                   @if (reply.attachment) {
-                    <div class="attachment-inline">
-                      @if (reply.attachment.contentType.startsWith('image/')) {
-                        <a [href]="getAttachmentUrl(reply.attachment.storagePath)" target="_blank" rel="noreferrer">
-                          <img
-                            class="attachment-thumb"
-                            [src]="getAttachmentUrl(reply.attachment.storagePath)"
-                            [alt]="reply.attachment.fileName"
-                          />
-                        </a>
-                      } @else if (reply.attachment.contentType === 'text/plain') {
-                        <button
-                          type="button"
-                          (click)="loadTextAttachment(reply.attachment.storagePath)"
-                          [disabled]="attachmentTextLoadingByPath.has(reply.attachment.storagePath)"
-                        >
-                          Показати txt preview
-                        </button>
-                        @if (attachmentTextLoadingByPath.has(reply.attachment.storagePath)) {
-                          <p class="meta">Завантаження txt preview...</p>
-                        }
-                        @if (attachmentTextPreviewByPath[reply.attachment.storagePath]) {
-                          <pre class="attachment-text">{{ attachmentTextPreviewByPath[reply.attachment.storagePath] }}</pre>
-                        }
-                      }
-                      <p class="attachment-meta">📎 <a [href]="getAttachmentUrl(reply.attachment.storagePath)" target="_blank" rel="noreferrer">{{ reply.attachment.fileName }}</a> ({{ reply.attachment.contentType }})</p>
-                    </div>
+                    <app-comment-attachment
+                      [attachment]="reply.attachment"
+                      [attachmentUrl]="getAttachmentUrl(reply.attachment.storagePath)"
+                      [textPreviewContent]="attachmentTextPreviewByPath[reply.attachment.storagePath] ?? ''"
+                      [isTextPreviewLoading]="attachmentTextLoadingByPath.has(reply.attachment.storagePath)"
+                      [showContentType]="true"
+                      (requestTextPreview)="loadTextAttachment($event)"
+                    />
                   }
                   <div class="thread-actions">
                     <button type="button" (click)="openReplyModal(reply)">Відповісти</button>
