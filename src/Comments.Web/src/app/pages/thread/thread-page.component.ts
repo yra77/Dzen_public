@@ -262,7 +262,8 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   attachment: CreateCommentAttachmentRequest | null = null;
   /** Data URL для preview вибраного зображення перед submit. */
   attachmentImagePreviewDataUrl = '';
-  attachmentTextPreviewByPath: Record<string, string> = {};
+  /** Кеш preview-вмісту text-вкладень за storagePath; значення може бути відсутнім до першого завантаження. */
+  attachmentTextPreviewByPath: Record<string, string | undefined> = {};
   attachmentTextLoadingByPath = new Set<string>();
 
   readonly replyForm = this.formBuilder.nonNullable.group({
