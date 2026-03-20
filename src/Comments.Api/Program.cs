@@ -189,7 +189,8 @@ builder.Services
     .AddGraphQLServer()
     .AddQueryType<CommentQueries>()
     .AddMutationType<CommentMutations>()
-    .AddErrorFilter<ValidationExceptionErrorFilter>();
+    .AddErrorFilter<ValidationExceptionErrorFilter>()
+    .AddErrorFilter<BusinessRuleExceptionErrorFilter>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
