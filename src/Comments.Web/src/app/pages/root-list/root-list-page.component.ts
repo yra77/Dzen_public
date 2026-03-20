@@ -58,7 +58,20 @@ import { mergeCommentIntoRootPage } from '../../shared/comment-realtime/comment-
       @if (signalRStatusMessage) {
         <p class="meta">{{ signalRStatusMessage }}</p>
       }
-       <div class="list-controls">
+      <div class="list-controls">
+        <label>
+          Пошук
+          <input
+            type="search"
+            [value]="searchQuery"
+            (input)="onSearchQueryChanged($event)"
+            (keydown.enter)="onSearchSubmitted()"
+            placeholder="Текст, email або ім'я автора"
+            data-testid="root-search-input" />
+        </label>
+        <button type="button" (click)="onSearchSubmitted()" [disabled]="isLoading" data-testid="root-search-submit">Шукати</button>
+        <button type="button" (click)="clearSearch()" [disabled]="isLoading || !searchQuery.trim()" data-testid="root-search-reset">Скинути пошук</button>
+
         <label>
           Сортувати за
           <select [value]="sortBy" (change)="onSortByChanged($event)" data-testid="root-sort-by">
@@ -252,9 +265,17 @@ export class RootListPageComponent implements OnDestroy {
   private signalRConnection: HubConnection | null = null;
   /** Підписка на shared load-state stream root/list сценарію. */
   private readonly rootListLoadStateSubscription: Subscription;
-  /** Shared RxJS stream для list-state (loading/error/data) у list/realtime refresh сценаріях. */
-  private readonly rootListLoadStateStream = new CommentQueryStateStream<{ page: number; pageSize: number; sortBy: RootCommentsSortField; sortDirection: RootCommentsSortDirection }, PagedCommentsResponse>(
-    (request) => this.commentsGraphqlApi.getRootComments(request.page, request.pageSize, request.sortBy, request.sortDirection),
+  /** Shared RxJS stream для list/search-state (loading/error/data) у list/search/realtime сценаріях. */
+  private readonly rootListLoadStateStream = new CommentQueryStateStream<{
+    page: number;
+    pageSize: number;
+    sortBy: RootCommentsSortField;
+    sortDirection: RootCommentsSortDirection;
+    searchQuery: string;
+  }, PagedCommentsResponse>(
+    (request) => request.searchQuery
+      ? this.commentsGraphqlApi.searchComments(request.searchQuery, request.page, request.pageSize)
+      : this.commentsGraphqlApi.getRootComments(request.page, request.pageSize, request.sortBy, request.sortDirection),
     (error) => this.apiErrorPresenter.present(error, 'Не вдалося завантажити коментарі.')
   );
 
@@ -297,6 +318,8 @@ export class RootListPageComponent implements OnDestroy {
   sortBy: RootCommentsSortField = 'CreatedAtUtc';
   /** Поточний напрям сортування root-коментарів. */
   sortDirection: RootCommentsSortDirection = 'Desc';
+  /** Поточний текст пошуку для режиму search/list. */
+  searchQuery = '';
   isLoading = false;
   errorMessage = '';
   /** Прапорець для показу підказки щодо повторної спроби завантаження. */
@@ -569,7 +592,8 @@ export class RootListPageComponent implements OnDestroy {
       page: this.page,
       pageSize: this.pageSize,
       sortBy: this.sortBy,
-      sortDirection: this.sortDirection
+      sortDirection: this.sortDirection,
+      searchQuery: this.searchQuery.trim()
     });
   }
 
@@ -605,6 +629,24 @@ export class RootListPageComponent implements OnDestroy {
   onSortDirectionChanged(event: Event): void {
     const selected = (event.target as HTMLSelectElement).value as RootCommentsSortDirection;
     this.sortDirection = selected;
+    this.page = 1;
+    this.load();
+  }
+
+  /** Оновлює локальний текст пошуку без зайвих API-запитів на кожен символ. */
+  onSearchQueryChanged(event: Event): void {
+    this.searchQuery = (event.target as HTMLInputElement).value;
+  }
+
+  /** Запускає пошук (або повернення в list-mode, якщо запит порожній). */
+  onSearchSubmitted(): void {
+    this.page = 1;
+    this.load();
+  }
+
+  /** Скидає пошук і завантажує стандартний список кореневих коментарів. */
+  clearSearch(): void {
+    this.searchQuery = '';
     this.page = 1;
     this.load();
   }
@@ -969,6 +1011,12 @@ export class RootListPageComponent implements OnDestroy {
       .build();
 
     this.signalRConnection.on('commentCreated', (incomingComment: CommentNode) => {
+      if (this.searchQuery.trim()) {
+        // У search-mode безпечніше виконати reload, бо склад фільтрованої видачі може змінитися неочевидно.
+        this.load();
+        return;
+      }
+
       let wasMerged = false;
 
       this.rootListLoadStateStream.mutateData((currentData) => {
