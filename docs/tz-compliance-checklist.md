@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-20 (ітерація frontend-graphql-error-ux: уніфіковано обробку GraphQL validation/transient помилок для retry UX).
+Останнє оновлення: 2026-03-20 (ітерація search-fallback-and-ux: виправлено пошук без Elasticsearch та спрощено search UI).
 
 > Документ містить лише актуальний стан реалізації, поточний план і наступні кроки без історичних застарілих нотаток.
 
@@ -15,7 +15,7 @@
 | GraphQL (HotChocolate) | ✅ Виконано | Піднято endpoint `/graphql`, працюють `CommentQueries` і `CommentMutations`. | Додати контрактні перевірки GraphQL-схеми/операцій у CI. |
 | CQRS + MediatR | ✅ Виконано | Команди/запити винесені в `Comments.Application`, у pipeline підключено `ValidationBehavior`. | Додати e2e перевірки CQRS-сценаріїв. |
 | RabbitMQ (MassTransit) | ⚠️ Частково | В роботі використовується `RabbitMQ.Client` (publisher + consumer hosted service), MassTransit поки не інтегрований. | Міграція на MassTransit: retry, DLQ, outbox, idempotency. |
-| Elasticsearch (офіційний .NET client) | ⚠️ Частково | Пошук/індексація реалізовані через `HttpClient`-адаптери; `Elasticsearch.Enabled` керує вмиканням. | Перейти на офіційний .NET client Elasticsearch + typed mapping/templates. |
+| Elasticsearch (офіційний .NET client) | ⚠️ Частково | Пошук/індексація реалізовані через `HttpClient`-адаптери; коли `Elasticsearch.Enabled=false`, пошук працює через repository fallback (без зовнішнього кластера). | Перейти на офіційний .NET client Elasticsearch + typed mapping/templates. |
 | SignalR | ✅ Виконано | Працює `CommentsHub` і endpoint `/hubs/comments`, подія створення коментаря розсилається realtime-каналом. | Додати регрес-перевірки reconnect/backoff сценаріїв. |
 | Clean Architecture + SOLID | ✅ Базово виконано | Розділено шари Domain/Application/Infrastructure/Api, інфраструктурні реалізації інтерфейсів винесені в Infrastructure. | Додати automated architecture-guard перевірки залежностей між шарами. |
 
@@ -23,7 +23,7 @@
 
 | Вимога ТЗ | Статус | Поточний стан у репозиторії | Що робимо далі |
 |---|---|---|---|
-| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`, header/actions модалок — у `CommentModalHeaderComponent` та `CommentFormActionsComponent`, layout модалки (`backdrop/panel`) — у `CommentModalLayoutComponent` з уніфікованими `test-id`, `closeMode`/`closeRequested` і причинами закриття (`backdrop` / `escape` / `close-button`). Для обох сторінок (`RootListPageComponent` і `ThreadPageComponent`) застосовано shared `CommentFormStateFacade`, `CommentFormAttachmentState`, shared `CommentQueryStateStream` і orchestration helpers (`refreshCommentPreview`, `reloadCommentCaptcha`, `runCommentSubmitWorkflow`) для submit/preview/captcha/modal/attachment/load станів; для root-list додано search UI + search/list unified state через той самий stream, debounce для input-пошуку та URL-sync (`page/sort/query`) для reload/back-forward; realtime channel використовує локальний merge payload у list/thread, а у search-mode переходить на безпечний reload. | Наступний крок: покрити search flow e2e-тестами (debounce + URL-state + paging/sort). |
+| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`, header/actions модалок — у `CommentModalHeaderComponent` та `CommentFormActionsComponent`, layout модалки (`backdrop/panel`) — у `CommentModalLayoutComponent` з уніфікованими `test-id`, `closeMode`/`closeRequested` і причинами закриття (`backdrop` / `escape` / `close-button`). Для обох сторінок (`RootListPageComponent` і `ThreadPageComponent`) застосовано shared `CommentFormStateFacade`, `CommentFormAttachmentState`, shared `CommentQueryStateStream` і orchestration helpers (`refreshCommentPreview`, `reloadCommentCaptcha`, `runCommentSubmitWorkflow`) для submit/preview/captcha/modal/attachment/load станів; для root-list додано search/list unified state через той самий stream, debounce для input-пошуку та URL-sync (`page/sort/query`) для reload/back-forward; кнопку «Скинути пошук» прибрано як зайву (очищення через поле пошуку). | Наступний крок: покрити search flow e2e-тестами (debounce + URL-state + paging/sort). |
 | Apollo Client (GraphQL) | ✅ Виконується за планом | Apollo Angular інтегровано; запити/мутації працюють через GraphQL API, а `GraphqlRequestError` + `ApiErrorPresenterService` тепер уніфікують показ validation/transient помилок (включно з `extensions.code` для retry-підказок). | Формалізувати cache-policy для list/thread/search та закріпити GraphQL error UX e2e сценаріями. |
 | RxJS | ✅ Виконано | RxJS використовується в сервісах та UI-компонентах; `CommentQueryStateStream` покриває list/thread/search/realtime-load сценарії, root-search має debounced input-stream через `Subject + debounceTime + distinctUntilChanged`, а для тимчасових network/server помилок додано обмежений auto-retry з backoff. | Додати e2e перевірки debounce-логіки, URL-sync та auto-retry UX для search/list/thread запитів. |
 | Якість збірки (Angular compiler warnings) | ⚠️ Частково | Додано скрипт `scripts/check-angular-build.sh`: production build падає при наявності `WARNING` у логах. Скрипт інтегровано в `scripts/go-no-go-check.sh` як окремий quality gate. | Додати окремий CI job, який запускає цей gate на кожному PR. |
@@ -39,10 +39,9 @@
 
 ## 3) Що внесено в цій ітерації
 
-- Для GraphQL-помилок на фронтенді додано `GraphqlRequestError` із класифікацією transient кодів (`extensions.code`) для керованого retry UX.
-- `CommentsGraphqlApiService` переведено на кидання структурованої `GraphqlRequestError` замість узагальненого `Error`.
-- `ApiErrorPresenterService` розширено обробкою `GraphqlRequestError`: окремий парсинг `extensions.validationErrors`, коректний `summary` та `canRetry`.
-- Checklist очищено від неактуальних формулювань; залишено тільки поточний стан і наступні кроки.
+- Виправлено backend search fallback: при `Elasticsearch.Enabled=false` використовується `RepositoryCommentSearchService`, який шукає по `userName/email/text` і повертає пагіновані результати (замість завжди порожньої видачі).
+- На root-list сторінці спрощено UX пошуку: прибрано кнопку «Скинути пошук» як зайву, очищення запиту виконується через поле пошуку з debounce.
+- Checklist очищено від неактуальних формулювань; залишено лише поточний стан та наступні кроки.
 
 ## 4) Що ще треба зробити у проєкті
 

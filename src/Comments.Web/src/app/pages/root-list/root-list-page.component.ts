@@ -72,7 +72,6 @@ import { COMMENT_QUERY_RETRY_POLICY } from '../../core/query-retry-policy';
             data-testid="root-search-input" />
         </label>
         <button type="button" (click)="onSearchSubmitted()" [disabled]="isLoading" data-testid="root-search-submit">Шукати</button>
-        <button type="button" (click)="clearSearch()" [disabled]="isLoading || !searchQuery.trim()" data-testid="root-search-reset">Скинути пошук</button>
 
         <label>
           Сортувати за
@@ -668,14 +667,6 @@ export class RootListPageComponent implements OnDestroy {
   onSearchSubmitted(): void {
     const normalizedQuery = this.searchQuery.trim();
     this.searchQuery = normalizedQuery;
-    this.page = 1;
-    this.load();
-  }
-
-  /** Скидає пошук і завантажує стандартний список кореневих коментарів. */
-  clearSearch(): void {
-    this.searchInputChanges.next('');
-    this.searchQuery = '';
     this.page = 1;
     this.load();
   }
