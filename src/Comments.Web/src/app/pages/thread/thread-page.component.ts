@@ -23,6 +23,7 @@ import { CommentModalLayoutComponent } from '../../shared/comment-modal-layout/c
 import { ModalCloseReason } from '../../shared/comment-modal-layout/comment-modal-layout.component';
 import { canCloseModal } from '../../shared/comment-modal-layout/modal-close.guard';
 import { buildQuickTagInsertResult, readAttachmentAsRequest } from '../../shared/comment-form/comment-form-helpers';
+import { applyServerValidationErrorsToControls, ServerFieldControlMapping, setupServerValidationReset } from '../../shared/comment-form/comment-form-server-validation';
 
 @Component({
   selector: 'app-thread-page',
@@ -162,6 +163,19 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
 
   private signalRConnection: HubConnection | null = null;
 
+  /** Мапінг server-side полів на FormControl для reply-форми сторінки гілки. */
+  private readonly replyFormServerFieldMapping: ServerFieldControlMapping = {
+    'request.username': 'userName',
+    username: 'userName',
+    'request.email': 'email',
+    email: 'email',
+    'request.text': 'text',
+    text: 'text',
+    'request.captchatoken': 'captchaAnswer',
+    captchatoken: 'captchaAnswer',
+    captchaanswer: 'captchaAnswer'
+  };
+
   thread: CommentNode | null = null;
   isLoading = true;
   isSubmitting = false;
@@ -200,10 +214,10 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   });
 
   constructor() {
-    this.setupServerValidationReset(this.replyForm.controls.userName);
-    this.setupServerValidationReset(this.replyForm.controls.email);
-    this.setupServerValidationReset(this.replyForm.controls.text);
-    this.setupServerValidationReset(this.replyForm.controls.captchaAnswer);
+    setupServerValidationReset(this.replyForm.controls.userName);
+    setupServerValidationReset(this.replyForm.controls.email);
+    setupServerValidationReset(this.replyForm.controls.text);
+    setupServerValidationReset(this.replyForm.controls.captchaAnswer);
   }
 
   /**
@@ -403,7 +417,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
           this.submitMessage = uiError.summary;
           this.submitValidationErrors = uiError.validationErrors;
           this.showRetryHint = uiError.canRetry;
-          this.applyServerValidationErrors(this.replyForm.controls, uiError.validationErrors);
+          applyServerValidationErrorsToControls(this.replyForm.controls, uiError.validationErrors, this.replyFormServerFieldMapping);
           this.reloadCaptcha();
           this.isSubmitting = false;
         }
@@ -550,65 +564,4 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     });
   }
 
-
-  /**
-   * Позначає поля форми як помилкові на основі server-side validation ключів.
-   */
-  private applyServerValidationErrors(
-    controls: Record<string, AbstractControl>,
-    validationErrors: ReadonlyArray<UiValidationError>
-  ): void {
-    for (const validationError of validationErrors) {
-      const normalizedField = validationError.field.toLowerCase();
-      const mappedControl = this.mapServerFieldToControl(controls, normalizedField);
-      if (!mappedControl) {
-        continue;
-      }
-
-      const existingErrors = mappedControl.errors ?? {};
-      mappedControl.setErrors({ ...existingErrors, server: true });
-      mappedControl.markAsTouched();
-    }
-  }
-
-  /**
-   * Повертає FormControl для server-side поля, якщо підтримується мапінг.
-   */
-  private mapServerFieldToControl(
-    controls: Record<string, AbstractControl>,
-    normalizedField: string
-  ): AbstractControl | null {
-    const mapping: Record<string, string> = {
-      'request.username': 'userName',
-      username: 'userName',
-      'request.email': 'email',
-      email: 'email',
-      'request.text': 'text',
-      text: 'text',
-      'request.captchatoken': 'captchaAnswer',
-      captchatoken: 'captchaAnswer',
-      captchaanswer: 'captchaAnswer'
-    };
-
-    const controlName = mapping[normalizedField];
-    if (!controlName) {
-      return null;
-    }
-
-    return controls[controlName] ?? null;
-  }
-
-  /**
-   * Автоматично прибирає server-помилку поля після зміни значення користувачем.
-   */
-  private setupServerValidationReset(control: AbstractControl): void {
-    control.valueChanges.subscribe(() => {
-      if (!control.errors || !control.errors['server']) {
-        return;
-      }
-
-      const { server: _server, ...restErrors } = control.errors;
-      control.setErrors(Object.keys(restErrors).length > 0 ? restErrors : null);
-    });
-  }
 }
