@@ -1,4 +1,7 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
+
+/** Причина запиту закриття модального вікна. */
+type ModalCloseReason = 'backdrop' | 'escape';
 
 /**
  * Уніфікований контейнер модального вікна (backdrop + panel).
@@ -9,15 +12,17 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
   selector: 'app-comment-modal-layout',
   standalone: true,
   template: `
-    <div
-      class="reply-modal-backdrop"
-      [attr.data-testid]="backdropTestId || null"
-      (click)="onBackdropClick()">
+    <div [attr.data-testid]="layoutTestId || null">
       <div
-        class="reply-modal"
-        [attr.data-testid]="panelTestId || null"
-        (click)="$event.stopPropagation()">
-        <ng-content />
+        class="reply-modal-backdrop"
+        [attr.data-testid]="backdropTestId || null"
+        (click)="onBackdropClick()">
+        <div
+          class="reply-modal"
+          [attr.data-testid]="panelTestId || null"
+          (click)="$event.stopPropagation()">
+          <ng-content />
+        </div>
       </div>
     </div>
   `,
@@ -29,23 +34,60 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
   ]
 })
 export class CommentModalLayoutComponent {
-  /** Дозволяє вимкнути закриття модалки по кліку в backdrop. */
-  @Input() closeOnBackdropClick = true;
+  /**
+   * Режим закриття модалки.
+   * - `always`: дозволяє backdrop + Escape;
+   * - `backdrop-only`: дозволяє лише backdrop;
+   * - `disabled`: блокує всі автоматичні способи закриття.
+   */
+  @Input() closeMode: 'always' | 'backdrop-only' | 'disabled' = 'always';
   /** Опційний data-testid для backdrop-контейнера. */
   @Input() backdropTestId = '';
   /** Опційний data-testid для panel-контейнера. */
   @Input() panelTestId = '';
+  /** Опційний data-testid для кореневого layout-елемента. */
+  @Input() layoutTestId = '';
   /** Подія кліку по backdrop для зовнішньої обробки закриття. */
   @Output() readonly backdropClicked = new EventEmitter<void>();
+  /** Уніфікована подія запиту закриття з причиною. */
+  @Output() readonly closeRequested = new EventEmitter<ModalCloseReason>();
+
+  /**
+   * Обробляє натискання Escape для уніфікованого закриття модалки.
+   */
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscapePressed(event: KeyboardEvent): void {
+    if (!this.canCloseByEscape()) {
+      return;
+    }
+
+    event.preventDefault();
+    this.closeRequested.emit('escape');
+  }
 
   /**
    * Емітить подію кліку по backdrop, якщо поведінка не вимкнена.
    */
   onBackdropClick(): void {
-    if (!this.closeOnBackdropClick) {
+    if (!this.canCloseByBackdrop()) {
       return;
     }
 
     this.backdropClicked.emit();
+    this.closeRequested.emit('backdrop');
+  }
+
+  /**
+   * Повертає true, якщо дозволено закриття через backdrop.
+   */
+  private canCloseByBackdrop(): boolean {
+    return this.closeMode === 'always' || this.closeMode === 'backdrop-only';
+  }
+
+  /**
+   * Повертає true, якщо дозволено закриття через клавішу Escape.
+   */
+  private canCloseByEscape(): boolean {
+    return this.closeMode === 'always';
   }
 }
