@@ -386,7 +386,8 @@ export class RootListPageComponent implements OnDestroy {
   attachment: CreateCommentAttachmentRequest | null = null;
   /** Data URL для preview вибраного зображення перед submit. */
   attachmentImagePreviewDataUrl = '';
-  attachmentTextPreviewByPath: Record<string, string> = {};
+  /** Кеш preview-вмісту text-вкладень за storagePath; значення може бути відсутнім до першого завантаження. */
+  attachmentTextPreviewByPath: Record<string, string | undefined> = {};
   attachmentTextLoadingByPath = new Set<string>();
   activeReplyTarget: CommentNode | null = null;
   isReplyModalOpen = false;
