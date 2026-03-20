@@ -403,8 +403,8 @@ export class RootListPageComponent implements OnDestroy {
   /**
    * Повертає true, якщо конкретне поле потрібно підсвітити червоним як помилкове.
    */
-  shouldHighlightInvalid(control: AbstractControl): boolean {
-    return control.invalid && (control.touched || control.dirty);
+  shouldHighlightInvalid(control: AbstractControl | null): boolean {
+    return !!control && control.invalid && (control.touched || control.dirty);
   }
 
   /**

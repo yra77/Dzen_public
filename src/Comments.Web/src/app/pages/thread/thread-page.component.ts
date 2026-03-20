@@ -243,8 +243,8 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   /**
    * Повертає true, якщо конкретне поле потрібно підсвітити як помилкове.
    */
-  shouldHighlightInvalid(control: AbstractControl): boolean {
-    return control.invalid && (control.touched || control.dirty);
+  shouldHighlightInvalid(control: AbstractControl | null): boolean {
+    return !!control && control.invalid && (control.touched || control.dirty);
   }
 
   /**
