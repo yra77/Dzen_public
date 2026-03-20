@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ModalCloseReason } from '../comment-modal-layout/comment-modal-layout.component';
 
 /**
  * Уніфікований рядок дій форми для модальних create/reply сценаріїв.
@@ -14,7 +15,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
         <button
           type="button"
           [attr.data-testid]="closeTestId || null"
-          (click)="closeClicked.emit()">
+          (click)="emitCloseClicked()">
           {{ closeLabel }}
         </button>
       }
@@ -48,6 +49,18 @@ export class CommentFormActionsComponent {
   @Input() closeLabel = 'Закрити';
   /** Опційний data-testid для close-кнопки. */
   @Input() closeTestId = '';
-  /** Подія кліку по close-кнопці. */
-  @Output() readonly closeClicked = new EventEmitter<void>();
+  /**
+   * Причина закриття, яку компонент емітить при кліку на close-кнопку.
+   * За замовчуванням — `close-button`, що відповідає уніфікованому modal API.
+   */
+  @Input() closeReason: ModalCloseReason = 'close-button';
+  /** Подія кліку по close-кнопці з типізованою причиною закриття. */
+  @Output() readonly closeClicked = new EventEmitter<ModalCloseReason>();
+
+  /**
+   * Централізовано емітить причину закриття модалки при кліку на close/cancel-кнопку.
+   */
+  emitCloseClicked(): void {
+    this.closeClicked.emit(this.closeReason);
+  }
 }
