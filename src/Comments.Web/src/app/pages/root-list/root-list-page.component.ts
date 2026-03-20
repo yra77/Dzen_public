@@ -25,14 +25,12 @@ import {
   buildQuickTagInsertResult,
   readAttachmentAsRequest,
   refreshCommentPreview,
-  reloadCommentCaptcha
+  reloadCommentCaptcha,
+  runCommentSubmitWorkflow
 } from '../../shared/comment-form/comment-form-helpers';
 import { applyServerValidationErrorsToControls, ServerFieldControlMapping, setupServerValidationReset } from '../../shared/comment-form/comment-form-server-validation';
 import {
-  createFailedCommentFormState,
   createInitialCommentFormSubmitState,
-  createSubmittingCommentFormState,
-  createSucceededCommentFormState
 } from '../../shared/comment-form/comment-form-submit-state';
 import {
   createInitialCommentFormPreviewState,
@@ -686,12 +684,9 @@ export class RootListPageComponent implements OnDestroy {
       return;
     }
 
-    this.setCreateSubmitState(createSubmittingCommentFormState());
-
     const raw = this.createForm.getRawValue();
-
-    this.commentsGraphqlApi
-      .createComment({
+    runCommentSubmitWorkflow({
+      submitRequest: () => this.commentsGraphqlApi.createComment({
         userName: raw.userName,
         email: raw.email,
         homePage: raw.homePage.trim() ? raw.homePage : null,
@@ -699,30 +694,29 @@ export class RootListPageComponent implements OnDestroy {
         parentId: null,
         captchaToken: `${this.captchaChallengeId}:${raw.captchaAnswer}`,
         attachment: this.createAttachmentState.value
-      })
-      .subscribe({
-        next: () => {
-          this.setCreateSubmitState(createSucceededCommentFormState('Коментар успішно створено.'));
-          this.createForm.reset({
-            userName: raw.userName,
-            email: raw.email,
-            homePage: raw.homePage,
-            text: '',
-            captchaAnswer: ''
-          });
-          this.setCreatePreviewState(createInitialCommentFormPreviewState());
-          this.createAttachmentState.reset();
-          this.closeCreateModal('backdrop', true);
-          this.load();
-          this.reloadCaptcha();
-        },
-        error: (error) => {
-          const uiError = this.apiErrorPresenter.present(error, 'Не вдалося створити коментар. Перевірте дані форми.');
-          this.setCreateSubmitState(createFailedCommentFormState(uiError.summary, uiError.validationErrors, uiError.canRetry));
-          applyServerValidationErrorsToControls(this.createForm.controls, uiError.validationErrors, this.createFormServerFieldMapping);
-          this.reloadCaptcha();
-        }
-      });
+      }),
+      setSubmitState: (state) => this.setCreateSubmitState(state),
+      successMessage: 'Коментар успішно створено.',
+      onSuccess: () => {
+        this.createForm.reset({
+          userName: raw.userName,
+          email: raw.email,
+          homePage: raw.homePage,
+          text: '',
+          captchaAnswer: ''
+        });
+        this.setCreatePreviewState(createInitialCommentFormPreviewState());
+        this.createAttachmentState.reset();
+        this.closeCreateModal('backdrop', true);
+        this.load();
+        this.reloadCaptcha();
+      },
+      presentError: (error) => this.apiErrorPresenter.present(error, 'Не вдалося створити коментар. Перевірте дані форми.'),
+      applyServerValidationErrors: (validationErrors) => {
+        applyServerValidationErrorsToControls(this.createForm.controls, validationErrors, this.createFormServerFieldMapping);
+      },
+      onAfterError: () => this.reloadCaptcha()
+    });
   }
 
   /**
@@ -831,12 +825,9 @@ export class RootListPageComponent implements OnDestroy {
       return;
     }
 
-    this.setReplySubmitState(createSubmittingCommentFormState());
-
     const raw = this.replyForm.getRawValue();
-
-    this.commentsGraphqlApi
-      .createComment({
+    runCommentSubmitWorkflow({
+      submitRequest: () => this.commentsGraphqlApi.createComment({
         userName: raw.userName,
         email: raw.email,
         homePage: null,
@@ -844,20 +835,19 @@ export class RootListPageComponent implements OnDestroy {
         parentId: this.activeReplyTarget.id,
         captchaToken: `${this.replyCaptchaChallengeId}:${raw.captchaAnswer}`,
         attachment: this.replyAttachmentState.value
-      })
-      .subscribe({
-        next: () => {
-          this.setReplySubmitState(createSucceededCommentFormState('Коментар успішно створено.'));
-          this.closeReplyModal('backdrop', true);
-          this.load();
-        },
-        error: (error) => {
-          const uiError = this.apiErrorPresenter.present(error, 'Не вдалося створити відповідь. Перевірте дані форми.');
-          this.setReplySubmitState(createFailedCommentFormState(uiError.summary, uiError.validationErrors, uiError.canRetry));
-          applyServerValidationErrorsToControls(this.replyForm.controls, uiError.validationErrors, this.replyFormServerFieldMapping);
-          this.reloadReplyCaptcha();
-        }
-      });
+      }),
+      setSubmitState: (state) => this.setReplySubmitState(state),
+      successMessage: 'Коментар успішно створено.',
+      onSuccess: () => {
+        this.closeReplyModal('backdrop', true);
+        this.load();
+      },
+      presentError: (error) => this.apiErrorPresenter.present(error, 'Не вдалося створити відповідь. Перевірте дані форми.'),
+      applyServerValidationErrors: (validationErrors) => {
+        applyServerValidationErrorsToControls(this.replyForm.controls, validationErrors, this.replyFormServerFieldMapping);
+      },
+      onAfterError: () => this.reloadReplyCaptcha()
+    });
   }
 
   /**

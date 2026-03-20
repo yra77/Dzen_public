@@ -1,4 +1,5 @@
 import { CaptchaImageResponse, CreateCommentAttachmentRequest } from '../../core/comments.models';
+import { UiValidationError } from '../../core/api-error-presenter.service';
 import { Observable } from 'rxjs';
 import {
   CommentFormPreviewState,
@@ -12,6 +13,12 @@ import {
   createInitialCommentFormCaptchaState,
   createResolvedCommentFormCaptchaState
 } from './comment-form-ui-state';
+import {
+  CommentFormSubmitState,
+  createFailedCommentFormState,
+  createSubmittingCommentFormState,
+  createSucceededCommentFormState
+} from './comment-form-submit-state';
 
 /**
  * Опис результату вставки quick-tag у textarea, щоб компонент оновив FormControl і caret.
@@ -174,6 +181,58 @@ export function reloadCommentCaptcha(options: ReloadCommentCaptchaOptions): void
     },
     error: (error) => {
       options.setCaptchaState(createFailedCommentFormCaptchaState(options.resolveErrorMessage(error)));
+    }
+  });
+}
+
+/**
+ * Нормалізований результат API-помилки для submit workflow.
+ */
+export interface CommentSubmitUiError {
+  /** Узагальнене повідомлення для верхнього банера submit-стану. */
+  summary: string;
+  /** Список server-side validation-помилок, прив'язаних до полів форми. */
+  validationErrors: ReadonlyArray<UiValidationError>;
+  /** Прапорець показу підказки "спробуйте ще раз". */
+  canRetry: boolean;
+}
+
+/**
+ * Параметри shared submit workflow, який уніфікує success/error lifecycle.
+ */
+export interface RunCommentSubmitWorkflowOptions {
+  /** Функція, що виконує фактичний submit-запит до API. */
+  submitRequest: () => Observable<unknown>;
+  /** Setter submit-стану через facade/компонент. */
+  setSubmitState: (state: CommentFormSubmitState) => void;
+  /** Повідомлення успішного submit. */
+  successMessage: string;
+  /** Callback успішного submit (reset/load/close/captcha). */
+  onSuccess: () => void;
+  /** Нормалізатор API-помилки в UI-представлення. */
+  presentError: (error: unknown) => CommentSubmitUiError;
+  /** Прив'язка server validation помилок до контролів форми. */
+  applyServerValidationErrors: (validationErrors: ReadonlyArray<UiValidationError>) => void;
+  /** Додаткова реакція на помилку (наприклад, refresh CAPTCHA). */
+  onAfterError?: () => void;
+}
+
+/**
+ * Запускає уніфікований submit workflow для create/reply форм list/thread сторінок.
+ */
+export function runCommentSubmitWorkflow(options: RunCommentSubmitWorkflowOptions): void {
+  options.setSubmitState(createSubmittingCommentFormState());
+
+  options.submitRequest().subscribe({
+    next: () => {
+      options.setSubmitState(createSucceededCommentFormState(options.successMessage));
+      options.onSuccess();
+    },
+    error: (error) => {
+      const uiError = options.presentError(error);
+      options.setSubmitState(createFailedCommentFormState(uiError.summary, uiError.validationErrors, uiError.canRetry));
+      options.applyServerValidationErrors(uiError.validationErrors);
+      options.onAfterError?.();
     }
   });
 }

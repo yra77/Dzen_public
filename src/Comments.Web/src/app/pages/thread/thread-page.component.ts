@@ -25,15 +25,13 @@ import {
   buildQuickTagInsertResult,
   readAttachmentAsRequest,
   refreshCommentPreview,
-  reloadCommentCaptcha
+  reloadCommentCaptcha,
+  runCommentSubmitWorkflow
 } from '../../shared/comment-form/comment-form-helpers';
 import { CommentFormAttachmentState } from '../../shared/comment-form/comment-form-attachment-state';
 import { applyServerValidationErrorsToControls, ServerFieldControlMapping, setupServerValidationReset } from '../../shared/comment-form/comment-form-server-validation';
 import {
-  createFailedCommentFormState,
   createInitialCommentFormSubmitState,
-  createSubmittingCommentFormState,
-  createSucceededCommentFormState
 } from '../../shared/comment-form/comment-form-submit-state';
 import {
   createInitialCommentFormPreviewState,
@@ -427,12 +425,10 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.replyFormState.setSubmitState(createSubmittingCommentFormState());
-
     const raw = this.replyForm.getRawValue();
 
-    this.commentsGraphqlApi
-      .createComment({
+    runCommentSubmitWorkflow({
+      submitRequest: () => this.commentsGraphqlApi.createComment({
         userName: raw.userName,
         email: raw.email,
         homePage: null,
@@ -440,24 +436,23 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
         parentId: this.activeReplyTarget.id,
         captchaToken: `${this.captchaChallengeId}:${raw.captchaAnswer}`,
         attachment: this.replyAttachmentState.value
-      })
-      .subscribe({
-        next: () => {
-          this.replyFormState.setSubmitState(createSucceededCommentFormState('Відповідь додано.'));
-          this.replyForm.reset({ userName: raw.userName, email: raw.email, text: '', captchaAnswer: '' });
-          this.replyFormState.setPreviewState(createInitialCommentFormPreviewState());
-          this.replyAttachmentState.reset();
-          this.closeReplyModal('backdrop', true);
-          this.loadThread();
-          this.reloadCaptcha();
-        },
-        error: (error) => {
-          const uiError = this.apiErrorPresenter.present(error, 'Не вдалося надіслати відповідь. Перевірте дані форми.');
-          this.replyFormState.setSubmitState(createFailedCommentFormState(uiError.summary, uiError.validationErrors, uiError.canRetry));
-          applyServerValidationErrorsToControls(this.replyForm.controls, uiError.validationErrors, this.replyFormServerFieldMapping);
-          this.reloadCaptcha();
-        }
-      });
+      }),
+      setSubmitState: (state) => this.replyFormState.setSubmitState(state),
+      successMessage: 'Відповідь додано.',
+      onSuccess: () => {
+        this.replyForm.reset({ userName: raw.userName, email: raw.email, text: '', captchaAnswer: '' });
+        this.replyFormState.setPreviewState(createInitialCommentFormPreviewState());
+        this.replyAttachmentState.reset();
+        this.closeReplyModal('backdrop', true);
+        this.loadThread();
+        this.reloadCaptcha();
+      },
+      presentError: (error) => this.apiErrorPresenter.present(error, 'Не вдалося надіслати відповідь. Перевірте дані форми.'),
+      applyServerValidationErrors: (validationErrors) => {
+        applyServerValidationErrorsToControls(this.replyForm.controls, validationErrors, this.replyFormServerFieldMapping);
+      },
+      onAfterError: () => this.reloadCaptcha()
+    });
   }
 
   /**
