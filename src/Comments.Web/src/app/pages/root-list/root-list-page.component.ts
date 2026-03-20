@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { Component, OnDestroy, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
@@ -19,7 +18,8 @@ import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick
 
 @Component({
   selector: 'app-root-list-page',
-  imports: [DatePipe, ReactiveFormsModule, CommentTreeComponent, QuickTagsToolbarComponent],
+  // Тримаймо лише фактично використані standalone-імпорти без зайвих пайпів.
+  imports: [ReactiveFormsModule, CommentTreeComponent, QuickTagsToolbarComponent],
   template: `
     <section class="panel">
       <button class="btn-answer" type="button" (click)="openCreateModal()" data-testid="root-open-create-modal-button">Коментувати</button>

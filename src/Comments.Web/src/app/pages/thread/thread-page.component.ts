@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -18,7 +17,8 @@ import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick
 
 @Component({
   selector: 'app-thread-page',
-  imports: [DatePipe, ReactiveFormsModule, RouterLink, CommentNodeCardComponent, CommentTreeComponent, QuickTagsToolbarComponent],
+  // Тримаймо лише фактично використані standalone-імпорти без зайвих пайпів.
+  imports: [ReactiveFormsModule, RouterLink, CommentNodeCardComponent, CommentTreeComponent, QuickTagsToolbarComponent],
   template: `
     <section class="panel">
       <h2>Гілка коментаря</h2>

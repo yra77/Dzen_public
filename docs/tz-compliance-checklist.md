@@ -23,10 +23,10 @@
 
 | Вимога ТЗ | Статус | Поточний стан у репозиторії | Що робимо далі |
 |---|---|---|---|
-| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; блок відображення вкладень винесено в `CommentAttachmentComponent`. | Продовжити декомпозицію page-компонентів (форми, дерево коментарів, модалки) у менші standalone-блоки. |
+| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; блок відображення вкладень винесено в `CommentAttachmentComponent`, дерево — у `CommentTreeComponent`. | Продовжити декомпозицію page-компонентів (форми, модалки, toolbar-блоки) у менші standalone-блоки. |
 | Apollo Client (GraphQL) | ✅ Виконано | Apollo Angular інтегровано; запити/мутації працюють через GraphQL API. | Нормалізувати cache-policy та обробку мережевих/GraphQL помилок. |
 | RxJS | ✅ Виконано | RxJS використовується в сервісах та UI-компонентах. | Уніфікувати потоки стану для сценаріїв list/thread/search/realtime. |
-| Якість збірки (Angular compiler warnings) | ✅ Виконано | Попередження `NG8102` для `??` на не-nullable типі прибрані через коректне nullable-типізування кешу preview вкладень. | Тримати збірку без попереджень та додати перевірку в CI. |
+| Якість збірки (Angular compiler warnings) | ✅ Виконано | Прибрано попередження `TS-998113` у `RootListPageComponent` і `ThreadPageComponent`: невикористаний `DatePipe` видалено з імпортів компонентів. | Тримати збірку без попереджень та додати перевірку в CI. |
 
 ## 2) Пріоритетний план робіт
 
@@ -39,15 +39,13 @@
 
 ## 3) Що внесено в цій ітерації
 
-- Продовжено frontend-декомпозицію за планом: додано standalone-компонент `CommentTreeComponent` для рекурсивного рендерингу дерева коментарів без дублювання шаблонів сторінок.
-- `RootListPageComponent` переведено на `CommentTreeComponent` для відображення всіх root-коментарів і дочірніх відповідей через єдиний компонентний шлях.
-- `ThreadPageComponent` переведено на `CommentTreeComponent` для блоку «Відповіді» з повторним використанням спільної логіки preview/вкладень/reply-дії.
-- Актуалізовано чекліст: залишено лише поточний стан реалізації та актуальні наступні кроки.
+- Усунуто Angular compiler warnings `TS-998113` на двох сторінках: видалено невикористаний `DatePipe` з imports standalone-компонентів `RootListPageComponent` та `ThreadPageComponent`.
+- Актуалізовано чекліст відповідності ТЗ: прибрано застарілий опис попередніх ітерацій, залишено тільки поточний стан і чинний план.
 
 ## 4) Що ще треба зробити у проєкті
 
 - Закрити вимоги ТЗ по production-ready messaging: перейти на MassTransit і додати retry/DLQ/outbox/idempotency.
 - Закрити вимоги ТЗ по стеку пошуку: перейти з low-level HTTP-обгортки на офіційний Elasticsearch .NET client.
-- Продовжити frontend-декомпозицію: винести форму створення/відповіді та модальні блоки у окремі standalone-компоненти (дерево вже винесено в `CommentTreeComponent`).
+- Продовжити frontend-декомпозицію: винести форму створення/відповіді та модальні блоки у окремі standalone-компоненти.
 - Підсилити quality-gates: додати GraphQL contract checks, architecture checks та перевірку збірки без Angular warnings у CI/CD.
 - Формалізувати DoD для ТЗ: чекліст «готово до релізу» з прив’язкою до автоперевірок.
