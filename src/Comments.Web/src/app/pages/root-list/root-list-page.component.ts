@@ -1,5 +1,6 @@
 import { Component, OnDestroy, inject } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 
@@ -261,10 +262,16 @@ export class RootListPageComponent implements OnDestroy {
   private readonly commentsGraphqlApi = inject(CommentsGraphqlApiService);
   private readonly formBuilder = inject(FormBuilder);
   private readonly apiErrorPresenter = inject(ApiErrorPresenterService);
+  private readonly router = inject(Router);
+  private readonly activatedRoute = inject(ActivatedRoute);
 
   private signalRConnection: HubConnection | null = null;
   /** Підписка на shared load-state stream root/list сценарію. */
   private readonly rootListLoadStateSubscription: Subscription;
+  /** Debounced-підписка для зміни тексту пошуку без зайвого API-spam на кожен символ. */
+  private readonly searchInputSubscription: Subscription;
+  /** Subject для debounce-потоку зміни пошуку. */
+  private readonly searchInputChanges = new Subject<string>();
   /** Shared RxJS stream для list/search-state (loading/error/data) у list/search/realtime сценаріях. */
   private readonly rootListLoadStateStream = new CommentQueryStateStream<{
     page: number;
@@ -419,6 +426,18 @@ export class RootListPageComponent implements OnDestroy {
       }
     });
 
+    this.searchInputSubscription = this.searchInputChanges
+      .pipe(
+        debounceTime(350),
+        distinctUntilChanged()
+      )
+      .subscribe((query) => {
+        this.searchQuery = query;
+        this.page = 1;
+        this.load();
+      });
+
+    this.hydrateListStateFromUrl();
     this.load();
     this.reloadCaptcha();
     this.initializeSignalR();
@@ -549,6 +568,7 @@ export class RootListPageComponent implements OnDestroy {
    */
   ngOnDestroy(): void {
     this.rootListLoadStateSubscription.unsubscribe();
+    this.searchInputSubscription.unsubscribe();
     this.rootListLoadStateStream.destroy();
 
     if (this.signalRConnection) {
@@ -588,6 +608,7 @@ export class RootListPageComponent implements OnDestroy {
    * Завантажує сторінку кореневих коментарів.
    */
   load(): void {
+    this.syncUrlWithCurrentListState();
     this.rootListLoadStateStream.reload({
       page: this.page,
       pageSize: this.pageSize,
@@ -635,17 +656,22 @@ export class RootListPageComponent implements OnDestroy {
 
   /** Оновлює локальний текст пошуку без зайвих API-запитів на кожен символ. */
   onSearchQueryChanged(event: Event): void {
-    this.searchQuery = (event.target as HTMLInputElement).value;
+    const nextQuery = (event.target as HTMLInputElement).value;
+    this.searchQuery = nextQuery;
+    this.searchInputChanges.next(nextQuery);
   }
 
   /** Запускає пошук (або повернення в list-mode, якщо запит порожній). */
   onSearchSubmitted(): void {
+    const normalizedQuery = this.searchQuery.trim();
+    this.searchQuery = normalizedQuery;
     this.page = 1;
     this.load();
   }
 
   /** Скидає пошук і завантажує стандартний список кореневих коментарів. */
   clearSearch(): void {
+    this.searchInputChanges.next('');
     this.searchQuery = '';
     this.page = 1;
     this.load();
@@ -1055,5 +1081,49 @@ export class RootListPageComponent implements OnDestroy {
       .catch(() => {
         this.signalRStatusMessage = 'Realtime недоступний. Дані оновлюються автоматично після створення коментарів.';
       });
+  }
+
+  /**
+   * Ініціалізує list/search/sort/page стан із URL query params під час першого відкриття сторінки.
+   */
+  private hydrateListStateFromUrl(): void {
+    const queryParams = this.activatedRoute.snapshot.queryParamMap;
+    const pageFromUrl = Number.parseInt(queryParams.get('page') ?? '', 10);
+    const sortByFromUrl = queryParams.get('sortBy');
+    const sortDirectionFromUrl = queryParams.get('sortDirection');
+    const queryFromUrl = queryParams.get('query');
+
+    if (Number.isInteger(pageFromUrl) && pageFromUrl > 0) {
+      this.page = pageFromUrl;
+    }
+
+    if (sortByFromUrl === 'CreatedAtUtc' || sortByFromUrl === 'UserName' || sortByFromUrl === 'Email') {
+      this.sortBy = sortByFromUrl;
+    }
+
+    if (sortDirectionFromUrl === 'Asc' || sortDirectionFromUrl === 'Desc') {
+      this.sortDirection = sortDirectionFromUrl;
+    }
+
+    if (typeof queryFromUrl === 'string') {
+      this.searchQuery = queryFromUrl.trim();
+    }
+  }
+
+  /**
+   * Синхронізує поточний list/search/sort/page стан у query params для reload/back-forward навігації.
+   */
+  private syncUrlWithCurrentListState(): void {
+    void this.router.navigate([], {
+      relativeTo: this.activatedRoute,
+      queryParams: {
+        page: this.page > 1 ? this.page : null,
+        sortBy: this.sortBy !== 'CreatedAtUtc' ? this.sortBy : null,
+        sortDirection: this.sortDirection !== 'Desc' ? this.sortDirection : null,
+        query: this.searchQuery.trim() ? this.searchQuery.trim() : null
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
   }
 }
