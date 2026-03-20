@@ -24,6 +24,13 @@ import { ModalCloseReason } from '../../shared/comment-modal-layout/comment-moda
 import { canCloseModal } from '../../shared/comment-modal-layout/modal-close.guard';
 import { buildQuickTagInsertResult, readAttachmentAsRequest } from '../../shared/comment-form/comment-form-helpers';
 import { applyServerValidationErrorsToControls, ServerFieldControlMapping, setupServerValidationReset } from '../../shared/comment-form/comment-form-server-validation';
+import {
+  CommentFormSubmitState,
+  createFailedCommentFormState,
+  createInitialCommentFormSubmitState,
+  createSubmittingCommentFormState,
+  createSucceededCommentFormState
+} from '../../shared/comment-form/comment-form-submit-state';
 
 @Component({
   selector: 'app-thread-page',
@@ -218,6 +225,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     setupServerValidationReset(this.replyForm.controls.email);
     setupServerValidationReset(this.replyForm.controls.text);
     setupServerValidationReset(this.replyForm.controls.captchaAnswer);
+    this.setSubmitState(createInitialCommentFormSubmitState());
   }
 
   /**
@@ -381,10 +389,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.isSubmitting = true;
-    this.submitMessage = '';
-    this.submitValidationErrors = [];
-    this.showRetryHint = false;
+    this.setSubmitState(createSubmittingCommentFormState());
 
     const raw = this.replyForm.getRawValue();
 
@@ -400,7 +405,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
       })
       .subscribe({
         next: () => {
-          this.submitMessage = 'Відповідь додано.';
+          this.setSubmitState(createSucceededCommentFormState('Відповідь додано.'));
           this.replyForm.reset({ userName: raw.userName, email: raw.email, text: '', captchaAnswer: '' });
           this.textPreviewHtml = '';
           this.previewMessage = '';
@@ -410,16 +415,12 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
           this.closeReplyModal('backdrop', true);
           this.loadThread();
           this.reloadCaptcha();
-          this.isSubmitting = false;
         },
         error: (error) => {
           const uiError = this.apiErrorPresenter.present(error, 'Не вдалося надіслати відповідь. Перевірте дані форми.');
-          this.submitMessage = uiError.summary;
-          this.submitValidationErrors = uiError.validationErrors;
-          this.showRetryHint = uiError.canRetry;
+          this.setSubmitState(createFailedCommentFormState(uiError.summary, uiError.validationErrors, uiError.canRetry));
           applyServerValidationErrorsToControls(this.replyForm.controls, uiError.validationErrors, this.replyFormServerFieldMapping);
           this.reloadCaptcha();
-          this.isSubmitting = false;
         }
       });
   }
@@ -430,9 +431,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   openReplyModal(comment: CommentNode): void {
     this.activeReplyTarget = comment;
     this.isReplyModalOpen = true;
-    this.submitMessage = '';
-    this.submitValidationErrors = [];
-    this.showRetryHint = false;
+    this.setSubmitState(createInitialCommentFormSubmitState());
     this.reloadCaptcha();
   }
 
@@ -562,6 +561,16 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
         this.isLoading = false;
       }
     });
+  }
+
+  /**
+   * Оновлює submit-стан reply-форми та синхронізує поля, які читає шаблон.
+   */
+  private setSubmitState(state: CommentFormSubmitState): void {
+    this.isSubmitting = state.isSubmitting;
+    this.submitMessage = state.message;
+    this.submitValidationErrors = state.validationErrors;
+    this.showRetryHint = state.showRetryHint;
   }
 
 }
