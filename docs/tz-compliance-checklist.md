@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-20 (ітерація frontend-decomposition: root-list shared form helpers).
+Останнє оновлення: 2026-03-20 (ітерація frontend-decomposition: shared server-validation helpers).
 
 > Документ містить лише актуальний стан реалізації, поточний план і наступні кроки без історичних застарілих нотаток.
 
@@ -39,14 +39,16 @@
 
 ## 3) Що внесено в цій ітерації
 
-- `RootListPageComponent` переведено на shared helper-и `buildQuickTagInsertResult` та `readAttachmentAsRequest`: прибрано локальне дублювання вставки quick-tags і DataURL-читання вкладень.
-- У `RootListPageComponent` видалено приватні дублікати `insertTagIntoTextarea` і `processAttachmentSelection`; правила тепер централізовані в `shared/comment-form/comment-form-helpers.ts`.
-- `docs/tz-compliance-checklist.md` оновлено відповідно до поточного фактичного стану ітерації.
+- Додано shared helper `comment-form-server-validation.ts` для єдиного оброблення server-side validation у формах (мапінг полів, проставлення `server`-помилок, автоматичне очищення помилок після зміни значення).
+- `RootListPageComponent` переведено на shared server-validation helper-и для create/reply форм: прибрано локальні дублікати логіки мапінгу полів і очищення `server`-помилок.
+- `ThreadPageComponent` також переведено на shared server-validation helper-и: прибрано дублювання коду обробки validation errors між сторінками.
+- Актуалізовано цей checklist: видалено неактуальні ітераційні згадки, залишено лише поточний стан і наступні задачі.
 
 ## 4) Що ще треба зробити у проєкті
 
-- Закрити вимоги ТЗ по production-ready messaging: перейти на MassTransit і додати retry/DLQ/outbox/idempotency.
-- Закрити вимоги ТЗ по стеку пошуку: перейти з low-level HTTP-обгортки на офіційний Elasticsearch .NET client.
-- Довести frontend-декомпозицію до DoD: винести create/reply form state (submit/loading/error/captcha/preview) у shared facade/store, щоби прибрати дублювання між list/thread сценаріями.
-- Підсилити quality-gates: додати GraphQL contract checks та architecture checks у CI/CD.
-- Формалізувати DoD для ТЗ: чекліст «готово до релізу» з прив’язкою до автоперевірок.
+- **P0 Messaging:** перейти з поточного `RabbitMQ.Client` на MassTransit (retry, DLQ, outbox, idempotency).
+- **P1 Search:** замінити low-level HTTP інтеграцію Elasticsearch на офіційний .NET client із typed mapping/templates.
+- **P1 Frontend decomposition (продовження):** винести submit/loading/error/captcha/preview стани create/reply форм у shared facade/store, щоб максимально прибрати state-дублювання з page-компонентів.
+- **P1 GraphQL quality:** додати контрактні перевірки GraphQL-операцій (позитивні + негативні кейси) у CI.
+- **P2 Architecture quality:** додати перевірки напрямків залежностей між шарами як автоматичний quality gate.
+- **P2 Build quality gates:** винести `scripts/check-angular-build.sh` в окремий CI job і зробити warning-blocking політику обов’язковою.
