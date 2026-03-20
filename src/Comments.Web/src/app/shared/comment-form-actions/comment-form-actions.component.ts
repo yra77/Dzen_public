@@ -12,12 +12,12 @@ import { ModalCloseReason } from '../comment-modal-layout/comment-modal-layout.c
   template: `
     <div class="actions wide">
       @if (showCloseButton) {
-        <button
+       <!-- <button
           type="button"
           [attr.data-testid]="closeTestId || null"
           (click)="emitCloseClicked()">
           {{ closeLabel }}
-        </button>
+        </button>-->
       }
       <button
         [type]="submitButtonType"
