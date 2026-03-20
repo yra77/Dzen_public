@@ -22,6 +22,7 @@ import { CommentFormActionsComponent } from '../../shared/comment-form-actions/c
 import { CommentModalLayoutComponent } from '../../shared/comment-modal-layout/comment-modal-layout.component';
 import { ModalCloseReason } from '../../shared/comment-modal-layout/comment-modal-layout.component';
 import { canCloseModal } from '../../shared/comment-modal-layout/modal-close.guard';
+import { buildQuickTagInsertResult, readAttachmentAsRequest } from '../../shared/comment-form/comment-form-helpers';
 
 @Component({
   selector: 'app-thread-page',
@@ -297,7 +298,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   /**
    * Валідовує і читає вкладення відповіді у base64-представлення.
    */
-  onAttachmentSelected(event: Event): void {
+  async onAttachmentSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     this.attachment = null;
@@ -308,37 +309,14 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (file.size > 1_000_000) {
-      this.attachmentMessage = 'Файл перевищує 1MB.';
+    const readResult = await readAttachmentAsRequest(file);
+    this.attachment = readResult.attachment;
+    this.attachmentMessage = readResult.message;
+    this.attachmentImagePreviewDataUrl = readResult.imagePreviewDataUrl;
+
+    if (!readResult.attachment) {
       input.value = '';
-      return;
     }
-
-    const allowedContentTypes = ['image/png', 'image/jpeg', 'image/gif', 'text/plain'];
-    if (!allowedContentTypes.includes(file.type)) {
-      this.attachmentMessage = 'Недозволений тип вкладення.';
-      input.value = '';
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result !== 'string') {
-        this.attachmentMessage = 'Не вдалося прочитати файл.';
-        return;
-      }
-
-      const base64Content = result.includes(',') ? result.split(',')[1] : result;
-      this.attachment = {
-        fileName: file.name,
-        contentType: file.type,
-        base64Content
-      };
-      this.attachmentImagePreviewDataUrl = file.type.startsWith('image/') ? result : '';
-      this.attachmentMessage = `Вкладення готове: ${file.name}`;
-    };
-    reader.readAsDataURL(file);
   }
 
 
@@ -347,30 +325,10 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
    * Додає HTML-тег у текстове поле з урахуванням поточного виділення користувача.
    */
   insertQuickTag(tag: 'i' | 'strong' | 'code' | 'a', textarea: HTMLTextAreaElement): void {
-    const selectionStart = textarea.selectionStart ?? 0;
-    const selectionEnd = textarea.selectionEnd ?? selectionStart;
-    const selectedText = textarea.value.slice(selectionStart, selectionEnd);
-
-    const openTag = `<${tag}>`;
-    const closeTag = `</${tag}>`;
-    let replacement = `${openTag}${selectedText}${closeTag}`;
-    let caretPosition = selectionStart + openTag.length;
-
-    if (tag === 'a') {
-      const hasSelection = selectedText.trim().length > 0;
-      const linkText = hasSelection ? selectedText : 'посилання';
-      replacement = `<a href="https://example.com">${linkText}</a>`;
-      caretPosition = hasSelection
-        ? selectionStart + replacement.length
-        : selectionStart + '<a href="'.length;
-    } else if (selectedText.length > 0) {
-      caretPosition = selectionStart + replacement.length;
-    }
-
-    const updatedText = `${textarea.value.slice(0, selectionStart)}${replacement}${textarea.value.slice(selectionEnd)}`;
-    this.replyForm.controls.text.setValue(updatedText);
+    const quickTagInsertResult = buildQuickTagInsertResult(tag, textarea);
+    this.replyForm.controls.text.setValue(quickTagInsertResult.updatedText);
     textarea.focus();
-    textarea.setSelectionRange(caretPosition, caretPosition);
+    textarea.setSelectionRange(quickTagInsertResult.caretPosition, quickTagInsertResult.caretPosition);
     this.previewText();
   }
 
