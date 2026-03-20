@@ -14,12 +14,13 @@ import { environment } from '../../../environments/environment';
 import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
 import { CommentTreeComponent } from '../../shared/comment-tree/comment-tree.component';
 import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick-tags-toolbar.component';
+import { FormSubmitFeedbackComponent } from '../../shared/form-submit-feedback/form-submit-feedback.component';
 
 
 @Component({
   selector: 'app-root-list-page',
   // Тримаймо лише фактично використані standalone-імпорти без зайвих пайпів.
-  imports: [ReactiveFormsModule, CommentTreeComponent, QuickTagsToolbarComponent],
+  imports: [ReactiveFormsModule, CommentTreeComponent, QuickTagsToolbarComponent, FormSubmitFeedbackComponent],
   template: `
     <section class="panel">
       <button class="btn-answer" type="button" (click)="openCreateModal()" data-testid="root-open-create-modal-button">Коментувати</button>
@@ -54,21 +55,11 @@ import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick
               <button type="button" class="modal-close-button" (click)="closeCreateModal()">Закрити</button>
             </div>
             <form class="form-grid" [formGroup]="createForm" (ngSubmit)="submitComment()" data-testid="root-create-form">
-              @if (submitMessage) {
-                <div class="wide form-error-top" data-testid="root-submit-message">
-                  <p class="error">{{ submitMessage }}</p>
-                  @if (showRetryHint) {
-                    <p class="meta">Можна повторити запит без зміни даних форми.</p>
-                  }
-                  @if (submitValidationErrors.length > 0) {
-                    <ul class="error-list">
-                      @for (validationError of submitValidationErrors; track validationError.field) {
-                        <li><strong>{{ validationError.field }}</strong>: {{ validationError.messages.join('; ') }}</li>
-                      }
-                    </ul>
-                  }
-                </div>
-              }
+              <app-form-submit-feedback
+                [message]="submitMessage"
+                [validationErrors]="submitValidationErrors"
+                [showRetryHint]="showRetryHint"
+                testId="root-submit-message" />
 
               <label>
                 Ім'я
@@ -188,21 +179,10 @@ import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick
               <p class="meta">Відповідь для: <strong>{{ activeReplyTarget?.userName }}</strong></p>
 
               <form class="form-grid" [formGroup]="replyForm" (ngSubmit)="submitReplyComment()">
-                @if (replySubmitMessage) {
-                  <div class="wide form-error-top">
-                    <p class="error">{{ replySubmitMessage }}</p>
-                    @if (replyShowRetryHint) {
-                      <p class="meta">Можна повторити запит без зміни даних форми.</p>
-                    }
-                    @if (replySubmitValidationErrors.length > 0) {
-                      <ul class="error-list">
-                        @for (validationError of replySubmitValidationErrors; track validationError.field) {
-                          <li><strong>{{ validationError.field }}</strong>: {{ validationError.messages.join('; ') }}</li>
-                        }
-                      </ul>
-                    }
-                  </div>
-                }
+                <app-form-submit-feedback
+                  [message]="replySubmitMessage"
+                  [validationErrors]="replySubmitValidationErrors"
+                  [showRetryHint]="replyShowRetryHint" />
 
                 <label>
                   Ім'я
