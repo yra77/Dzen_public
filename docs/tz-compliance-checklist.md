@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-20 (ітерація quality-gate для Angular production build).
+Останнє оновлення: 2026-03-20 (ітерація frontend-decomposition: shared comment form helpers).
 
 > Документ містить лише актуальний стан реалізації, поточний план і наступні кроки без історичних застарілих нотаток.
 
@@ -39,14 +39,14 @@
 
 ## 3) Що внесено в цій ітерації
 
-- Додано `scripts/check-angular-build.sh` для strict-перевірки production-збірки Angular (падіння при warning/error).
-- `scripts/go-no-go-check.sh` оновлено: Angular production quality gate додано в обов’язкову послідовність smoke-checks.
-- `docs/tz-compliance-checklist.md` синхронізовано з поточним станом реалізації без застарілих пунктів.
+- Додано `src/Comments.Web/src/app/shared/comment-form/comment-form-helpers.ts` із централізованими helper-ами для quick-tags та обробки attachment (валідація + читання DataURL).
+- `ThreadPageComponent` переведено на shared helper-и: прибрано дублювання логіки вставки quick-tags і читання вкладень.
+- `docs/tz-compliance-checklist.md` очищено від неактуальних нотаток і синхронізовано зі станом поточної ітерації.
 
 ## 4) Що ще треба зробити у проєкті
 
 - Закрити вимоги ТЗ по production-ready messaging: перейти на MassTransit і додати retry/DLQ/outbox/idempotency.
 - Закрити вимоги ТЗ по стеку пошуку: перейти з low-level HTTP-обгортки на офіційний Elasticsearch .NET client.
-- Довести frontend-декомпозицію до DoD: поширити уніфікований modal API (включно з test-id і варіантами закриття) на наступні UI-сценарії.
+- Довести frontend-декомпозицію до DoD: перевести `RootListPageComponent` на нові shared helper-и форми (quick-tags/attachment), щоби повністю прибрати дублювання між list/thread сценаріями.
 - Підсилити quality-gates: додати GraphQL contract checks та architecture checks у CI/CD.
 - Формалізувати DoD для ТЗ: чекліст «готово до релізу» з прив’язкою до автоперевірок.
