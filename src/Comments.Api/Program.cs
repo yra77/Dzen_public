@@ -109,7 +109,8 @@ if (rabbitMqOptions.Enabled)
 
         configurator.UsingRabbitMq((context, busConfigurator) =>
         {
-            busConfigurator.Host(rabbitMqOptions.HostName, rabbitMqOptions.Port, "/", hostConfigurator =>
+            var rabbitMqUri = new Uri($"rabbitmq://{rabbitMqOptions.HostName}:{rabbitMqOptions.Port}/");
+            busConfigurator.Host(rabbitMqUri, hostConfigurator =>
             {
                 hostConfigurator.Username(rabbitMqOptions.UserName);
                 hostConfigurator.Password(rabbitMqOptions.Password);

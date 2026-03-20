@@ -2,8 +2,6 @@ using Comments.Application.Abstractions;
 using Comments.Application.DTOs;
 
 using Elastic.Clients.Elasticsearch;
-using Elastic.Clients.Elasticsearch.QueryDsl;
-using Elastic.Clients.Elasticsearch.SortOptions;
 
 namespace Comments.Infrastructure.Search;
 
@@ -37,16 +35,14 @@ public sealed class ElasticsearchCommentSearchService : ICommentSearchService
             .Index(_options.IndexName)
             .From(from)
             .Size(pageSize)
-            .Query(new Query(new MultiMatchQuery
-            {
-                Query = query,
-                Fields = new[] { "text", "userName", "email" }
-            }))
-            .Sort(new SortOptions(new FieldSort
-            {
-                Field = nameof(CommentSearchDocument.CreatedAtUtc),
-                Order = SortOrder.Desc
-            })), cancellationToken);
+            .Query(queryDescriptor => queryDescriptor
+                .MultiMatch(multiMatchDescriptor => multiMatchDescriptor
+                    .Query(query)
+                    .Fields(new[] { "text", "userName", "email" })))
+            .Sort(sortDescriptor => sortDescriptor
+                .Field(fieldDescriptor => fieldDescriptor
+                    .Field(nameof(CommentSearchDocument.CreatedAtUtc))
+                    .Order(SortOrder.Desc))), cancellationToken);
 
         if (!response.IsValidResponse)
         {
