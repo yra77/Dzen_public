@@ -5,7 +5,6 @@ import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 
 import {
   CommentNode,
-  CreateCommentAttachmentRequest
 } from '../../core/comments.models';
 import { CommentsGraphqlApiService } from '../../core/comments-graphql-api.service';
 import { environment } from '../../../environments/environment';
@@ -23,6 +22,7 @@ import { CommentModalLayoutComponent } from '../../shared/comment-modal-layout/c
 import { ModalCloseReason } from '../../shared/comment-modal-layout/comment-modal-layout.component';
 import { canCloseModal } from '../../shared/comment-modal-layout/modal-close.guard';
 import { buildQuickTagInsertResult, readAttachmentAsRequest } from '../../shared/comment-form/comment-form-helpers';
+import { CommentFormAttachmentState } from '../../shared/comment-form/comment-form-attachment-state';
 import { applyServerValidationErrorsToControls, ServerFieldControlMapping, setupServerValidationReset } from '../../shared/comment-form/comment-form-server-validation';
 import {
   createFailedCommentFormState,
@@ -206,10 +206,8 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   signalRStatusMessage = '';
   /** Поточний коментар, на який користувач відповідає у модальному вікні. */
   activeReplyTarget: CommentNode | null = null;
-  attachmentMessage = '';
-  attachment: CreateCommentAttachmentRequest | null = null;
-  /** Data URL для preview вибраного зображення перед submit. */
-  attachmentImagePreviewDataUrl = '';
+  /** Shared state вкладення reply-форми (payload + message + image preview). */
+  private readonly replyAttachmentState = new CommentFormAttachmentState();
   /** Кеш preview-вмісту text-вкладень за storagePath; значення може бути відсутнім до першого завантаження. */
   attachmentTextPreviewByPath: Record<string, string | undefined> = {};
   attachmentTextLoadingByPath = new Set<string>();
@@ -280,6 +278,16 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   /** Повідомлення про стан CAPTCHA для reply-форми. */
   get captchaMessage(): string {
     return this.replyFormState.captchaMessage;
+  }
+
+  /** Повідомлення стану вкладення reply-форми для attachment picker. */
+  get attachmentMessage(): string {
+    return this.replyAttachmentState.statusMessage;
+  }
+
+  /** Data URL preview вибраного зображення reply-форми. */
+  get attachmentImagePreviewDataUrl(): string {
+    return this.replyAttachmentState.previewDataUrl;
   }
 
   /**
@@ -376,18 +384,14 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   async onAttachmentSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    this.attachment = null;
-    this.attachmentMessage = '';
-    this.attachmentImagePreviewDataUrl = '';
+    this.replyAttachmentState.reset();
 
     if (!file) {
       return;
     }
 
     const readResult = await readAttachmentAsRequest(file);
-    this.attachment = readResult.attachment;
-    this.attachmentMessage = readResult.message;
-    this.attachmentImagePreviewDataUrl = readResult.imagePreviewDataUrl;
+    this.replyAttachmentState.applyReadResult(readResult);
 
     if (!readResult.attachment) {
       input.value = '';
@@ -410,9 +414,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
 
   /** Очищає вибране вкладення у формі відповіді. */
   clearReplyAttachment(): void {
-    this.attachment = null;
-    this.attachmentImagePreviewDataUrl = '';
-    this.attachmentMessage = '';
+    this.replyAttachmentState.reset();
   }
 
   /**
@@ -454,16 +456,14 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
         text: raw.text,
         parentId: this.activeReplyTarget.id,
         captchaToken: `${this.captchaChallengeId}:${raw.captchaAnswer}`,
-        attachment: this.attachment
+        attachment: this.replyAttachmentState.value
       })
       .subscribe({
         next: () => {
           this.replyFormState.setSubmitState(createSucceededCommentFormState('Відповідь додано.'));
           this.replyForm.reset({ userName: raw.userName, email: raw.email, text: '', captchaAnswer: '' });
           this.replyFormState.setPreviewState(createInitialCommentFormPreviewState());
-          this.attachment = null;
-          this.attachmentMessage = '';
-          this.attachmentImagePreviewDataUrl = '';
+          this.replyAttachmentState.reset();
           this.closeReplyModal('backdrop', true);
           this.loadThread();
           this.reloadCaptcha();
@@ -508,9 +508,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     this.replyForm.controls.text.reset('');
     this.replyForm.controls.captchaAnswer.reset('');
     this.replyFormState.setPreviewState(createInitialCommentFormPreviewState());
-    this.attachment = null;
-    this.attachmentMessage = '';
-    this.attachmentImagePreviewDataUrl = '';
+    this.replyAttachmentState.reset();
   }
 
   /**

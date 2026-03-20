@@ -62,11 +62,16 @@ export function validateCommentAttachmentFile(file: File): string {
 /**
  * Асинхронно читає файл як Data URL і формує payload для GraphQL мутації.
  */
-export function readAttachmentAsRequest(file: File): Promise<{
+export interface CommentAttachmentReadResult {
   attachment: CreateCommentAttachmentRequest | null;
   message: string;
   imagePreviewDataUrl: string;
-}> {
+}
+
+/**
+ * Асинхронно читає файл як Data URL і повертає нормалізований результат для attachment-state.
+ */
+export function readAttachmentAsRequest(file: File): Promise<CommentAttachmentReadResult> {
   return new Promise((resolve) => {
     const validationMessage = validateCommentAttachmentFile(file);
     if (validationMessage) {
