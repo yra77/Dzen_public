@@ -119,7 +119,7 @@ export class CommentAuthorTextFieldsComponent {
   /** Подія зміни textarea для тригеру preview в батьківському компоненті. */
   @Output() readonly textChanged = new EventEmitter<void>();
   /** Подія вибору quick-tag з поточним textarea контекстом. */
-  @Output() readonly quickTagSelected = new EventEmitter<{ tag: string; textArea: HTMLTextAreaElement }>();
+  @Output() readonly quickTagSelected = new EventEmitter<{ tag: 'i' | 'strong' | 'code' | 'a'; textArea: HTMLTextAreaElement }>();
 
   /**
    * Допоміжна перевірка невалідності control за іменем поля форми.
@@ -133,7 +133,7 @@ export class CommentAuthorTextFieldsComponent {
    * Проксіює quick-tag у батьківський компонент разом з textarea,
    * щоб сторінка вставила тег у правильну позицію курсора.
    */
-  emitQuickTagSelection(tag: string, textArea: HTMLTextAreaElement): void {
+  emitQuickTagSelection(tag: 'i' | 'strong' | 'code' | 'a', textArea: HTMLTextAreaElement): void {
     this.quickTagSelected.emit({ tag, textArea });
   }
 }
