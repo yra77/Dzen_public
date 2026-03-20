@@ -61,7 +61,7 @@ import { canCloseModal } from '../../shared/comment-modal-layout/modal-close.gua
           panelTestId="root-create-modal-panel"
           [closeMode]="isSubmitting ? 'disabled' : 'always'"
           (closeRequested)="onCreateModalCloseRequested($event)">
-            <app-comment-modal-header title="Новий коментар" (closeClicked)="onCreateModalCloseRequested('backdrop')" />
+            <app-comment-modal-header title="Новий коментар" (closeClicked)="onCreateModalCloseRequested($event)" />
             <form class="form-grid" [formGroup]="createForm" (ngSubmit)="submitComment()" data-testid="root-create-form">
               <app-form-submit-feedback
                 [message]="submitMessage"
@@ -149,7 +149,7 @@ import { canCloseModal } from '../../shared/comment-modal-layout/modal-close.gua
             panelTestId="root-reply-modal-panel"
             [closeMode]="isReplySubmitting ? 'disabled' : 'always'"
             (closeRequested)="onReplyModalCloseRequested($event)">
-              <app-comment-modal-header title="Нова відповідь" (closeClicked)="onReplyModalCloseRequested('backdrop')" />
+              <app-comment-modal-header title="Нова відповідь" (closeClicked)="onReplyModalCloseRequested($event)" />
               <p class="meta">Відповідь для: <strong>{{ activeReplyTarget?.userName }}</strong></p>
 
               <form class="form-grid" [formGroup]="replyForm" (ngSubmit)="submitReplyComment()">

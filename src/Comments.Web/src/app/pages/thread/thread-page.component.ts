@@ -75,7 +75,7 @@ import { canCloseModal } from '../../shared/comment-modal-layout/modal-close.gua
             panelTestId="thread-reply-modal-panel"
             [closeMode]="isSubmitting ? 'disabled' : 'always'"
             (closeRequested)="onReplyModalCloseRequested($event)">
-              <app-comment-modal-header title="Нова відповідь" (closeClicked)="onReplyModalCloseRequested('backdrop')" />
+              <app-comment-modal-header title="Нова відповідь" (closeClicked)="onReplyModalCloseRequested($event)" />
               <p class="meta">Відповідь на: <strong>{{ activeReplyTarget.userName }}</strong></p>
 
               <form class="form-grid" [formGroup]="replyForm" (ngSubmit)="submitReply()" data-testid="thread-reply-form">
@@ -123,7 +123,7 @@ import { canCloseModal } from '../../shared/comment-modal-layout/modal-close.gua
                 <app-comment-form-actions
                   [showCloseButton]="true"
                   closeLabel="Закрити"
-                  (closeClicked)="onReplyModalCloseRequested('backdrop')"
+                  (closeClicked)="onReplyModalCloseRequested($event)"
                   submitLabel="Створити коментар"
                   [submitDisabled]="replyForm.invalid || isSubmitting || hasBlockingErrors(replyForm)"
                   submitTestId="thread-submit-button" />

@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-20.
+Останнє оновлення: 2026-03-20 (ітерація modal API: close-button reason).
 
 > Документ містить тільки актуальний стан реалізації та робочий план без історичних/застарілих приміток.
 
@@ -23,7 +23,7 @@
 
 | Вимога ТЗ | Статус | Поточний стан у репозиторії | Що робимо далі |
 |---|---|---|---|
-| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`, header/actions модалок — у `CommentModalHeaderComponent` та `CommentFormActionsComponent`, layout модалки (`backdrop/panel`) — у `CommentModalLayoutComponent` з уніфікованими `test-id` і `closeMode`/`closeRequested`. | Поширити modal API на всі наступні modal-сценарії (редагування/підтвердження дій), щоб не повертати дублювання. |
+| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`, header/actions модалок — у `CommentModalHeaderComponent` та `CommentFormActionsComponent`, layout модалки (`backdrop/panel`) — у `CommentModalLayoutComponent` з уніфікованими `test-id`, `closeMode`/`closeRequested` і деталізованими причинами закриття (`backdrop` / `escape` / `close-button`). | Поширити modal API на всі наступні modal-сценарії (редагування/підтвердження дій), щоб не повертати дублювання. |
 | Apollo Client (GraphQL) | ✅ Виконано | Apollo Angular інтегровано; запити/мутації працюють через GraphQL API. | Нормалізувати cache-policy та обробку мережевих/GraphQL помилок. |
 | RxJS | ✅ Виконано | RxJS використовується в сервісах та UI-компонентах. | Уніфікувати потоки стану для сценаріїв list/thread/search/realtime. |
 | Якість збірки (Angular compiler warnings) | ✅ Виконано | Поточна SPA збірка проходить без доданих у цій ітерації попереджень компілятора. | Закріпити вимогу окремим CI-кроком із fail при warning/error. |
@@ -39,10 +39,11 @@
 
 ## 3) Що внесено в цій ітерації
 
-- Додано shared-guard `canCloseModal(...)` для централізованого правила закриття модалок у стані submit (`src/app/shared/comment-modal-layout/modal-close.guard.ts`).
-- `RootListPageComponent` переведено на єдиний API `closeCreateModal(reason, force)` / `closeReplyModal(reason, force)` з використанням `ModalCloseReason` і нового shared-guard.
-- `ThreadPageComponent` уніфіковано з root-сторінкою: закриття reply-модалки також працює через `closeReplyModal(reason, force)` + `canCloseModal(...)`.
-- `docs/tz-compliance-checklist.md` синхронізовано з поточним станом без історичних приміток, що втратили актуальність.
+- Розширено `ModalCloseReason`: додано явну причину `close-button` для розрізнення сценарію кліку на кнопку закриття від backdrop/escape.
+- `CommentModalHeaderComponent` тепер емітить типізовану причину закриття (`close-button`), а не безтипову подію.
+- `RootListPageComponent` і `ThreadPageComponent` оновлено на передачу причини закриття з header через `$event`, без підміни на `backdrop`.
+- Оновлено `canCloseModal(...)`: guard дозволяє закриття для всіх уніфікованих UI-причин поза submit-станом.
+- `docs/tz-compliance-checklist.md` очищено від неактуальних формулювань і синхронізовано з поточним станом модального API.
 
 ## 4) Що ще треба зробити у проєкті
 

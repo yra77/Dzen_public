@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ModalCloseReason } from '../comment-modal-layout/comment-modal-layout.component';
 
 /**
  * Уніфікований заголовок модального вікна з кнопкою закриття.
@@ -15,7 +16,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
         type="button"
         class="modal-close-button"
         [attr.data-testid]="closeTestId || null"
-        (click)="closeClicked.emit()">
+        (click)="closeClicked.emit('close-button')">
         {{ closeLabel }}
       </button>
     </div>
@@ -35,6 +36,6 @@ export class CommentModalHeaderComponent {
   @Input() closeLabel = 'Закрити';
   /** Опційний data-testid для кнопки закриття. */
   @Input() closeTestId = '';
-  /** Подія кліку по кнопці закриття. */
-  @Output() readonly closeClicked = new EventEmitter<void>();
+  /** Подія кліку по кнопці закриття з явною причиною закриття. */
+  @Output() readonly closeClicked = new EventEmitter<ModalCloseReason>();
 }
