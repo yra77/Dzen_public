@@ -188,7 +188,9 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   /** Shared RxJS stream для thread-state (loading/error/data) у thread/realtime refresh сценаріях. */
   private readonly threadLoadStateStream = new CommentQueryStateStream<string, CommentNode>(
     (rootCommentId) => this.commentsGraphqlApi.getThread(rootCommentId),
-    (error) => this.apiErrorPresenter.present(error, 'Не вдалося завантажити гілку.')
+    (error) => this.apiErrorPresenter.present(error, 'Не вдалося завантажити гілку.'),
+    // Для thread reload дозволяємо обмежений auto-retry на випадок тимчасових network/server збоїв.
+    { autoRetryCount: 2, autoRetryBaseDelayMs: 600 }
   );
 
   /** Мапінг server-side полів на FormControl для reply-форми сторінки гілки. */
