@@ -23,7 +23,7 @@
 
 | Вимога ТЗ | Статус | Поточний стан у репозиторії | Що робимо далі |
 |---|---|---|---|
-| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, а поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`. | Продовжити декомпозицію page-компонентів: винести наступні повторювані блоки (модальні header/actions) у спільні standalone-компоненти. |
+| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`, а модальні header/actions — у `CommentModalHeaderComponent` та `CommentFormActionsComponent`. | Наступний крок: винести спільний layout-контейнер модальних вікон (backdrop/panel) для повного завершення декомпозиції UI-шару. |
 | Apollo Client (GraphQL) | ✅ Виконано | Apollo Angular інтегровано; запити/мутації працюють через GraphQL API. | Нормалізувати cache-policy та обробку мережевих/GraphQL помилок. |
 | RxJS | ✅ Виконано | RxJS використовується в сервісах та UI-компонентах. | Уніфікувати потоки стану для сценаріїв list/thread/search/realtime. |
 | Якість збірки (Angular compiler warnings) | ✅ Виконано | Поточна SPA збірка проходить без доданих у цій ітерації попереджень компілятора. | Закріпити вимогу окремим CI-кроком із fail при warning/error. |
@@ -32,21 +32,21 @@
 
 1. **P0 — Messaging:** перевести RabbitMQ інтеграцію з `RabbitMQ.Client` на MassTransit (producer/consumer + retry + DLQ + outbox/idempotency).
 2. **P1 — Search:** замінити `HttpClient`-реалізацію Elasticsearch на офіційний .NET client із typed mapping/templates.
-3. **P1 — Frontend decomposition:** продовжити винесення повторюваних UI-блоків зі сторінок `RootListPageComponent` і `ThreadPageComponent` в окремі standalone-компоненти (наступний крок: спільні modal-header/actions, щоб прибрати залишкове дублювання).
+3. **P1 — Frontend decomposition:** продовжити винесення повторюваних UI-блоків зі сторінок `RootListPageComponent` і `ThreadPageComponent` в окремі standalone-компоненти (наступний крок: shared контейнер модалки `backdrop+panel` і узгоджений modal-layout API).
 4. **P1 — GraphQL quality:** додати контрактні перевірки GraphQL-запитів/мутацій (включно з негативними кейсами) у CI.
 5. **P2 — Architecture quality:** додати автоматичні перевірки дозволених напрямків залежностей між шарами.
 6. **P2 — Build quality gates:** додати окремий CI-крок на fail при Angular warning/error у production-збірці.
 
 ## 3) Що внесено в цій ітерації
 
-- Продовжено frontend-декомпозицію за планом: додано standalone-компонент `CommentAuthorTextFieldsComponent` для перевикористання полів `userName/email/homePage/text`, quick-tags та preview-блоку.
-- На сторінках `RootListPageComponent` і `ThreadPageComponent` прибрано дублювання шаблонів полів автора/тексту у create/reply формах, замінено на спільний компонент.
-- Актуалізовано цей чекліст: видалено неактуальні примітки, залишено поточний стан і наступні кроки.
+- Продовжено frontend-декомпозицію за планом: додано standalone-компоненти `CommentModalHeaderComponent` і `CommentFormActionsComponent` для перевикористання модальних header/actions у create/reply сценаріях.
+- На сторінках `RootListPageComponent` і `ThreadPageComponent` прибрано дублювання розмітки `modal-header` і кнопкового блоку `actions`, замінено на спільні компоненти.
+- Актуалізовано цей чекліст: прибрано застарілі пункти та зафіксовано новий наступний крок (modal layout container).
 
 ## 4) Що ще треба зробити у проєкті
 
 - Закрити вимоги ТЗ по production-ready messaging: перейти на MassTransit і додати retry/DLQ/outbox/idempotency.
 - Закрити вимоги ТЗ по стеку пошуку: перейти з low-level HTTP-обгортки на офіційний Elasticsearch .NET client.
-- Продовжити frontend-декомпозицію: винести у shared-компоненти залишкові модальні блоки (`modal-header`, `actions`) для root/thread форм, щоб завершити уніфікацію UI-патернів.
+- Продовжити frontend-декомпозицію: винести у shared-компонент спільний modal layout (`backdrop`, `panel`, базові відступи/скрол), щоб завершити уніфікацію UI-патернів.
 - Підсилити quality-gates: додати GraphQL contract checks, architecture checks та перевірку збірки без Angular warnings у CI/CD.
 - Формалізувати DoD для ТЗ: чекліст «готово до релізу» з прив’язкою до автоперевірок.
