@@ -14,5 +14,6 @@ export function canCloseModal(
     return false;
   }
 
-  return closeReason === 'backdrop' || closeReason === 'escape';
+  // Дозволені всі уніфіковані UI-причини закриття поза submit-станом.
+  return closeReason === 'backdrop' || closeReason === 'escape' || closeReason === 'close-button';
 }
