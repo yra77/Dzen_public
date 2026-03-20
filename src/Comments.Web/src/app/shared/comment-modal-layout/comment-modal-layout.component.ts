@@ -1,7 +1,7 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 
 /** Причина запиту закриття модального вікна. */
-type ModalCloseReason = 'backdrop' | 'escape';
+export type ModalCloseReason = 'backdrop' | 'escape';
 
 /**
  * Уніфікований контейнер модального вікна (backdrop + panel).

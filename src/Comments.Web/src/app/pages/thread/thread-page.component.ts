@@ -20,6 +20,7 @@ import { CommentAuthorTextFieldsComponent } from '../../shared/comment-author-te
 import { CommentModalHeaderComponent } from '../../shared/comment-modal-header/comment-modal-header.component';
 import { CommentFormActionsComponent } from '../../shared/comment-form-actions/comment-form-actions.component';
 import { CommentModalLayoutComponent } from '../../shared/comment-modal-layout/comment-modal-layout.component';
+import { ModalCloseReason } from '../../shared/comment-modal-layout/comment-modal-layout.component';
 
 @Component({
   selector: 'app-thread-page',
@@ -71,9 +72,9 @@ import { CommentModalLayoutComponent } from '../../shared/comment-modal-layout/c
             layoutTestId="thread-reply-modal-layout"
             backdropTestId="thread-reply-modal-backdrop"
             panelTestId="thread-reply-modal-panel"
-            closeMode="always"
-            (closeRequested)="closeReplyModal()">
-              <app-comment-modal-header title="Нова відповідь" (closeClicked)="closeReplyModal()" />
+            [closeMode]="isSubmitting ? 'disabled' : 'always'"
+            (closeRequested)="onReplyModalCloseRequested($event)">
+              <app-comment-modal-header title="Нова відповідь" (closeClicked)="onReplyModalCloseRequested('backdrop')" />
               <p class="meta">Відповідь на: <strong>{{ activeReplyTarget.userName }}</strong></p>
 
               <form class="form-grid" [formGroup]="replyForm" (ngSubmit)="submitReply()" data-testid="thread-reply-form">
@@ -121,7 +122,7 @@ import { CommentModalLayoutComponent } from '../../shared/comment-modal-layout/c
                 <app-comment-form-actions
                   [showCloseButton]="true"
                   closeLabel="Закрити"
-                  (closeClicked)="closeReplyModal()"
+                  (closeClicked)="onReplyModalCloseRequested('backdrop')"
                   submitLabel="Створити коментар"
                   [submitDisabled]="replyForm.invalid || isSubmitting || hasBlockingErrors(replyForm)"
                   submitTestId="thread-submit-button" />
@@ -436,7 +437,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
           this.attachment = null;
           this.attachmentMessage = '';
           this.attachmentImagePreviewDataUrl = '';
-          this.closeReplyModal();
+          this.closeReplyModal(true);
           this.loadThread();
           this.reloadCaptcha();
           this.isSubmitting = false;
@@ -466,9 +467,21 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Централізовано обробляє запити на закриття reply-модалки (Escape/backdrop/кнопки).
+   */
+  onReplyModalCloseRequested(_: ModalCloseReason): void {
+    this.closeReplyModal();
+  }
+
+  /**
    * Закриває модальне вікно відповіді та очищає тимчасові стани форми.
    */
-  closeReplyModal(): void {
+  closeReplyModal(force = false): void {
+    // Поки триває submit, блокуємо закриття модалки, щоб не губити стан відправки.
+    if (this.isSubmitting && !force) {
+      return;
+    }
+
     this.isReplyModalOpen = false;
     this.activeReplyTarget = null;
     this.replyForm.controls.text.reset('');
