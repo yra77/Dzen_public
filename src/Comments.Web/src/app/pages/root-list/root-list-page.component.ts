@@ -1,9 +1,11 @@
 import { Component, OnDestroy, inject } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 
 import {
   CommentNode,
+  PagedCommentsResponse,
   RootCommentsSortDirection,
   RootCommentsSortField
 } from '../../core/comments.models';
@@ -42,6 +44,7 @@ import {
 } from '../../shared/comment-form/comment-form-ui-state';
 import { CommentFormStateFacade } from '../../shared/comment-form/comment-form-state.facade';
 import { CommentFormAttachmentState } from '../../shared/comment-form/comment-form-attachment-state';
+import { CommentQueryStateStream } from '../../shared/comment-query-state/comment-query-state.stream';
 
 
 @Component({
@@ -246,6 +249,13 @@ export class RootListPageComponent implements OnDestroy {
   private readonly apiErrorPresenter = inject(ApiErrorPresenterService);
 
   private signalRConnection: HubConnection | null = null;
+  /** Підписка на shared load-state stream root/list сценарію. */
+  private readonly rootListLoadStateSubscription: Subscription;
+  /** Shared RxJS stream для list-state (loading/error/data) у list/realtime refresh сценаріях. */
+  private readonly rootListLoadStateStream = new CommentQueryStateStream<{ page: number; pageSize: number; sortBy: RootCommentsSortField; sortDirection: RootCommentsSortDirection }, PagedCommentsResponse>(
+    (request) => this.commentsGraphqlApi.getRootComments(request.page, request.pageSize, request.sortBy, request.sortDirection),
+    (error) => this.apiErrorPresenter.present(error, 'Не вдалося завантажити коментарі.')
+  );
 
   /** Мапінг server-side полів на FormControl для root/create форми. */
   private readonly createFormServerFieldMapping: ServerFieldControlMapping = {
@@ -373,6 +383,17 @@ export class RootListPageComponent implements OnDestroy {
     this.replyFormState.setPreviewState(createInitialCommentFormPreviewState());
     this.replyFormState.setCaptchaState(createInitialCommentFormCaptchaState());
     this.replyFormState.setModalState(createClosedCommentFormModalState());
+
+    this.rootListLoadStateSubscription = this.rootListLoadStateStream.subscribe((state) => {
+      this.isLoading = state.isLoading;
+      this.errorMessage = state.errorMessage;
+      this.loadCanRetry = state.canRetry;
+
+      if (state.data) {
+        this.comments = state.data.items;
+        this.totalCount = state.data.totalCount;
+      }
+    });
 
     this.load();
     this.reloadCaptcha();
@@ -503,6 +524,9 @@ export class RootListPageComponent implements OnDestroy {
    * Коректно завершує SignalR-з'єднання при знищенні компонента.
    */
   ngOnDestroy(): void {
+    this.rootListLoadStateSubscription.unsubscribe();
+    this.rootListLoadStateStream.destroy();
+
     if (this.signalRConnection) {
       void this.signalRConnection.stop();
     }
@@ -540,22 +564,11 @@ export class RootListPageComponent implements OnDestroy {
    * Завантажує сторінку кореневих коментарів.
    */
   load(): void {
-    this.isLoading = true;
-    this.errorMessage = '';
-    this.loadCanRetry = false;
-
-    this.commentsGraphqlApi.getRootComments(this.page, this.pageSize, this.sortBy, this.sortDirection).subscribe({
-      next: (response) => {
-        this.comments = response.items;
-        this.totalCount = response.totalCount;
-        this.isLoading = false;
-      },
-      error: (error) => {
-        const uiError = this.apiErrorPresenter.present(error, 'Не вдалося завантажити коментарі.');
-        this.errorMessage = uiError.summary;
-        this.loadCanRetry = uiError.canRetry;
-        this.isLoading = false;
-      }
+    this.rootListLoadStateStream.reload({
+      page: this.page,
+      pageSize: this.pageSize,
+      sortBy: this.sortBy,
+      sortDirection: this.sortDirection
     });
   }
 
