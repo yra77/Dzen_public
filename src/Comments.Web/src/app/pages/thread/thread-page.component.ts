@@ -37,6 +37,15 @@ import {
   createResolvedCommentFormPreviewState,
   createUnavailableCommentFormPreviewState
 } from '../../shared/comment-form/comment-form-preview-state';
+import {
+  CommentFormCaptchaState,
+  CommentFormModalState,
+  createClosedCommentFormModalState,
+  createFailedCommentFormCaptchaState,
+  createInitialCommentFormCaptchaState,
+  createOpenedCommentFormModalState,
+  createResolvedCommentFormCaptchaState
+} from '../../shared/comment-form/comment-form-ui-state';
 
 @Component({
   selector: 'app-thread-page',
@@ -198,10 +207,8 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   submitMessage = '';
   submitValidationErrors: ReadonlyArray<UiValidationError> = [];
   showRetryHint = false;
-  captchaChallengeId = '';
-  captchaImageDataUrl = '';
-  /** Повідомлення про помилку завантаження CAPTCHA. */
-  captchaMessage = '';
+  /** UI-стан CAPTCHA для reply-форми в межах сторінки гілки. */
+  private captchaState: CommentFormCaptchaState = createInitialCommentFormCaptchaState();
   textPreviewHtml = '';
   /** Повідомлення про fallback-стан, коли preview тимчасово недоступний. */
   previewMessage = '';
@@ -209,8 +216,8 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   signalRStatusMessage = '';
   /** Поточний коментар, на який користувач відповідає у модальному вікні. */
   activeReplyTarget: CommentNode | null = null;
-  /** Прапорець видимості модального вікна створення відповіді. */
-  isReplyModalOpen = false;
+  /** UI-стан видимості модального вікна створення відповіді. */
+  private replyModalState: CommentFormModalState = createClosedCommentFormModalState();
   attachmentMessage = '';
   attachment: CreateCommentAttachmentRequest | null = null;
   /** Data URL для preview вибраного зображення перед submit. */
@@ -232,6 +239,26 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     setupServerValidationReset(this.replyForm.controls.text);
     setupServerValidationReset(this.replyForm.controls.captchaAnswer);
     this.setSubmitState(createInitialCommentFormSubmitState());
+  }
+
+  /** Прапорець видимості reply-модалки для template. */
+  get isReplyModalOpen(): boolean {
+    return this.replyModalState.isOpen;
+  }
+
+  /** Активний challenge id CAPTCHA для reply-форми. */
+  get captchaChallengeId(): string {
+    return this.captchaState.challengeId;
+  }
+
+  /** Data URL CAPTCHA для reply-форми. */
+  get captchaImageDataUrl(): string {
+    return this.captchaState.imageDataUrl;
+  }
+
+  /** Повідомлення про стан CAPTCHA для reply-форми. */
+  get captchaMessage(): string {
+    return this.captchaState.message;
   }
 
   /**
@@ -371,17 +398,17 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
    * Перезавантажує CAPTCHA для форми відповіді.
    */
   reloadCaptcha(): void {
-    this.captchaMessage = '';
+    this.setCaptchaState(createInitialCommentFormCaptchaState());
 
     this.commentsGraphqlApi.getCaptcha().subscribe({
       next: (response) => {
-        this.captchaChallengeId = response.challengeId;
-        this.captchaImageDataUrl = `data:${response.mimeType};base64,${response.imageBase64}`;
-        this.captchaMessage = '';
+        this.setCaptchaState(
+          createResolvedCommentFormCaptchaState(response.challengeId, `data:${response.mimeType};base64,${response.imageBase64}`)
+        );
       },
       error: (error) => {
         const uiError = this.apiErrorPresenter.present(error, 'Не вдалося завантажити CAPTCHA.');
-        this.captchaMessage = uiError.summary;
+        this.setCaptchaState(createFailedCommentFormCaptchaState(uiError.summary));
       }
     });
   }
@@ -434,7 +461,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
    */
   openReplyModal(comment: CommentNode): void {
     this.activeReplyTarget = comment;
-    this.isReplyModalOpen = true;
+    this.setReplyModalState(createOpenedCommentFormModalState());
     this.setSubmitState(createInitialCommentFormSubmitState());
     this.setPreviewState(createInitialCommentFormPreviewState());
     this.reloadCaptcha();
@@ -455,7 +482,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.isReplyModalOpen = false;
+    this.setReplyModalState(createClosedCommentFormModalState());
     this.activeReplyTarget = null;
     this.replyForm.controls.text.reset('');
     this.replyForm.controls.captchaAnswer.reset('');
@@ -583,6 +610,20 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   private setPreviewState(state: CommentFormPreviewState): void {
     this.textPreviewHtml = state.html;
     this.previewMessage = state.message;
+  }
+
+  /**
+   * Оновлює UI-стан видимості reply-модалки.
+   */
+  private setReplyModalState(state: CommentFormModalState): void {
+    this.replyModalState = state;
+  }
+
+  /**
+   * Оновлює CAPTCHA-стан reply-форми.
+   */
+  private setCaptchaState(state: CommentFormCaptchaState): void {
+    this.captchaState = state;
   }
 
 }
