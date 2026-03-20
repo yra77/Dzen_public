@@ -21,7 +21,12 @@ import { CommentFormActionsComponent } from '../../shared/comment-form-actions/c
 import { CommentModalLayoutComponent } from '../../shared/comment-modal-layout/comment-modal-layout.component';
 import { ModalCloseReason } from '../../shared/comment-modal-layout/comment-modal-layout.component';
 import { canCloseModal } from '../../shared/comment-modal-layout/modal-close.guard';
-import { buildQuickTagInsertResult, readAttachmentAsRequest } from '../../shared/comment-form/comment-form-helpers';
+import {
+  buildQuickTagInsertResult,
+  readAttachmentAsRequest,
+  refreshCommentPreview,
+  reloadCommentCaptcha
+} from '../../shared/comment-form/comment-form-helpers';
 import { applyServerValidationErrorsToControls, ServerFieldControlMapping, setupServerValidationReset } from '../../shared/comment-form/comment-form-server-validation';
 import {
   createFailedCommentFormState,
@@ -31,15 +36,11 @@ import {
 } from '../../shared/comment-form/comment-form-submit-state';
 import {
   createInitialCommentFormPreviewState,
-  createResolvedCommentFormPreviewState,
-  createUnavailableCommentFormPreviewState
 } from '../../shared/comment-form/comment-form-preview-state';
 import {
   createClosedCommentFormModalState,
-  createFailedCommentFormCaptchaState,
   createInitialCommentFormCaptchaState,
   createOpenedCommentFormModalState,
-  createResolvedCommentFormCaptchaState
 } from '../../shared/comment-form/comment-form-ui-state';
 import { CommentFormStateFacade } from '../../shared/comment-form/comment-form-state.facade';
 import { CommentFormAttachmentState } from '../../shared/comment-form/comment-form-attachment-state';
@@ -620,21 +621,11 @@ export class RootListPageComponent implements OnDestroy {
    * Оновлює HTML preview для поточного тексту коментаря.
    */
   previewText(): void {
-    const text = this.createForm.controls.text.value;
-    if (!text || !text.trim()) {
-      this.setCreatePreviewState(createInitialCommentFormPreviewState());
-      return;
-    }
-
-    this.commentsGraphqlApi.previewComment(text).subscribe({
-      next: (preview) => {
-        this.setCreatePreviewState(createResolvedCommentFormPreviewState(preview));
-      },
-      error: () => {
-        this.setCreatePreviewState(
-          createUnavailableCommentFormPreviewState('Preview тимчасово недоступний. Ви можете продовжити відправку коментаря без preview.')
-        );
-      }
+    refreshCommentPreview({
+      text: this.createForm.controls.text.value,
+      requestPreview: (text) => this.commentsGraphqlApi.previewComment(text),
+      setPreviewState: (state) => this.setCreatePreviewState(state),
+      unavailableMessage: 'Preview тимчасово недоступний. Ви можете продовжити відправку коментаря без preview.'
     });
   }
 
@@ -680,18 +671,10 @@ export class RootListPageComponent implements OnDestroy {
    * Перезавантажує CAPTCHA для форми створення.
    */
   reloadCaptcha(): void {
-    this.setCreateCaptchaState(createInitialCommentFormCaptchaState());
-
-    this.commentsGraphqlApi.getCaptcha().subscribe({
-      next: (response) => {
-        this.setCreateCaptchaState(
-          createResolvedCommentFormCaptchaState(response.challengeId, `data:${response.mimeType};base64,${response.imageBase64}`)
-        );
-      },
-      error: (error) => {
-        const uiError = this.apiErrorPresenter.present(error, 'Не вдалося завантажити CAPTCHA.');
-        this.setCreateCaptchaState(createFailedCommentFormCaptchaState(uiError.summary));
-      }
+    reloadCommentCaptcha({
+      requestCaptcha: () => this.commentsGraphqlApi.getCaptcha(),
+      setCaptchaState: (state) => this.setCreateCaptchaState(state),
+      resolveErrorMessage: (error) => this.apiErrorPresenter.present(error, 'Не вдалося завантажити CAPTCHA.').summary
     });
   }
 
@@ -783,21 +766,11 @@ export class RootListPageComponent implements OnDestroy {
    * Оновлює HTML preview для тексту відповіді з модального вікна.
    */
   previewReplyText(): void {
-    const text = this.replyForm.controls.text.value;
-    if (!text || !text.trim()) {
-      this.setReplyPreviewState(createInitialCommentFormPreviewState());
-      return;
-    }
-
-    this.commentsGraphqlApi.previewComment(text).subscribe({
-      next: (preview) => {
-        this.setReplyPreviewState(createResolvedCommentFormPreviewState(preview));
-      },
-      error: () => {
-        this.setReplyPreviewState(
-          createUnavailableCommentFormPreviewState('Preview тимчасово недоступний. Ви можете продовжити відправку відповіді без preview.')
-        );
-      }
+    refreshCommentPreview({
+      text: this.replyForm.controls.text.value,
+      requestPreview: (text) => this.commentsGraphqlApi.previewComment(text),
+      setPreviewState: (state) => this.setReplyPreviewState(state),
+      unavailableMessage: 'Preview тимчасово недоступний. Ви можете продовжити відправку відповіді без preview.'
     });
   }
 
@@ -843,18 +816,10 @@ export class RootListPageComponent implements OnDestroy {
    * Перезавантажує CAPTCHA для модального вікна відповіді.
    */
   reloadReplyCaptcha(): void {
-    this.setReplyCaptchaState(createInitialCommentFormCaptchaState());
-
-    this.commentsGraphqlApi.getCaptcha().subscribe({
-      next: (response) => {
-        this.setReplyCaptchaState(
-          createResolvedCommentFormCaptchaState(response.challengeId, `data:${response.mimeType};base64,${response.imageBase64}`)
-        );
-      },
-      error: (error) => {
-        const uiError = this.apiErrorPresenter.present(error, 'Не вдалося завантажити CAPTCHA для відповіді.');
-        this.setReplyCaptchaState(createFailedCommentFormCaptchaState(uiError.summary));
-      }
+    reloadCommentCaptcha({
+      requestCaptcha: () => this.commentsGraphqlApi.getCaptcha(),
+      setCaptchaState: (state) => this.setReplyCaptchaState(state),
+      resolveErrorMessage: (error) => this.apiErrorPresenter.present(error, 'Не вдалося завантажити CAPTCHA для відповіді.').summary
     });
   }
 

@@ -1,4 +1,17 @@
-import { CreateCommentAttachmentRequest } from '../../core/comments.models';
+import { CaptchaImageResponse, CreateCommentAttachmentRequest } from '../../core/comments.models';
+import { Observable } from 'rxjs';
+import {
+  CommentFormPreviewState,
+  createInitialCommentFormPreviewState,
+  createResolvedCommentFormPreviewState,
+  createUnavailableCommentFormPreviewState
+} from './comment-form-preview-state';
+import {
+  CommentFormCaptchaState,
+  createFailedCommentFormCaptchaState,
+  createInitialCommentFormCaptchaState,
+  createResolvedCommentFormCaptchaState
+} from './comment-form-ui-state';
 
 /**
  * Опис результату вставки quick-tag у textarea, щоб компонент оновив FormControl і caret.
@@ -99,5 +112,68 @@ export function readAttachmentAsRequest(file: File): Promise<CommentAttachmentRe
       });
     };
     reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Параметри orchestration-хелпера для оновлення preview стану форми.
+ */
+export interface RefreshCommentPreviewOptions {
+  /** Поточне значення textarea, для якого треба побудувати preview. */
+  text: string;
+  /** Виклик API, що повертає HTML preview. */
+  requestPreview: (text: string) => Observable<string>;
+  /** Записує обчислений preview-стан у фасад/компонент. */
+  setPreviewState: (state: CommentFormPreviewState) => void;
+  /** Fallback-повідомлення для сценарію недоступного preview. */
+  unavailableMessage: string;
+}
+
+/**
+ * Уніфікує логіку preview: empty -> initial, success -> resolved, error -> unavailable.
+ */
+export function refreshCommentPreview(options: RefreshCommentPreviewOptions): void {
+  if (!options.text.trim()) {
+    options.setPreviewState(createInitialCommentFormPreviewState());
+    return;
+  }
+
+  options.requestPreview(options.text).subscribe({
+    next: (previewHtml) => {
+      options.setPreviewState(createResolvedCommentFormPreviewState(previewHtml));
+    },
+    error: () => {
+      options.setPreviewState(createUnavailableCommentFormPreviewState(options.unavailableMessage));
+    }
+  });
+}
+
+/**
+ * Параметри orchestration-хелпера для перезавантаження CAPTCHA.
+ */
+export interface ReloadCommentCaptchaOptions {
+  /** Виклик API, що повертає captcha challenge + image. */
+  requestCaptcha: () => Observable<CaptchaImageResponse>;
+  /** Записує обчислений captcha-стан у фасад/компонент. */
+  setCaptchaState: (state: CommentFormCaptchaState) => void;
+  /** Фабрика повідомлення про помилку з урахуванням контексту (create/reply/thread). */
+  resolveErrorMessage: (error: unknown) => string;
+}
+
+/**
+ * Уніфікує lifecycle CAPTCHA: initial loading -> resolved image або failed message.
+ */
+export function reloadCommentCaptcha(options: ReloadCommentCaptchaOptions): void {
+  options.setCaptchaState(createInitialCommentFormCaptchaState());
+
+  options.requestCaptcha().subscribe({
+    next: (response) => {
+      options.setCaptchaState(
+        createResolvedCommentFormCaptchaState(response.challengeId, `data:${response.mimeType};base64,${response.imageBase64}`)
+      );
+    },
+    error: (error) => {
+      options.setCaptchaState(createFailedCommentFormCaptchaState(options.resolveErrorMessage(error)));
+    }
   });
 }
