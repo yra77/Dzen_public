@@ -343,7 +343,7 @@ function renderComment(comment) {
     <article class="comment">
       <div><strong>${escapeHtml(comment.userName)}</strong> (${escapeHtml(comment.email)})${homepage}</div>
       <div class="meta">${new Date(comment.createdAtUtc).toLocaleString()} · ID: ${escapeHtml(comment.id)}</div>
-      <p>${escapeHtml(comment.text)}</p>
+      <p>${renderCommentText(comment.text)}</p>
       <div class="comment-actions">${buildReplyButton(comment.id)} ${buildToggleThreadButton(comment)} ${buildLoadThreadButton(comment.id)}</div>
       ${attachment}
       ${replies}
@@ -373,7 +373,7 @@ function renderRootCommentsTable(comments) {
         <td>${escapeHtml(comment.email)}</td>
         <td>${homepage}</td>
         <td>${new Date(comment.createdAtUtc).toLocaleString()}</td>
-        <td>${escapeHtml(comment.text)}</td>
+        <td>${renderCommentText(comment.text)}</td>
         <td>
           ${renderAttachment(comment.attachment)}
           <div class="comment-actions">${buildReplyButton(comment.id)} ${buildToggleThreadButton(comment)} ${buildLoadThreadButton(comment.id)}</div>
@@ -407,6 +407,11 @@ function renderRootCommentsTable(comments) {
       </table>
     </div>
   `;
+}
+
+// Renders already-sanitized comment XHTML and preserves user line breaks in HTML output.
+function renderCommentText(value) {
+  return String(value ?? '').replace(/\n/g, '<br />');
 }
 
 

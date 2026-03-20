@@ -36,7 +36,7 @@ import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick
       } @else if (thread) {
         <div class="thread-node">
           <p class="comment-header"><strong>{{ thread.userName }}</strong><span>{{ thread.email }}</span><span>{{ thread.createdAtUtc | date: 'dd.MM.yy HH:mm' }}</span></p>
-          <p>{{ thread.text }}</p>
+          <p [innerHTML]="renderCommentText(thread.text)"></p>
           @if (thread.attachment) {
              <app-comment-attachment
               [attachment]="thread.attachment"
@@ -64,7 +64,7 @@ import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick
               <li>
                 <article class="thread-node">
                   <p class="comment-header"><strong>{{ reply.userName }}</strong><span>{{ reply.email }}</span><span>{{ reply.createdAtUtc | date: 'dd.MM.yy HH:mm' }}</span></p>
-                  <p>{{ reply.text }}</p>
+                  <p [innerHTML]="renderCommentText(reply.text)"></p>
                   @if (reply.attachment) {
                     <app-comment-attachment
                       [attachment]="reply.attachment"
@@ -560,6 +560,13 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   getAttachmentUrl(storagePath: string): string {
     const normalizedPath = storagePath.startsWith('/') ? storagePath : `/${storagePath}`;
     return `${environment.apiBaseUrl}${normalizedPath}`;
+  }
+
+  /**
+   * Повертає безпечний HTML для відображення тексту коментаря з підтримкою переносів рядків.
+   */
+  renderCommentText(text: string): string {
+    return text.replace(/\n/g, '<br />');
   }
 
   /**

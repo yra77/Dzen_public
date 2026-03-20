@@ -177,7 +177,7 @@ import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick
         <ng-template #commentTreeNode let-node>
           <article class="comment thread-node">
             <p class="comment-header"><strong>{{ node.userName }}</strong><span>{{ node.email }}</span><span>{{ node.createdAtUtc | date: 'dd.MM.yy HH:mm' }}</span></p>
-            <p>{{ node.text }}</p>
+            <p [innerHTML]="renderCommentText(node.text)"></p>
             @if (node.attachment) {
             <app-comment-attachment
                 [attachment]="node.attachment"
@@ -866,6 +866,13 @@ export class RootListPageComponent implements OnDestroy {
   getAttachmentUrl(storagePath: string): string {
     const normalizedPath = storagePath.startsWith('/') ? storagePath : `/${storagePath}`;
     return `${environment.apiBaseUrl}${normalizedPath}`;
+  }
+
+  /**
+   * Повертає безпечний HTML для відображення тексту коментаря з підтримкою переносів рядків.
+   */
+  renderCommentText(text: string): string {
+    return text.replace(/\n/g, '<br />');
   }
 
   /**
