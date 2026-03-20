@@ -1,4 +1,4 @@
-import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -13,11 +13,12 @@ import { environment } from '../../../environments/environment';
 import { ApiErrorPresenterService, UiValidationError } from '../../core/api-error-presenter.service';
 import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
 import { CommentNodeCardComponent } from '../../shared/comment-node-card/comment-node-card.component';
+import { CommentTreeComponent } from '../../shared/comment-tree/comment-tree.component';
 import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick-tags-toolbar.component';
 
 @Component({
   selector: 'app-thread-page',
-  imports: [DatePipe, ReactiveFormsModule, RouterLink, NgTemplateOutlet, CommentNodeCardComponent, QuickTagsToolbarComponent],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink, CommentNodeCardComponent, CommentTreeComponent, QuickTagsToolbarComponent],
   template: `
     <section class="panel">
       <h2>Гілка коментаря</h2>
@@ -48,30 +49,16 @@ import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick
         @if (thread.replies.length < 1) {
           <p>Ще немає відповідей.</p>
         } @else {
-          <ng-container *ngTemplateOutlet="replyTree; context: { $implicit: thread.replies }"></ng-container>
+          <app-comment-tree
+            [comments]="thread.replies"
+            [renderText]="renderCommentText.bind(this)"
+            [resolveAttachmentUrl]="getAttachmentUrl.bind(this)"
+            [textPreviewByPath]="attachmentTextPreviewByPath"
+            [loadingPaths]="attachmentTextLoadingByPath"
+            [showContentType]="true"
+            (requestTextPreview)="loadTextAttachment($event)"
+            (replyClicked)="openReplyModal($event)" />
         }
-
-        <ng-template #replyTree let-replies>
-          <ul class="tree">
-            @for (reply of replies; track reply.id) {
-              <li>
-                <app-comment-node-card
-                  [comment]="reply"
-                  [renderedTextHtml]="renderCommentText(reply.text)"
-                  [attachmentUrl]="reply.attachment ? getAttachmentUrl(reply.attachment.storagePath) : ''"
-                  [textPreviewContent]="reply.attachment ? (attachmentTextPreviewByPath[reply.attachment.storagePath] ?? '') : ''"
-                  [isTextPreviewLoading]="reply.attachment ? attachmentTextLoadingByPath.has(reply.attachment.storagePath) : false"
-                  [showContentType]="true"
-                  (requestTextPreview)="loadTextAttachment($event)"
-                  (replyClicked)="openReplyModal($event)" />
-
-                @if (reply.replies.length !== 0) {
-                  <ng-container *ngTemplateOutlet="replyTree; context: { $implicit: reply.replies }"></ng-container>
-                }
-              </li>
-            }
-          </ul>
-        </ng-template>
 
         @if (isReplyModalOpen && activeReplyTarget) {
           <div class="reply-modal-backdrop" (click)="closeReplyModal()">
