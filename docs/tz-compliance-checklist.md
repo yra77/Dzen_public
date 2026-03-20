@@ -1,8 +1,8 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-20 (ітерація modal API: єдина кнопка закриття в header модалки).
+Останнє оновлення: 2026-03-20 (ітерація quality-gate для Angular production build).
 
-> Документ містить тільки актуальний стан реалізації та робочий план без історичних/застарілих приміток.
+> Документ містить лише актуальний стан реалізації, поточний план і наступні кроки без історичних застарілих нотаток.
 
 ## 1) Матриця відповідності ТЗ (актуально)
 
@@ -23,10 +23,10 @@
 
 | Вимога ТЗ | Статус | Поточний стан у репозиторії | Що робимо далі |
 |---|---|---|---|
-| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`, header/actions модалок — у `CommentModalHeaderComponent` та `CommentFormActionsComponent`, layout модалки (`backdrop/panel`) — у `CommentModalLayoutComponent` з уніфікованими `test-id`, `closeMode`/`closeRequested` і деталізованими причинами закриття (`backdrop` / `escape` / `close-button`). Закриття виконується тільки через header-кнопку, без дублюючої нижньої кнопки в action-рядку. | Поширити modal API на всі наступні modal-сценарії (редагування/підтвердження дій), щоб не повертати дублювання. |
+| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`, header/actions модалок — у `CommentModalHeaderComponent` та `CommentFormActionsComponent`, layout модалки (`backdrop/panel`) — у `CommentModalLayoutComponent` з уніфікованими `test-id`, `closeMode`/`closeRequested` і причинами закриття (`backdrop` / `escape` / `close-button`). | Поширити modal API на нові modal-сценарії (редагування/підтвердження дій), щоби не повертати дублювання. |
 | Apollo Client (GraphQL) | ✅ Виконано | Apollo Angular інтегровано; запити/мутації працюють через GraphQL API. | Нормалізувати cache-policy та обробку мережевих/GraphQL помилок. |
 | RxJS | ✅ Виконано | RxJS використовується в сервісах та UI-компонентах. | Уніфікувати потоки стану для сценаріїв list/thread/search/realtime. |
-| Якість збірки (Angular compiler warnings) | ✅ Виконано | Поточна SPA збірка проходить без доданих у цій ітерації попереджень компілятора. | Закріпити вимогу окремим CI-кроком із fail при warning/error. |
+| Якість збірки (Angular compiler warnings) | ⚠️ Частково | Додано скрипт `scripts/check-angular-build.sh`: production build падає при наявності `WARNING` у логах. Скрипт інтегровано в `scripts/go-no-go-check.sh` як окремий quality gate. | Додати окремий CI job, який запускає цей gate на кожному PR. |
 
 ## 2) Пріоритетний план робіт
 
@@ -35,19 +35,18 @@
 3. **P1 — Frontend decomposition:** стандартизувати modal API у shared-компонентах (керування причинами закриття, test-id, перевикористання в нових сценаріях), зберігаючи сторінки `RootListPageComponent` і `ThreadPageComponent` тонкими.
 4. **P1 — GraphQL quality:** додати контрактні перевірки GraphQL-запитів/мутацій (включно з негативними кейсами) у CI.
 5. **P2 — Architecture quality:** додати автоматичні перевірки дозволених напрямків залежностей між шарами.
-6. **P2 — Build quality gates:** додати окремий CI-крок на fail при Angular warning/error у production-збірці.
+6. **P2 — Build quality gates:** винести `scripts/check-angular-build.sh` в CI та зробити build warning/error блокуючим критерієм.
 
 ## 3) Що внесено в цій ітерації
 
-- `CommentFormActionsComponent` спрощено до єдиної submit-кнопки; дублюючу нижню close-кнопку прибрано.
-- `RootListPageComponent`: у create/reply формах прибрано передачу `showCloseButton/closeLabel/closeClicked` у `CommentFormActionsComponent`, закриття лишилось у header.
-- `ThreadPageComponent`: у reply-формі прибрано передачу `showCloseButton/closeLabel/closeClicked` у `CommentFormActionsComponent`.
-- `docs/tz-compliance-checklist.md` синхронізовано з поточним станом modal API без історичних/застарілих приміток.
+- Додано `scripts/check-angular-build.sh` для strict-перевірки production-збірки Angular (падіння при warning/error).
+- `scripts/go-no-go-check.sh` оновлено: Angular production quality gate додано в обов’язкову послідовність smoke-checks.
+- `docs/tz-compliance-checklist.md` синхронізовано з поточним станом реалізації без застарілих пунктів.
 
 ## 4) Що ще треба зробити у проєкті
 
 - Закрити вимоги ТЗ по production-ready messaging: перейти на MassTransit і додати retry/DLQ/outbox/idempotency.
 - Закрити вимоги ТЗ по стеку пошуку: перейти з low-level HTTP-обгортки на офіційний Elasticsearch .NET client.
-- Довести frontend-декомпозицію до DoD: поширити вже уніфікований modal API (включно з test-id і варіантами закриття) на наступні UI-сценарії.
-- Підсилити quality-gates: додати GraphQL contract checks, architecture checks та перевірку збірки без Angular warnings у CI/CD.
+- Довести frontend-декомпозицію до DoD: поширити уніфікований modal API (включно з test-id і варіантами закриття) на наступні UI-сценарії.
+- Підсилити quality-gates: додати GraphQL contract checks та architecture checks у CI/CD.
 - Формалізувати DoD для ТЗ: чекліст «готово до релізу» з прив’язкою до автоперевірок.

@@ -18,13 +18,16 @@ run_go_no_go_checks() {
   require_command dotnet
   require_command npm
 
-  echo "[1/3] Running backend tests..."
+  echo "[1/4] Running backend tests..."
   dotnet test Comments.sln --configuration Release
 
-  echo "[2/3] Running frontend unit tests..."
+  echo "[2/4] Running strict Angular production build check..."
+  ./scripts/check-angular-build.sh
+
+  echo "[3/4] Running frontend unit tests..."
   npm --prefix src/Comments.Web run test -- --watch=false --browsers=ChromeHeadless
 
-  echo "[3/3] Running frontend e2e smoke tests..."
+  echo "[4/4] Running frontend e2e smoke tests..."
   npm --prefix src/Comments.Web run e2e
 
   echo "Go/No-Go checks completed successfully."
