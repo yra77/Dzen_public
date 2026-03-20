@@ -107,9 +107,6 @@ import { canCloseModal } from '../../shared/comment-modal-layout/modal-close.gua
               }
 
               <app-comment-form-actions
-                [showCloseButton]="true"
-                closeLabel="Закрити"
-                (closeClicked)="onCreateModalCloseRequested($event)"
                 submitLabel="Створити коментар"
                 [submitDisabled]="createForm.invalid || isSubmitting || hasBlockingErrors(createForm)"
                 submitTestId="root-submit-button" />
@@ -188,9 +185,6 @@ import { canCloseModal } from '../../shared/comment-modal-layout/modal-close.gua
                 }
 
                 <app-comment-form-actions
-                  [showCloseButton]="true"
-                  closeLabel="Закрити"
-                  (closeClicked)="onReplyModalCloseRequested($event)"
                   submitLabel="Створити коментар"
                   [submitDisabled]="replyForm.invalid || isReplySubmitting || hasBlockingErrors(replyForm)" />
               </form>

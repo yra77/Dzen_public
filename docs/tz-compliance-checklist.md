@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-20 (ітерація modal API: typed close reason у form-actions + close кнопки в root modal).
+Останнє оновлення: 2026-03-20 (ітерація modal API: єдина кнопка закриття в header модалки).
 
 > Документ містить тільки актуальний стан реалізації та робочий план без історичних/застарілих приміток.
 
@@ -23,7 +23,7 @@
 
 | Вимога ТЗ | Статус | Поточний стан у репозиторії | Що робимо далі |
 |---|---|---|---|
-| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`, header/actions модалок — у `CommentModalHeaderComponent` та `CommentFormActionsComponent`, layout модалки (`backdrop/panel`) — у `CommentModalLayoutComponent` з уніфікованими `test-id`, `closeMode`/`closeRequested` і деталізованими причинами закриття (`backdrop` / `escape` / `close-button`), включно з типізованою передачею причини з action-кнопки закриття. | Поширити modal API на всі наступні modal-сценарії (редагування/підтвердження дій), щоб не повертати дублювання. |
+| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`, header/actions модалок — у `CommentModalHeaderComponent` та `CommentFormActionsComponent`, layout модалки (`backdrop/panel`) — у `CommentModalLayoutComponent` з уніфікованими `test-id`, `closeMode`/`closeRequested` і деталізованими причинами закриття (`backdrop` / `escape` / `close-button`). Закриття виконується тільки через header-кнопку, без дублюючої нижньої кнопки в action-рядку. | Поширити modal API на всі наступні modal-сценарії (редагування/підтвердження дій), щоб не повертати дублювання. |
 | Apollo Client (GraphQL) | ✅ Виконано | Apollo Angular інтегровано; запити/мутації працюють через GraphQL API. | Нормалізувати cache-policy та обробку мережевих/GraphQL помилок. |
 | RxJS | ✅ Виконано | RxJS використовується в сервісах та UI-компонентах. | Уніфікувати потоки стану для сценаріїв list/thread/search/realtime. |
 | Якість збірки (Angular compiler warnings) | ✅ Виконано | Поточна SPA збірка проходить без доданих у цій ітерації попереджень компілятора. | Закріпити вимогу окремим CI-кроком із fail при warning/error. |
@@ -39,9 +39,9 @@
 
 ## 3) Що внесено в цій ітерації
 
-- `CommentFormActionsComponent` переведено на типізований контракт `closeClicked: EventEmitter<ModalCloseReason>` з явною причиною `close-button`.
-- `RootListPageComponent`: у create/reply формах додано close-кнопки через shared `CommentFormActionsComponent`; причина закриття передається через `$event` у єдиний обробник модалки.
-- `ThreadPageComponent`: прибрано хардкод `'close-button'` у template, використовується типізований `$event` від `CommentFormActionsComponent`.
+- `CommentFormActionsComponent` спрощено до єдиної submit-кнопки; дублюючу нижню close-кнопку прибрано.
+- `RootListPageComponent`: у create/reply формах прибрано передачу `showCloseButton/closeLabel/closeClicked` у `CommentFormActionsComponent`, закриття лишилось у header.
+- `ThreadPageComponent`: у reply-формі прибрано передачу `showCloseButton/closeLabel/closeClicked` у `CommentFormActionsComponent`.
 - `docs/tz-compliance-checklist.md` синхронізовано з поточним станом modal API без історичних/застарілих приміток.
 
 ## 4) Що ще треба зробити у проєкті
