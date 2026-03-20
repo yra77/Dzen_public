@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-20 (ітерація frontend-rxjs-state: shared load-state stream для list/thread/realtime flow).
+Останнє оновлення: 2026-03-20 (ітерація frontend-rxjs-state: realtime merge у list/thread + fallback reload).
 
 > Документ містить лише актуальний стан реалізації, поточний план і наступні кроки без історичних застарілих нотаток.
 
@@ -23,7 +23,7 @@
 
 | Вимога ТЗ | Статус | Поточний стан у репозиторії | Що робимо далі |
 |---|---|---|---|
-| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`, header/actions модалок — у `CommentModalHeaderComponent` та `CommentFormActionsComponent`, layout модалки (`backdrop/panel`) — у `CommentModalLayoutComponent` з уніфікованими `test-id`, `closeMode`/`closeRequested` і причинами закриття (`backdrop` / `escape` / `close-button`). Для обох сторінок (`RootListPageComponent` і `ThreadPageComponent`) застосовано shared `CommentFormStateFacade`, `CommentFormAttachmentState`, shared `CommentQueryStateStream` і orchestration helpers (`refreshCommentPreview`, `reloadCommentCaptcha`, `runCommentSubmitWorkflow`) для submit/preview/captcha/modal/attachment/load станів. | Наступний крок: розширити `CommentQueryStateStream` на search flow та централізований realtime merge (без повного reload). |
+| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`, header/actions модалок — у `CommentModalHeaderComponent` та `CommentFormActionsComponent`, layout модалки (`backdrop/panel`) — у `CommentModalLayoutComponent` з уніфікованими `test-id`, `closeMode`/`closeRequested` і причинами закриття (`backdrop` / `escape` / `close-button`). Для обох сторінок (`RootListPageComponent` і `ThreadPageComponent`) застосовано shared `CommentFormStateFacade`, `CommentFormAttachmentState`, shared `CommentQueryStateStream` і orchestration helpers (`refreshCommentPreview`, `reloadCommentCaptcha`, `runCommentSubmitWorkflow`) для submit/preview/captcha/modal/attachment/load станів; realtime channel використовує локальний merge payload у list/thread сценаріях з fallback на reload, якщо merge неможливий. | Наступний крок: підключити search flow до `CommentQueryStateStream` і винести unified search UI-state/pagination у shared orchestration. |
 | Apollo Client (GraphQL) | ✅ Виконано | Apollo Angular інтегровано; запити/мутації працюють через GraphQL API. | Нормалізувати cache-policy та обробку мережевих/GraphQL помилок. |
 | RxJS | ✅ Виконано | RxJS використовується в сервісах та UI-компонентах. | Уніфікувати потоки стану для сценаріїв list/thread/search/realtime. |
 | Якість збірки (Angular compiler warnings) | ⚠️ Частково | Додано скрипт `scripts/check-angular-build.sh`: production build падає при наявності `WARNING` у логах. Скрипт інтегровано в `scripts/go-no-go-check.sh` як окремий quality gate. | Додати окремий CI job, який запускає цей gate на кожному PR. |
@@ -32,23 +32,24 @@
 
 1. **P0 — Messaging:** перевести RabbitMQ інтеграцію з `RabbitMQ.Client` на MassTransit (producer/consumer + retry + DLQ + outbox/idempotency).
 2. **P1 — Search:** замінити `HttpClient`-реалізацію Elasticsearch на офіційний .NET client із typed mapping/templates.
-3. **P1 — Frontend/RxJS state:** завершити уніфікацію state-stream, додавши search flow і realtime merge without full reload.
+3. **P1 — Frontend/RxJS state:** завершити уніфікацію state-stream, додавши search flow (realtime merge для list/thread уже впроваджено).
 4. **P1 — GraphQL quality:** додати контрактні перевірки GraphQL-запитів/мутацій (включно з негативними кейсами) у CI.
 5. **P2 — Architecture quality:** додати автоматичні перевірки дозволених напрямків залежностей між шарами.
 6. **P2 — Build quality gates:** винести `scripts/check-angular-build.sh` в CI та зробити build warning/error блокуючим критерієм.
 
 ## 3) Що внесено в цій ітерації
 
-- Додано shared RxJS-оркестратор `CommentQueryStateStream<TRequest, TData>` для уніфікованого load lifecycle (`isLoading` / `errorMessage` / `canRetry` / `data`) у list/thread/realtime сценаріях.
-- `RootListPageComponent` переведено на `CommentQueryStateStream`: прибрано дублювання imperative subscribe-коду в `load()`, оновлення UI-стану йде через єдиний stream.
-- `ThreadPageComponent` переведено на `CommentQueryStateStream`: `loadThread()` тепер використовує shared reload-пайплайн і спільну модель помилок/ретраю.
-- Checklist синхронізовано з фактичним станом: видалено неактуальний пункт про «уніфікувати state-stream для list/thread», бо базовий shared stream вже впроваджено.
+- `CommentQueryStateStream<TRequest, TData>` розширено методом `mutateData(...)` для локальних оновлень state без додаткового HTTP/GraphQL запиту.
+- Додано shared realtime merge helper (`mergeCommentIntoRootPage`, `mergeCommentIntoThread`) для локального застосування `commentCreated` payload у list/thread.
+- `RootListPageComponent`: SignalR handler тепер спершу намагається виконати локальний merge payload; якщо merge неможливий — виконує fallback `load()`.
+- `ThreadPageComponent`: SignalR handler також використовує локальний merge payload у поточну гілку з fallback `loadThread()`.
+- Checklist очищено від неактуальної нотатки про «майбутній realtime merge для list/thread», оскільки цей крок уже реалізовано.
 
 ## 4) Що ще треба зробити у проєкті
 
 - **P0 Messaging:** перейти з поточного `RabbitMQ.Client` на MassTransit (retry, DLQ, outbox, idempotency).
 - **P1 Search:** замінити low-level HTTP інтеграцію Elasticsearch на офіційний .NET client із typed mapping/templates.
-- **P1 Frontend/RxJS:** розширити shared state-stream на search flow і додати realtime merge без повного reload.
+- **P1 Frontend/RxJS:** розширити shared state-stream на search flow (realtime merge для list/thread вже працює, потрібно покрити search).
 - **P1 GraphQL quality:** додати контрактні перевірки GraphQL-операцій (позитивні + негативні кейси) у CI.
 - **P2 Architecture quality:** додати перевірки напрямків залежностей між шарами як автоматичний quality gate.
 - **P2 Build quality gates:** винести `scripts/check-angular-build.sh` в окремий CI job і зробити warning-blocking політику обов’язковою.
