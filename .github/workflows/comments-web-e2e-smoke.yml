@@ -69,6 +69,12 @@ jobs:
           cat /tmp/comments-api.log
           exit 1
 
+      - name: Validate GraphQL schema contract
+        # Checks that backend schema still contains root fields consumed by SPA operations.
+        env:
+          GRAPHQL_CONTRACT_API_URL: http://127.0.0.1:5000
+        run: ./scripts/check-graphql-contract.sh
+
       - name: Start Angular app
         working-directory: src/Comments.Web
         run: |
