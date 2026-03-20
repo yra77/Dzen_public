@@ -120,6 +120,8 @@ validate_negative_contract_cases() {
   local invalid_response_file
   local invalid_mutation_payload
   local invalid_mutation_response_file
+  local invalid_reply_mutation_payload
+  local invalid_reply_mutation_response_file
 
   # Unknown field must produce GraphQL validation errors without crashing endpoint.
   invalid_query_payload='{"query":"query ContractNegativeCase { unknownContractField }"}'
@@ -163,6 +165,26 @@ validate_negative_contract_cases() {
 
   if ! jq -e '.errors[0].message == "Validation failed"' "$invalid_mutation_response_file" >/dev/null; then
     echo "ERROR: invalid createComment case does not include expected validation message." >&2
+    exit 1
+  fi
+
+  # Invalid addReply parentId must return a predictable GraphQL user-facing error contract.
+  invalid_reply_mutation_payload='{"query":"mutation ContractInvalidAddReply($input: AddReplyInput!) { addReply(input: $input) { id } }","variables":{"input":{"parentId":"00000000-0000-0000-0000-000000000000","userName":"User123","email":"user123@example.com","homePage":"https://example.com","text":"<p>reply</p>","captchaToken":"mock-pass","attachment":null}}}'
+  invalid_reply_mutation_response_file="$WORKDIR/negative-invalid-add-reply-parent.json"
+  post_graphql "$endpoint" "$invalid_reply_mutation_payload" "$invalid_reply_mutation_response_file"
+
+  if ! jq -e '.errors | type == "array" and length > 0' "$invalid_reply_mutation_response_file" >/dev/null; then
+    echo "ERROR: invalid addReply(parentId) case did not return GraphQL errors array." >&2
+    exit 1
+  fi
+
+  if ! jq -e '.errors[0].message == "Parent comment was not found."' "$invalid_reply_mutation_response_file" >/dev/null; then
+    echo "ERROR: invalid addReply(parentId) case does not include expected domain error message." >&2
+    exit 1
+  fi
+
+  if ! jq -e '.errors[0].path | type == "array" and .[0] == "addReply"' "$invalid_reply_mutation_response_file" >/dev/null; then
+    echo "ERROR: invalid addReply(parentId) case does not include expected GraphQL error path." >&2
     exit 1
   fi
 
