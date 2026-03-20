@@ -425,6 +425,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const replyTarget = this.activeReplyTarget;
     const raw = this.replyForm.getRawValue();
 
     runCommentSubmitWorkflow({
@@ -433,7 +434,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
         email: raw.email,
         homePage: null,
         text: raw.text,
-        parentId: this.activeReplyTarget.id,
+        parentId: replyTarget.id,
         captchaToken: `${this.captchaChallengeId}:${raw.captchaAnswer}`,
         attachment: this.replyAttachmentState.value
       }),
