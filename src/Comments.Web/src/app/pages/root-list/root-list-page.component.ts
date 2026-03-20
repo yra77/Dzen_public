@@ -13,13 +13,13 @@ import { CommentsGraphqlApiService } from '../../core/comments-graphql-api.servi
 import { ApiErrorPresenterService, UiValidationError } from '../../core/api-error-presenter.service';
 import { environment } from '../../../environments/environment';
 import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
-import { CommentAttachmentComponent } from '../../shared/comment-attachment/comment-attachment.component';
+import { CommentNodeCardComponent } from '../../shared/comment-node-card/comment-node-card.component';
 import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick-tags-toolbar.component';
 
 
 @Component({
   selector: 'app-root-list-page',
-  imports: [DatePipe, ReactiveFormsModule, NgTemplateOutlet, CommentAttachmentComponent, QuickTagsToolbarComponent],
+  imports: [DatePipe, ReactiveFormsModule, NgTemplateOutlet, CommentNodeCardComponent, QuickTagsToolbarComponent],
   template: `
     <section class="panel">
       <button class="btn-answer" type="button" (click)="openCreateModal()" data-testid="root-open-create-modal-button">Коментувати</button>
@@ -175,21 +175,14 @@ import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick
         </div>
 
         <ng-template #commentTreeNode let-node>
-          <article class="comment thread-node">
-            <p class="comment-header"><strong>{{ node.userName }}</strong><span>{{ node.email }}</span><span>{{ node.createdAtUtc | date: 'dd.MM.yy HH:mm' }}</span></p>
-            <p [innerHTML]="renderCommentText(node.text)"></p>
-            @if (node.attachment) {
-            <app-comment-attachment
-                [attachment]="node.attachment"
-                [attachmentUrl]="getAttachmentUrl(node.attachment.storagePath)"
-                [textPreviewContent]="attachmentTextPreviewByPath[node.attachment.storagePath] ?? ''"
-                [isTextPreviewLoading]="attachmentTextLoadingByPath.has(node.attachment.storagePath)"
-                (requestTextPreview)="loadTextAttachment($event)"/>
-            }
-            <div class="thread-actions">
-              <button class="btn-answer" type="button" (click)="openReplyModal(node)">Відповісти</button>
-            </div>
-          </article>
+          <app-comment-node-card
+            [comment]="node"
+            [renderedTextHtml]="renderCommentText(node.text)"
+            [attachmentUrl]="node.attachment ? getAttachmentUrl(node.attachment.storagePath) : ''"
+            [textPreviewContent]="node.attachment ? (attachmentTextPreviewByPath[node.attachment.storagePath] ?? '') : ''"
+            [isTextPreviewLoading]="node.attachment ? attachmentTextLoadingByPath.has(node.attachment.storagePath) : false"
+            (requestTextPreview)="loadTextAttachment($event)"
+            (replyClicked)="openReplyModal($event)" />
 
            @if ((node.replies ?? []).length > 0) {
             <ul class="tree">

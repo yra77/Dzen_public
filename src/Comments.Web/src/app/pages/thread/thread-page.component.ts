@@ -12,12 +12,12 @@ import { CommentsGraphqlApiService } from '../../core/comments-graphql-api.servi
 import { environment } from '../../../environments/environment';
 import { ApiErrorPresenterService, UiValidationError } from '../../core/api-error-presenter.service';
 import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
-import { CommentAttachmentComponent } from '../../shared/comment-attachment/comment-attachment.component';
+import { CommentNodeCardComponent } from '../../shared/comment-node-card/comment-node-card.component';
 import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick-tags-toolbar.component';
 
 @Component({
   selector: 'app-thread-page',
-  imports: [DatePipe, ReactiveFormsModule, RouterLink, NgTemplateOutlet, CommentAttachmentComponent, QuickTagsToolbarComponent],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink, NgTemplateOutlet, CommentNodeCardComponent, QuickTagsToolbarComponent],
   template: `
     <section class="panel">
       <h2>Гілка коментаря</h2>
@@ -34,22 +34,15 @@ import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick
           <p class="meta">Спробуйте оновити гілку повторно через кілька секунд.</p>
         }
       } @else if (thread) {
-        <div class="thread-node">
-          <p class="comment-header"><strong>{{ thread.userName }}</strong><span>{{ thread.email }}</span><span>{{ thread.createdAtUtc | date: 'dd.MM.yy HH:mm' }}</span></p>
-          <p [innerHTML]="renderCommentText(thread.text)"></p>
-          @if (thread.attachment) {
-             <app-comment-attachment
-              [attachment]="thread.attachment"
-              [attachmentUrl]="getAttachmentUrl(thread.attachment.storagePath)"
-              [textPreviewContent]="attachmentTextPreviewByPath[thread.attachment.storagePath] ?? ''"
-              [isTextPreviewLoading]="attachmentTextLoadingByPath.has(thread.attachment.storagePath)"
-              [showContentType]="true"
-              (requestTextPreview)="loadTextAttachment($event)"/>
-          }
-          <div class="thread-actions">
-            <button type="button" (click)="openReplyModal(thread)">Відповісти</button>
-          </div>
-        </div>
+        <app-comment-node-card
+          [comment]="thread"
+          [renderedTextHtml]="renderCommentText(thread.text)"
+          [attachmentUrl]="thread.attachment ? getAttachmentUrl(thread.attachment.storagePath) : ''"
+          [textPreviewContent]="thread.attachment ? (attachmentTextPreviewByPath[thread.attachment.storagePath] ?? '') : ''"
+          [isTextPreviewLoading]="thread.attachment ? attachmentTextLoadingByPath.has(thread.attachment.storagePath) : false"
+          [showContentType]="true"
+          (requestTextPreview)="loadTextAttachment($event)"
+          (replyClicked)="openReplyModal($event)" />
 
         <h3>Відповіді</h3>
         @if (thread.replies.length < 1) {
@@ -62,22 +55,15 @@ import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick
           <ul class="tree">
             @for (reply of replies; track reply.id) {
               <li>
-                <article class="thread-node">
-                  <p class="comment-header"><strong>{{ reply.userName }}</strong><span>{{ reply.email }}</span><span>{{ reply.createdAtUtc | date: 'dd.MM.yy HH:mm' }}</span></p>
-                  <p [innerHTML]="renderCommentText(reply.text)"></p>
-                  @if (reply.attachment) {
-                    <app-comment-attachment
-                      [attachment]="reply.attachment"
-                      [attachmentUrl]="getAttachmentUrl(reply.attachment.storagePath)"
-                      [textPreviewContent]="attachmentTextPreviewByPath[reply.attachment.storagePath] ?? ''"
-                      [isTextPreviewLoading]="attachmentTextLoadingByPath.has(reply.attachment.storagePath)"
-                      [showContentType]="true"
-                      (requestTextPreview)="loadTextAttachment($event)"/>
-                  }
-                  <div class="thread-actions">
-                    <button type="button" (click)="openReplyModal(reply)">Відповісти</button>
-                  </div>
-                </article>
+                <app-comment-node-card
+                  [comment]="reply"
+                  [renderedTextHtml]="renderCommentText(reply.text)"
+                  [attachmentUrl]="reply.attachment ? getAttachmentUrl(reply.attachment.storagePath) : ''"
+                  [textPreviewContent]="reply.attachment ? (attachmentTextPreviewByPath[reply.attachment.storagePath] ?? '') : ''"
+                  [isTextPreviewLoading]="reply.attachment ? attachmentTextLoadingByPath.has(reply.attachment.storagePath) : false"
+                  [showContentType]="true"
+                  (requestTextPreview)="loadTextAttachment($event)"
+                  (replyClicked)="openReplyModal($event)" />
 
                 @if (reply.replies.length !== 0) {
                   <ng-container *ngTemplateOutlet="replyTree; context: { $implicit: reply.replies }"></ng-container>
