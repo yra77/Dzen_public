@@ -21,6 +21,7 @@ import { CommentModalHeaderComponent } from '../../shared/comment-modal-header/c
 import { CommentFormActionsComponent } from '../../shared/comment-form-actions/comment-form-actions.component';
 import { CommentModalLayoutComponent } from '../../shared/comment-modal-layout/comment-modal-layout.component';
 import { ModalCloseReason } from '../../shared/comment-modal-layout/comment-modal-layout.component';
+import { canCloseModal } from '../../shared/comment-modal-layout/modal-close.guard';
 
 @Component({
   selector: 'app-thread-page',
@@ -437,7 +438,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
           this.attachment = null;
           this.attachmentMessage = '';
           this.attachmentImagePreviewDataUrl = '';
-          this.closeReplyModal(true);
+          this.closeReplyModal('backdrop', true);
           this.loadThread();
           this.reloadCaptcha();
           this.isSubmitting = false;
@@ -469,16 +470,15 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   /**
    * Централізовано обробляє запити на закриття reply-модалки (Escape/backdrop/кнопки).
    */
-  onReplyModalCloseRequested(_: ModalCloseReason): void {
-    this.closeReplyModal();
+  onReplyModalCloseRequested(reason: ModalCloseReason): void {
+    this.closeReplyModal(reason);
   }
 
   /**
    * Закриває модальне вікно відповіді та очищає тимчасові стани форми.
    */
-  closeReplyModal(force = false): void {
-    // Поки триває submit, блокуємо закриття модалки, щоб не губити стан відправки.
-    if (this.isSubmitting && !force) {
+  closeReplyModal(reason: ModalCloseReason = 'backdrop', force = false): void {
+    if (!canCloseModal(this.isSubmitting, reason, force)) {
       return;
     }
 

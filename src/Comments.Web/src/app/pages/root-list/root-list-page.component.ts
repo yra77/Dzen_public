@@ -21,6 +21,7 @@ import { CommentModalHeaderComponent } from '../../shared/comment-modal-header/c
 import { CommentFormActionsComponent } from '../../shared/comment-form-actions/comment-form-actions.component';
 import { CommentModalLayoutComponent } from '../../shared/comment-modal-layout/comment-modal-layout.component';
 import { ModalCloseReason } from '../../shared/comment-modal-layout/comment-modal-layout.component';
+import { canCloseModal } from '../../shared/comment-modal-layout/modal-close.guard';
 
 
 @Component({
@@ -366,16 +367,15 @@ export class RootListPageComponent implements OnDestroy {
   /**
    * Централізовано обробляє запити на закриття create-модалки.
    */
-  onCreateModalCloseRequested(_: ModalCloseReason): void {
-    this.closeCreateModal();
+  onCreateModalCloseRequested(reason: ModalCloseReason): void {
+    this.closeCreateModal(reason);
   }
 
   /**
    * Закриває модальне вікно створення кореневого коментаря.
    */
-  closeCreateModal(force = false): void {
-    // Під час submit блокуємо випадкове закриття (Escape/backdrop/кнопка), щоб не втратити контекст відправки.
-    if (this.isSubmitting && !force) {
+  closeCreateModal(reason: ModalCloseReason = 'backdrop', force = false): void {
+    if (!canCloseModal(this.isSubmitting, reason, force)) {
       return;
     }
 
@@ -577,7 +577,7 @@ export class RootListPageComponent implements OnDestroy {
           this.attachment = null;
           this.attachmentMessage = '';
           this.attachmentImagePreviewDataUrl = '';
-          this.closeCreateModal(true);
+          this.closeCreateModal('backdrop', true);
           this.load();
           this.reloadCaptcha();
           this.isSubmitting = false;
@@ -621,16 +621,15 @@ export class RootListPageComponent implements OnDestroy {
   /**
    * Централізовано обробляє запити на закриття reply-модалки.
    */
-  onReplyModalCloseRequested(_: ModalCloseReason): void {
-    this.closeReplyModal();
+  onReplyModalCloseRequested(reason: ModalCloseReason): void {
+    this.closeReplyModal(reason);
   }
 
   /**
    * Закриває модальне вікно створення відповіді.
    */
-  closeReplyModal(force = false): void {
-    // Блокуємо закриття під час submit, щоби користувач не "втратив" форму до отримання результату API.
-    if (this.isReplySubmitting && !force) {
+  closeReplyModal(reason: ModalCloseReason = 'backdrop', force = false): void {
+    if (!canCloseModal(this.isReplySubmitting, reason, force)) {
       return;
     }
 
@@ -741,7 +740,7 @@ export class RootListPageComponent implements OnDestroy {
       .subscribe({
         next: () => {
           this.replySubmitMessage = 'Коментар успішно створено.';
-          this.closeReplyModal(true);
+          this.closeReplyModal('backdrop', true);
           this.load();
           this.isReplySubmitting = false;
         },
