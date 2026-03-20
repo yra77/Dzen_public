@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
@@ -42,6 +43,7 @@ import {
   createOpenedCommentFormModalState,
 } from '../../shared/comment-form/comment-form-ui-state';
 import { CommentFormStateFacade } from '../../shared/comment-form/comment-form-state.facade';
+import { CommentQueryStateStream } from '../../shared/comment-query-state/comment-query-state.stream';
 
 @Component({
   selector: 'app-thread-page',
@@ -180,6 +182,13 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   private readonly apiErrorPresenter = inject(ApiErrorPresenterService);
 
   private signalRConnection: HubConnection | null = null;
+  /** Підписка на shared load-state stream thread/realtime сценарію. */
+  private readonly threadLoadStateSubscription: Subscription;
+  /** Shared RxJS stream для thread-state (loading/error/data) у thread/realtime refresh сценаріях. */
+  private readonly threadLoadStateStream = new CommentQueryStateStream<string, CommentNode>(
+    (rootCommentId) => this.commentsGraphqlApi.getThread(rootCommentId),
+    (error) => this.apiErrorPresenter.present(error, 'Не вдалося завантажити гілку.')
+  );
 
   /** Мапінг server-side полів на FormControl для reply-форми сторінки гілки. */
   private readonly replyFormServerFieldMapping: ServerFieldControlMapping = {
@@ -227,6 +236,16 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     this.replyFormState.setPreviewState(createInitialCommentFormPreviewState());
     this.replyFormState.setCaptchaState(createInitialCommentFormCaptchaState());
     this.replyFormState.setModalState(createClosedCommentFormModalState());
+
+    this.threadLoadStateSubscription = this.threadLoadStateStream.subscribe((state) => {
+      this.isLoading = state.isLoading;
+      this.errorMessage = state.errorMessage;
+      this.loadCanRetry = state.canRetry;
+
+      if (state.data) {
+        this.thread = state.data;
+      }
+    });
   }
 
   /** Прапорець активного submit у reply-формі. */
@@ -350,6 +369,9 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
    * Коректно завершує SignalR-з'єднання при знищенні компонента.
    */
   ngOnDestroy(): void {
+    this.threadLoadStateSubscription.unsubscribe();
+    this.threadLoadStateStream.destroy();
+
     if (this.signalRConnection) {
       void this.signalRConnection.stop();
     }
@@ -574,22 +596,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.isLoading = true;
-    this.errorMessage = '';
-    this.loadCanRetry = false;
-
-    this.commentsGraphqlApi.getThread(commentId).subscribe({
-      next: (response) => {
-        this.thread = response;
-        this.isLoading = false;
-      },
-      error: (error) => {
-        const uiError = this.apiErrorPresenter.present(error, 'Не вдалося завантажити гілку.');
-        this.errorMessage = uiError.summary;
-        this.loadCanRetry = uiError.canRetry;
-        this.isLoading = false;
-      }
-    });
+    this.threadLoadStateStream.reload(commentId);
   }
 
 }
