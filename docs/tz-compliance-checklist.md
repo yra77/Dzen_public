@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-20 (ітерація frontend-rxjs-state: auto-retry/backoff для list/thread/search завантаження).
+Останнє оновлення: 2026-03-20 (ітерація frontend-rxjs-state: уніфіковано retry-policy для list/thread/search завантаження).
 
 > Документ містить лише актуальний стан реалізації, поточний план і наступні кроки без історичних застарілих нотаток.
 
@@ -39,10 +39,10 @@
 
 ## 3) Що внесено в цій ітерації
 
-- У `CommentQueryStateStream` додано опційний auto-retry із керованим лімітом спроб та backoff-затримкою, який спрацьовує тільки для retryable помилок (`canRetry=true`).
-- У `RootListPageComponent` для list/search завантаження активовано обмежений auto-retry (`2` спроби) для тимчасових network/server збоїв.
-- У `ThreadPageComponent` для завантаження гілки активовано такий самий auto-retry профіль (`2` спроби) для тимчасових збоїв.
-- Checklist очищено від застарілої фіксації попередньої ітерації, щоб зберігати лише актуальний стан і наступні кроки.
+- Додано єдиний конфіг `COMMENT_QUERY_RETRY_POLICY` у фронтенді для list/thread/search завантажень (`autoRetryCount=2`, `autoRetryBaseDelayMs=600`).
+- `RootListPageComponent` переведено на shared retry-policy без дублювання inline-конфігурації.
+- `ThreadPageComponent` переведено на той самий shared retry-policy без дублювання inline-конфігурації.
+- Із checklist видалено неактуальні історичні формулювання; залишено лише поточний стан і релевантні next steps.
 
 ## 4) Що ще треба зробити у проєкті
 
