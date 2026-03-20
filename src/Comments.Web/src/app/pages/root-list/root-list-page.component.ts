@@ -20,6 +20,7 @@ import { CommentAuthorTextFieldsComponent } from '../../shared/comment-author-te
 import { CommentModalHeaderComponent } from '../../shared/comment-modal-header/comment-modal-header.component';
 import { CommentFormActionsComponent } from '../../shared/comment-form-actions/comment-form-actions.component';
 import { CommentModalLayoutComponent } from '../../shared/comment-modal-layout/comment-modal-layout.component';
+import { ModalCloseReason } from '../../shared/comment-modal-layout/comment-modal-layout.component';
 
 
 @Component({
@@ -57,9 +58,9 @@ import { CommentModalLayoutComponent } from '../../shared/comment-modal-layout/c
           layoutTestId="root-create-modal-layout"
           backdropTestId="root-create-modal-backdrop"
           panelTestId="root-create-modal-panel"
-          closeMode="always"
-          (closeRequested)="closeCreateModal()">
-            <app-comment-modal-header title="Новий коментар" (closeClicked)="closeCreateModal()" />
+          [closeMode]="isSubmitting ? 'disabled' : 'always'"
+          (closeRequested)="onCreateModalCloseRequested($event)">
+            <app-comment-modal-header title="Новий коментар" (closeClicked)="onCreateModalCloseRequested('backdrop')" />
             <form class="form-grid" [formGroup]="createForm" (ngSubmit)="submitComment()" data-testid="root-create-form">
               <app-form-submit-feedback
                 [message]="submitMessage"
@@ -145,9 +146,9 @@ import { CommentModalLayoutComponent } from '../../shared/comment-modal-layout/c
             layoutTestId="root-reply-modal-layout"
             backdropTestId="root-reply-modal-backdrop"
             panelTestId="root-reply-modal-panel"
-            closeMode="always"
-            (closeRequested)="closeReplyModal()">
-              <app-comment-modal-header title="Нова відповідь" (closeClicked)="closeReplyModal()" />
+            [closeMode]="isReplySubmitting ? 'disabled' : 'always'"
+            (closeRequested)="onReplyModalCloseRequested($event)">
+              <app-comment-modal-header title="Нова відповідь" (closeClicked)="onReplyModalCloseRequested('backdrop')" />
               <p class="meta">Відповідь для: <strong>{{ activeReplyTarget?.userName }}</strong></p>
 
               <form class="form-grid" [formGroup]="replyForm" (ngSubmit)="submitReplyComment()">
@@ -363,9 +364,21 @@ export class RootListPageComponent implements OnDestroy {
   }
 
   /**
+   * Централізовано обробляє запити на закриття create-модалки.
+   */
+  onCreateModalCloseRequested(_: ModalCloseReason): void {
+    this.closeCreateModal();
+  }
+
+  /**
    * Закриває модальне вікно створення кореневого коментаря.
    */
-  closeCreateModal(): void {
+  closeCreateModal(force = false): void {
+    // Під час submit блокуємо випадкове закриття (Escape/backdrop/кнопка), щоб не втратити контекст відправки.
+    if (this.isSubmitting && !force) {
+      return;
+    }
+
     this.isCreateModalOpen = false;
   }
 
@@ -564,7 +577,7 @@ export class RootListPageComponent implements OnDestroy {
           this.attachment = null;
           this.attachmentMessage = '';
           this.attachmentImagePreviewDataUrl = '';
-          this.isCreateModalOpen = false;
+          this.closeCreateModal(true);
           this.load();
           this.reloadCaptcha();
           this.isSubmitting = false;
@@ -606,9 +619,21 @@ export class RootListPageComponent implements OnDestroy {
   }
 
   /**
+   * Централізовано обробляє запити на закриття reply-модалки.
+   */
+  onReplyModalCloseRequested(_: ModalCloseReason): void {
+    this.closeReplyModal();
+  }
+
+  /**
    * Закриває модальне вікно створення відповіді.
    */
-  closeReplyModal(): void {
+  closeReplyModal(force = false): void {
+    // Блокуємо закриття під час submit, щоби користувач не "втратив" форму до отримання результату API.
+    if (this.isReplySubmitting && !force) {
+      return;
+    }
+
     this.isReplyModalOpen = false;
     this.activeReplyTarget = null;
   }
@@ -716,7 +741,7 @@ export class RootListPageComponent implements OnDestroy {
       .subscribe({
         next: () => {
           this.replySubmitMessage = 'Коментар успішно створено.';
-          this.closeReplyModal();
+          this.closeReplyModal(true);
           this.load();
           this.isReplySubmitting = false;
         },
