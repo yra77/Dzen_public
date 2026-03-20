@@ -17,6 +17,7 @@ import {
   GET_CAPTCHA_IMAGE_QUERY,
   GET_COMMENT_THREAD_QUERY,
   GET_ROOT_COMMENTS_QUERY,
+  GET_SEARCH_COMMENTS_QUERY,
   PREVIEW_COMMENT_QUERY
 } from './comments-graphql-documents';
 
@@ -29,6 +30,11 @@ type GraphqlCommentSortDirection = 'ASC' | 'DESC';
 interface RootCommentsQueryData {
   /** Пейджований список кореневих коментарів. */
   comments: PagedCommentsResponse | null;
+}
+
+interface SearchCommentsQueryData {
+  /** Пейджований список знайдених коментарів. */
+  searchComments: PagedCommentsResponse | null;
 }
 
 interface ThreadQueryData {
@@ -112,6 +118,25 @@ export class CommentsGraphqlApiService {
         }
 
         return normalizedThread;
+      })
+    );
+  }
+
+  /** Виконує повнотекстовий пошук коментарів із пагінацією через GraphQL query. */
+  searchComments(query: string, page: number, pageSize: number): Observable<PagedCommentsResponse> {
+    return this.executeGraphql<SearchCommentsQueryData>(GET_SEARCH_COMMENTS_QUERY, { query, page, pageSize }).pipe(
+      map(response => {
+        const payload = response.searchComments;
+        if (!payload) {
+          throw new Error('GraphQL query searchComments returned empty payload.');
+        }
+
+        return {
+          ...payload,
+          items: payload.items
+            .map(comment => this.normalizeCommentNode(comment, { includeReplies: true }))
+            .filter((comment): comment is CommentNode => comment !== null)
+        };
       })
     );
   }

@@ -69,6 +69,22 @@ query GetRootComments($page: Int!, $pageSize: Int!, $sortBy: CommentSortField!, 
 ${buildCommentTreeFragments('RootComment', 5)}
 `;
 
+/** GraphQL query для повнотекстового пошуку коментарів із пагінацією. */
+export const GET_SEARCH_COMMENTS_QUERY = `
+query SearchComments($query: String!, $page: Int!, $pageSize: Int!) {
+  searchComments(query: $query, page: $page, pageSize: $pageSize) {
+    page
+    pageSize
+    totalCount
+    items {
+      ...SearchCommentLevel1
+    }
+  }
+}
+
+${buildCommentTreeFragments('SearchComment', 5)}
+`;
+
 /** GraphQL query для отримання повного дерева thread-коментаря з фіксованою глибиною. */
 export const GET_COMMENT_THREAD_QUERY = `
 query GetCommentThread($rootCommentId: UUID!) {
