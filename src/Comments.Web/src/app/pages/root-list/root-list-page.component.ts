@@ -22,6 +22,7 @@ import { CommentFormActionsComponent } from '../../shared/comment-form-actions/c
 import { CommentModalLayoutComponent } from '../../shared/comment-modal-layout/comment-modal-layout.component';
 import { ModalCloseReason } from '../../shared/comment-modal-layout/comment-modal-layout.component';
 import { canCloseModal } from '../../shared/comment-modal-layout/modal-close.guard';
+import { buildQuickTagInsertResult, readAttachmentAsRequest } from '../../shared/comment-form/comment-form-helpers';
 
 
 @Component({
@@ -487,19 +488,26 @@ export class RootListPageComponent implements OnDestroy {
   /**
    * Валідовує і читає вкладення користувача у base64-представлення.
    */
-  onAttachmentSelected(event: Event): void {
-    this.processAttachmentSelection(
-      event,
-      (attachment) => {
-        this.attachment = attachment;
-      },
-      (message) => {
-        this.attachmentMessage = message;
-      },
-      (preview) => {
-        this.attachmentImagePreviewDataUrl = preview;
-      }
-    );
+  async onAttachmentSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    this.attachment = null;
+    this.attachmentMessage = '';
+    this.attachmentImagePreviewDataUrl = '';
+
+    if (!file) {
+      return;
+    }
+
+    // Використовуємо shared helper, щоб не дублювати валідацію/читання вкладень між list/thread сценаріями.
+    const readResult = await readAttachmentAsRequest(file);
+    this.attachment = readResult.attachment;
+    this.attachmentMessage = readResult.message;
+    this.attachmentImagePreviewDataUrl = readResult.imagePreviewDataUrl;
+
+    if (!readResult.attachment) {
+      input.value = '';
+    }
   }
 
 
@@ -514,7 +522,10 @@ export class RootListPageComponent implements OnDestroy {
    * Додає HTML-тег у текстове поле з урахуванням поточного виділення користувача.
    */
   insertQuickTag(tag: 'i' | 'strong' | 'code' | 'a', textarea: HTMLTextAreaElement): void {
-    this.insertTagIntoTextarea(tag, textarea, this.createForm.controls.text);
+    const quickTagInsertResult = buildQuickTagInsertResult(tag, textarea);
+    this.createForm.controls.text.setValue(quickTagInsertResult.updatedText);
+    textarea.focus();
+    textarea.setSelectionRange(quickTagInsertResult.caretPosition, quickTagInsertResult.caretPosition);
     this.previewText();
   }
 
@@ -664,26 +675,36 @@ export class RootListPageComponent implements OnDestroy {
    * Додає HTML-тег у поле тексту відповіді модального вікна.
    */
   insertReplyQuickTag(tag: 'i' | 'strong' | 'code' | 'a', textarea: HTMLTextAreaElement): void {
-    this.insertTagIntoTextarea(tag, textarea, this.replyForm.controls.text);
+    const quickTagInsertResult = buildQuickTagInsertResult(tag, textarea);
+    this.replyForm.controls.text.setValue(quickTagInsertResult.updatedText);
+    textarea.focus();
+    textarea.setSelectionRange(quickTagInsertResult.caretPosition, quickTagInsertResult.caretPosition);
     this.previewReplyText();
   }
 
   /**
    * Валідовує та читає вкладення для reply-форми.
    */
-  onReplyAttachmentSelected(event: Event): void {
-    this.processAttachmentSelection(
-      event,
-      (attachment) => {
-        this.replyAttachment = attachment;
-      },
-      (message) => {
-        this.replyAttachmentMessage = message;
-      },
-      (preview) => {
-        this.replyAttachmentImagePreviewDataUrl = preview;
-      }
-    );
+  async onReplyAttachmentSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    this.replyAttachment = null;
+    this.replyAttachmentMessage = '';
+    this.replyAttachmentImagePreviewDataUrl = '';
+
+    if (!file) {
+      return;
+    }
+
+    // Shared helper тримає однакові правила attachment для форми root-коментаря та reply-коментаря.
+    const readResult = await readAttachmentAsRequest(file);
+    this.replyAttachment = readResult.attachment;
+    this.replyAttachmentMessage = readResult.message;
+    this.replyAttachmentImagePreviewDataUrl = readResult.imagePreviewDataUrl;
+
+    if (!readResult.attachment) {
+      input.value = '';
+    }
   }
 
 
@@ -793,91 +814,6 @@ export class RootListPageComponent implements OnDestroy {
     });
   }
 
-  /**
-   * Універсально вставляє HTML-теги у textarea та синхронізує FormControl.
-   */
-  private insertTagIntoTextarea(
-    tag: 'i' | 'strong' | 'code' | 'a',
-    textarea: HTMLTextAreaElement,
-    control: { setValue: (value: string) => void }
-  ): void {
-    const selectionStart = textarea.selectionStart ?? 0;
-    const selectionEnd = textarea.selectionEnd ?? selectionStart;
-    const selectedText = textarea.value.slice(selectionStart, selectionEnd);
-
-    const openTag = `<${tag}>`;
-    const closeTag = `</${tag}>`;
-    let replacement = `${openTag}${selectedText}${closeTag}`;
-    let caretPosition = selectionStart + openTag.length;
-
-    if (tag === 'a') {
-      const hasSelection = selectedText.trim().length > 0;
-      const linkText = hasSelection ? selectedText : 'посилання';
-      replacement = `<a href="https://example.com">${linkText}</a>`;
-      caretPosition = hasSelection
-        ? selectionStart + replacement.length
-        : selectionStart + '<a href="'.length;
-    } else if (selectedText.length > 0) {
-      caretPosition = selectionStart + replacement.length;
-    }
-
-    const updatedText = `${textarea.value.slice(0, selectionStart)}${replacement}${textarea.value.slice(selectionEnd)}`;
-    control.setValue(updatedText);
-    textarea.focus();
-    textarea.setSelectionRange(caretPosition, caretPosition);
-  }
-
-  /**
-   * Валідовує вкладення, читає його як DataURL та повертає в callback-и.
-   */
-  private processAttachmentSelection(
-    event: Event,
-    setAttachment: (attachment: CreateCommentAttachmentRequest | null) => void,
-    setMessage: (message: string) => void,
-    setPreview: (preview: string) => void
-  ): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    setAttachment(null);
-    setMessage('');
-    setPreview('');
-
-    if (!file) {
-      return;
-    }
-
-    if (file.size > 1_000_000) {
-      setMessage('Файл перевищує 1MB.');
-      input.value = '';
-      return;
-    }
-
-    const allowedContentTypes = ['image/png', 'image/jpeg', 'image/gif', 'text/plain'];
-    if (!allowedContentTypes.includes(file.type)) {
-      setMessage('Недозволений тип вкладення.');
-      input.value = '';
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result !== 'string') {
-        setMessage('Не вдалося прочитати файл.');
-        return;
-      }
-
-      const base64Content = result.includes(',') ? result.split(',')[1] : result;
-      setAttachment({
-        fileName: file.name,
-        contentType: file.type,
-        base64Content
-      });
-      setPreview(file.type.startsWith('image/') ? result : '');
-      setMessage(`Вкладення готове: ${file.name}`);
-    };
-    reader.readAsDataURL(file);
-  }
 
   /**
    * Позначає поля форми як помилкові на основі server-side validation ключів.
