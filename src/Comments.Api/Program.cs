@@ -79,8 +79,11 @@ if (elasticsearchOptions.Enabled)
         client.BaseAddress = new Uri(elasticsearchOptions.Uri);
     });
 
+    // Реєструємо repository fallback навіть у режимі Elasticsearch,
+    // щоб search не «падав в нуль» при тимчасовій недоступності кластера.
+    builder.Services.AddScoped<RepositoryCommentSearchService>();
     builder.Services.AddScoped<ICommentCreatedChannel>(sp => sp.GetRequiredService<ElasticsearchCommentCreatedChannel>());
-    builder.Services.AddScoped<ICommentSearchService>(sp => sp.GetRequiredService<ElasticsearchCommentSearchService>());
+    builder.Services.AddScoped<ICommentSearchService, ResilientCommentSearchService>();
     builder.Services.AddHostedService<ElasticsearchBackfillHostedService>();
 }
 else
