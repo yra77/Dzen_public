@@ -47,6 +47,7 @@ import { CommentFormStateFacade } from '../../shared/comment-form/comment-form-s
 import { CommentFormAttachmentState } from '../../shared/comment-form/comment-form-attachment-state';
 import { CommentQueryStateStream } from '../../shared/comment-query-state/comment-query-state.stream';
 import { mergeCommentIntoRootPage } from '../../shared/comment-realtime/comment-realtime-merge';
+import { COMMENT_QUERY_RETRY_POLICY } from '../../core/query-retry-policy';
 
 
 @Component({
@@ -285,7 +286,7 @@ export class RootListPageComponent implements OnDestroy {
       : this.commentsGraphqlApi.getRootComments(request.page, request.pageSize, request.sortBy, request.sortDirection),
     (error) => this.apiErrorPresenter.present(error, 'Не вдалося завантажити коментарі.'),
     // Для list/search дозволяємо короткий auto-retry лише на тимчасових збоях мережі.
-    { autoRetryCount: 2, autoRetryBaseDelayMs: 600 }
+    COMMENT_QUERY_RETRY_POLICY
   );
 
   /** Мапінг server-side полів на FormControl для root/create форми. */

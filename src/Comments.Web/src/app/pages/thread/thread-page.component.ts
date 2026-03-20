@@ -45,6 +45,7 @@ import {
 import { CommentFormStateFacade } from '../../shared/comment-form/comment-form-state.facade';
 import { CommentQueryStateStream } from '../../shared/comment-query-state/comment-query-state.stream';
 import { mergeCommentIntoThread } from '../../shared/comment-realtime/comment-realtime-merge';
+import { COMMENT_QUERY_RETRY_POLICY } from '../../core/query-retry-policy';
 
 @Component({
   selector: 'app-thread-page',
@@ -190,7 +191,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     (rootCommentId) => this.commentsGraphqlApi.getThread(rootCommentId),
     (error) => this.apiErrorPresenter.present(error, 'Не вдалося завантажити гілку.'),
     // Для thread reload дозволяємо обмежений auto-retry на випадок тимчасових network/server збоїв.
-    { autoRetryCount: 2, autoRetryBaseDelayMs: 600 }
+    COMMENT_QUERY_RETRY_POLICY
   );
 
   /** Мапінг server-side полів на FormControl для reply-форми сторінки гілки. */
