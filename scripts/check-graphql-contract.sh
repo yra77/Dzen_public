@@ -183,6 +183,21 @@ validate_negative_contract_cases() {
     exit 1
   fi
 
+  if ! jq -e '.errors[0].extensions.code == "BAD_USER_INPUT"' "$invalid_reply_mutation_response_file" >/dev/null; then
+    echo "ERROR: invalid addReply(parentId) case does not include BAD_USER_INPUT code." >&2
+    exit 1
+  fi
+
+  if ! jq -e '.errors[0].extensions.businessError.type == "business_rule"' "$invalid_reply_mutation_response_file" >/dev/null; then
+    echo "ERROR: invalid addReply(parentId) case does not include businessError.type contract." >&2
+    exit 1
+  fi
+
+  if ! jq -e '.errors[0].extensions.businessError.message == "Parent comment was not found."' "$invalid_reply_mutation_response_file" >/dev/null; then
+    echo "ERROR: invalid addReply(parentId) case does not include businessError.message contract." >&2
+    exit 1
+  fi
+
   if ! jq -e '.errors[0].path | type == "array" and .[0] == "addReply"' "$invalid_reply_mutation_response_file" >/dev/null; then
     echo "ERROR: invalid addReply(parentId) case does not include expected GraphQL error path." >&2
     exit 1
