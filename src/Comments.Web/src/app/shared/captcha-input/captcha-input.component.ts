@@ -1,4 +1,5 @@
 import { Component, Input } from '@angular/core';
+import { ControlContainer, FormGroupDirective, ReactiveFormsModule } from '@angular/forms';
 
 /**
  * Уніфікований блок відображення CAPTCHA (зображення + поле відповіді).
@@ -9,6 +10,8 @@ import { Component, Input } from '@angular/core';
 @Component({
   selector: 'app-captcha-input',
   standalone: true,
+  imports: [ReactiveFormsModule],
+  viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }],
   template: `
     <div class="captcha-block">
       @if (imageDataUrl) {
