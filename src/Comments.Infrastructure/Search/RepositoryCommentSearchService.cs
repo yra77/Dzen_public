@@ -77,15 +77,14 @@ public sealed class RepositoryCommentSearchService : ICommentSearchService
     /// </summary>
     private static CommentDto MapToDto(Comment comment)
     {
-        AttachmentDto? attachment = null;
-        if (comment.Attachment is not null)
-        {
-            attachment = new AttachmentDto(
-                comment.Attachment.FileName,
-                comment.Attachment.ContentType,
-                comment.Attachment.StoragePath,
-                comment.Attachment.SizeBytes);
-        }
+        AttachmentDto? attachment =
+            comment.AttachmentStoragePath is null
+                ? null
+                : new AttachmentDto(
+                    comment.AttachmentFileName ?? string.Empty,
+                    comment.AttachmentContentType ?? string.Empty,
+                    comment.AttachmentStoragePath,
+                    comment.AttachmentSizeBytes ?? 0);
 
         return new CommentDto(
             comment.Id,
