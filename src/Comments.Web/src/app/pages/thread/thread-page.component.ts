@@ -25,27 +25,24 @@ import { canCloseModal } from '../../shared/comment-modal-layout/modal-close.gua
 import { buildQuickTagInsertResult, readAttachmentAsRequest } from '../../shared/comment-form/comment-form-helpers';
 import { applyServerValidationErrorsToControls, ServerFieldControlMapping, setupServerValidationReset } from '../../shared/comment-form/comment-form-server-validation';
 import {
-  CommentFormSubmitState,
   createFailedCommentFormState,
   createInitialCommentFormSubmitState,
   createSubmittingCommentFormState,
   createSucceededCommentFormState
 } from '../../shared/comment-form/comment-form-submit-state';
 import {
-  CommentFormPreviewState,
   createInitialCommentFormPreviewState,
   createResolvedCommentFormPreviewState,
   createUnavailableCommentFormPreviewState
 } from '../../shared/comment-form/comment-form-preview-state';
 import {
-  CommentFormCaptchaState,
-  CommentFormModalState,
   createClosedCommentFormModalState,
   createFailedCommentFormCaptchaState,
   createInitialCommentFormCaptchaState,
   createOpenedCommentFormModalState,
   createResolvedCommentFormCaptchaState
 } from '../../shared/comment-form/comment-form-ui-state';
+import { CommentFormStateFacade } from '../../shared/comment-form/comment-form-state.facade';
 
 @Component({
   selector: 'app-thread-page',
@@ -200,24 +197,15 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
 
   thread: CommentNode | null = null;
   isLoading = true;
-  isSubmitting = false;
   errorMessage = '';
   /** Прапорець для показу підказки щодо повторної спроби завантаження. */
   loadCanRetry = false;
-  submitMessage = '';
-  submitValidationErrors: ReadonlyArray<UiValidationError> = [];
-  showRetryHint = false;
-  /** UI-стан CAPTCHA для reply-форми в межах сторінки гілки. */
-  private captchaState: CommentFormCaptchaState = createInitialCommentFormCaptchaState();
-  textPreviewHtml = '';
-  /** Повідомлення про fallback-стан, коли preview тимчасово недоступний. */
-  previewMessage = '';
+  /** Shared facade для submit/preview/captcha/modal станів reply-форми. */
+  private readonly replyFormState = new CommentFormStateFacade();
   /** Поточний статус realtime-з'єднання SignalR. */
   signalRStatusMessage = '';
   /** Поточний коментар, на який користувач відповідає у модальному вікні. */
   activeReplyTarget: CommentNode | null = null;
-  /** UI-стан видимості модального вікна створення відповіді. */
-  private replyModalState: CommentFormModalState = createClosedCommentFormModalState();
   attachmentMessage = '';
   attachment: CreateCommentAttachmentRequest | null = null;
   /** Data URL для preview вибраного зображення перед submit. */
@@ -238,27 +226,60 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     setupServerValidationReset(this.replyForm.controls.email);
     setupServerValidationReset(this.replyForm.controls.text);
     setupServerValidationReset(this.replyForm.controls.captchaAnswer);
-    this.setSubmitState(createInitialCommentFormSubmitState());
+    this.replyFormState.setSubmitState(createInitialCommentFormSubmitState());
+    this.replyFormState.setPreviewState(createInitialCommentFormPreviewState());
+    this.replyFormState.setCaptchaState(createInitialCommentFormCaptchaState());
+    this.replyFormState.setModalState(createClosedCommentFormModalState());
+  }
+
+  /** Прапорець активного submit у reply-формі. */
+  get isSubmitting(): boolean {
+    return this.replyFormState.isSubmitting;
+  }
+
+  /** Повідомлення submit-операції reply-форми. */
+  get submitMessage(): string {
+    return this.replyFormState.submitMessage;
+  }
+
+  /** Нормалізовані validation-помилки submit-операції reply-форми. */
+  get submitValidationErrors(): ReadonlyArray<UiValidationError> {
+    return this.replyFormState.submitValidationErrors;
+  }
+
+  /** Показувати чи ні retry-підказку для reply submit. */
+  get showRetryHint(): boolean {
+    return this.replyFormState.showRetryHint;
+  }
+
+  /** HTML preview поточного тексту reply-форми. */
+  get textPreviewHtml(): string {
+    return this.replyFormState.previewHtml;
+  }
+
+  /** Повідомлення про fallback-стан preview у reply-формі. */
+  get previewMessage(): string {
+    return this.replyFormState.previewMessage;
   }
 
   /** Прапорець видимості reply-модалки для template. */
   get isReplyModalOpen(): boolean {
-    return this.replyModalState.isOpen;
+    return this.replyFormState.isModalOpen;
   }
 
   /** Активний challenge id CAPTCHA для reply-форми. */
   get captchaChallengeId(): string {
-    return this.captchaState.challengeId;
+    return this.replyFormState.captchaChallengeId;
   }
 
   /** Data URL CAPTCHA для reply-форми. */
   get captchaImageDataUrl(): string {
-    return this.captchaState.imageDataUrl;
+    return this.replyFormState.captchaImageDataUrl;
   }
 
   /** Повідомлення про стан CAPTCHA для reply-форми. */
   get captchaMessage(): string {
-    return this.captchaState.message;
+    return this.replyFormState.captchaMessage;
   }
 
   /**
@@ -333,16 +354,16 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   previewText(): void {
     const text = this.replyForm.controls.text.value;
     if (!text || !text.trim()) {
-      this.setPreviewState(createInitialCommentFormPreviewState());
+      this.replyFormState.setPreviewState(createInitialCommentFormPreviewState());
       return;
     }
 
     this.commentsGraphqlApi.previewComment(text).subscribe({
       next: (preview) => {
-        this.setPreviewState(createResolvedCommentFormPreviewState(preview));
+        this.replyFormState.setPreviewState(createResolvedCommentFormPreviewState(preview));
       },
       error: () => {
-        this.setPreviewState(
+        this.replyFormState.setPreviewState(
           createUnavailableCommentFormPreviewState('Preview тимчасово недоступний. Ви можете продовжити відправку відповіді без preview.')
         );
       }
@@ -398,17 +419,17 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
    * Перезавантажує CAPTCHA для форми відповіді.
    */
   reloadCaptcha(): void {
-    this.setCaptchaState(createInitialCommentFormCaptchaState());
+    this.replyFormState.setCaptchaState(createInitialCommentFormCaptchaState());
 
     this.commentsGraphqlApi.getCaptcha().subscribe({
       next: (response) => {
-        this.setCaptchaState(
+        this.replyFormState.setCaptchaState(
           createResolvedCommentFormCaptchaState(response.challengeId, `data:${response.mimeType};base64,${response.imageBase64}`)
         );
       },
       error: (error) => {
         const uiError = this.apiErrorPresenter.present(error, 'Не вдалося завантажити CAPTCHA.');
-        this.setCaptchaState(createFailedCommentFormCaptchaState(uiError.summary));
+        this.replyFormState.setCaptchaState(createFailedCommentFormCaptchaState(uiError.summary));
       }
     });
   }
@@ -421,7 +442,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.setSubmitState(createSubmittingCommentFormState());
+    this.replyFormState.setSubmitState(createSubmittingCommentFormState());
 
     const raw = this.replyForm.getRawValue();
 
@@ -437,9 +458,9 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
       })
       .subscribe({
         next: () => {
-          this.setSubmitState(createSucceededCommentFormState('Відповідь додано.'));
+          this.replyFormState.setSubmitState(createSucceededCommentFormState('Відповідь додано.'));
           this.replyForm.reset({ userName: raw.userName, email: raw.email, text: '', captchaAnswer: '' });
-          this.setPreviewState(createInitialCommentFormPreviewState());
+          this.replyFormState.setPreviewState(createInitialCommentFormPreviewState());
           this.attachment = null;
           this.attachmentMessage = '';
           this.attachmentImagePreviewDataUrl = '';
@@ -449,7 +470,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           const uiError = this.apiErrorPresenter.present(error, 'Не вдалося надіслати відповідь. Перевірте дані форми.');
-          this.setSubmitState(createFailedCommentFormState(uiError.summary, uiError.validationErrors, uiError.canRetry));
+          this.replyFormState.setSubmitState(createFailedCommentFormState(uiError.summary, uiError.validationErrors, uiError.canRetry));
           applyServerValidationErrorsToControls(this.replyForm.controls, uiError.validationErrors, this.replyFormServerFieldMapping);
           this.reloadCaptcha();
         }
@@ -461,9 +482,9 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
    */
   openReplyModal(comment: CommentNode): void {
     this.activeReplyTarget = comment;
-    this.setReplyModalState(createOpenedCommentFormModalState());
-    this.setSubmitState(createInitialCommentFormSubmitState());
-    this.setPreviewState(createInitialCommentFormPreviewState());
+    this.replyFormState.setModalState(createOpenedCommentFormModalState());
+    this.replyFormState.setSubmitState(createInitialCommentFormSubmitState());
+    this.replyFormState.setPreviewState(createInitialCommentFormPreviewState());
     this.reloadCaptcha();
   }
 
@@ -482,11 +503,11 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.setReplyModalState(createClosedCommentFormModalState());
+    this.replyFormState.setModalState(createClosedCommentFormModalState());
     this.activeReplyTarget = null;
     this.replyForm.controls.text.reset('');
     this.replyForm.controls.captchaAnswer.reset('');
-    this.setPreviewState(createInitialCommentFormPreviewState());
+    this.replyFormState.setPreviewState(createInitialCommentFormPreviewState());
     this.attachment = null;
     this.attachmentMessage = '';
     this.attachmentImagePreviewDataUrl = '';
@@ -592,38 +613,6 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
         this.isLoading = false;
       }
     });
-  }
-
-  /**
-   * Оновлює submit-стан reply-форми та синхронізує поля, які читає шаблон.
-   */
-  private setSubmitState(state: CommentFormSubmitState): void {
-    this.isSubmitting = state.isSubmitting;
-    this.submitMessage = state.message;
-    this.submitValidationErrors = state.validationErrors;
-    this.showRetryHint = state.showRetryHint;
-  }
-
-  /**
-   * Оновлює preview-стан reply-форми та синхронізує template-поля.
-   */
-  private setPreviewState(state: CommentFormPreviewState): void {
-    this.textPreviewHtml = state.html;
-    this.previewMessage = state.message;
-  }
-
-  /**
-   * Оновлює UI-стан видимості reply-модалки.
-   */
-  private setReplyModalState(state: CommentFormModalState): void {
-    this.replyModalState = state;
-  }
-
-  /**
-   * Оновлює CAPTCHA-стан reply-форми.
-   */
-  private setCaptchaState(state: CommentFormCaptchaState): void {
-    this.captchaState = state;
   }
 
 }
