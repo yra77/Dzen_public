@@ -44,6 +44,7 @@ import {
 } from '../../shared/comment-form/comment-form-ui-state';
 import { CommentFormStateFacade } from '../../shared/comment-form/comment-form-state.facade';
 import { CommentQueryStateStream } from '../../shared/comment-query-state/comment-query-state.stream';
+import { mergeCommentIntoThread } from '../../shared/comment-realtime/comment-realtime-merge';
 
 @Component({
   selector: 'app-thread-page',
@@ -549,7 +550,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Ініціалізує SignalR-підписку на створення нових коментарів.
+   * Ініціалізує SignalR-підписку на створення коментарів із локальним merge у відкриту гілку.
    */
   private initializeSignalR(): void {
     this.signalRConnection = new HubConnectionBuilder()
@@ -557,8 +558,22 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
       .withAutomaticReconnect()
       .build();
 
-    this.signalRConnection.on('commentCreated', () => {
-      this.loadThread();
+    this.signalRConnection.on('commentCreated', (incomingComment: CommentNode) => {
+      let wasMerged = false;
+
+      this.threadLoadStateStream.mutateData((currentThread) => {
+        if (!currentThread) {
+          return currentThread;
+        }
+
+        const mergeResult = mergeCommentIntoThread(currentThread, incomingComment);
+        wasMerged = mergeResult.wasMerged;
+        return mergeResult.data;
+      });
+
+      if (!wasMerged) {
+        this.loadThread();
+      }
     });
 
     this.signalRConnection.onreconnecting(() => {

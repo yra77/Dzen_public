@@ -94,6 +94,19 @@ export class CommentQueryStateStream<TRequest, TData> {
     return this.stateSubject.subscribe(next);
   }
 
+  /**
+   * Локально оновлює поточні дані (наприклад, для realtime merge) без запуску нового HTTP/GraphQL запиту.
+   */
+  mutateData(mutator: (currentData: TData | null) => TData | null): void {
+    const currentState = this.stateSubject.value;
+    const nextData = mutator(currentState.data);
+
+    this.stateSubject.next({
+      ...currentState,
+      data: nextData
+    });
+  }
+
   /** Вивільняє внутрішні RxJS ресурси під час destroy компонента. */
   destroy(): void {
     this.subscription.unsubscribe();

@@ -45,6 +45,7 @@ import {
 import { CommentFormStateFacade } from '../../shared/comment-form/comment-form-state.facade';
 import { CommentFormAttachmentState } from '../../shared/comment-form/comment-form-attachment-state';
 import { CommentQueryStateStream } from '../../shared/comment-query-state/comment-query-state.stream';
+import { mergeCommentIntoRootPage } from '../../shared/comment-realtime/comment-realtime-merge';
 
 
 @Component({
@@ -959,7 +960,7 @@ export class RootListPageComponent implements OnDestroy {
 
 
   /**
-   * Ініціалізує SignalR-підписку, щоб оновлювати список при нових коментарях.
+   * Ініціалізує SignalR-підписку з локальним realtime merge; fallback — повний reload.
    */
   private initializeSignalR(): void {
     this.signalRConnection = new HubConnectionBuilder()
@@ -967,8 +968,22 @@ export class RootListPageComponent implements OnDestroy {
       .withAutomaticReconnect()
       .build();
 
-    this.signalRConnection.on('commentCreated', () => {
-      this.load();
+    this.signalRConnection.on('commentCreated', (incomingComment: CommentNode) => {
+      let wasMerged = false;
+
+      this.rootListLoadStateStream.mutateData((currentData) => {
+        if (!currentData) {
+          return currentData;
+        }
+
+        const mergeResult = mergeCommentIntoRootPage(currentData, incomingComment, this.page, this.sortBy, this.sortDirection);
+        wasMerged = mergeResult.wasMerged;
+        return mergeResult.data;
+      });
+
+      if (!wasMerged) {
+        this.load();
+      }
     });
 
     this.signalRConnection.onreconnecting(() => {
