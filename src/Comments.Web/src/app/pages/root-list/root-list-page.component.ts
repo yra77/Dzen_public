@@ -15,6 +15,7 @@ import { environment } from '../../../environments/environment';
 import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
 import { CommentAttachmentComponent } from '../../shared/comment-attachment/comment-attachment.component';
 
+
 @Component({
   selector: 'app-root-list-page',
   imports: [DatePipe, ReactiveFormsModule, NgTemplateOutlet, CommentAttachmentComponent],
@@ -178,20 +179,19 @@ import { CommentAttachmentComponent } from '../../shared/comment-attachment/comm
             <p class="comment-header"><strong>{{ node.userName }}</strong><span>{{ node.email }}</span><span>{{ node.createdAtUtc | date: 'dd.MM.yy HH:mm' }}</span></p>
             <p>{{ node.text }}</p>
             @if (node.attachment) {
-              <app-comment-attachment
+            <app-comment-attachment
                 [attachment]="node.attachment"
                 [attachmentUrl]="getAttachmentUrl(node.attachment.storagePath)"
                 [textPreviewContent]="attachmentTextPreviewByPath[node.attachment.storagePath] ?? ''"
                 [isTextPreviewLoading]="attachmentTextLoadingByPath.has(node.attachment.storagePath)"
-                (requestTextPreview)="loadTextAttachment($event)"
-              />
+                (requestTextPreview)="loadTextAttachment($event)"/>
             }
             <div class="thread-actions">
               <button class="btn-answer" type="button" (click)="openReplyModal(node)">Відповісти</button>
             </div>
           </article>
 
-          @if ((node.replies ?? []).length > 0) {
+           @if ((node.replies ?? []).length > 0) {
             <ul class="tree">
               @for (childReply of (node.replies ?? []); track childReply.id) {
                 <li>
