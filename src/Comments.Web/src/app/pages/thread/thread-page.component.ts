@@ -15,11 +15,13 @@ import { CommentNodeCardComponent } from '../../shared/comment-node-card/comment
 import { CommentTreeComponent } from '../../shared/comment-tree/comment-tree.component';
 import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick-tags-toolbar.component';
 import { FormSubmitFeedbackComponent } from '../../shared/form-submit-feedback/form-submit-feedback.component';
+import { CommentAttachmentPickerComponent } from '../../shared/comment-attachment-picker/comment-attachment-picker.component';
+import { CaptchaInputComponent } from '../../shared/captcha-input/captcha-input.component';
 
 @Component({
   selector: 'app-thread-page',
   // Тримаймо лише фактично використані standalone-імпорти без зайвих пайпів.
-  imports: [ReactiveFormsModule, RouterLink, CommentNodeCardComponent, CommentTreeComponent, QuickTagsToolbarComponent, FormSubmitFeedbackComponent],
+  imports: [ReactiveFormsModule, RouterLink, CommentNodeCardComponent, CommentTreeComponent, QuickTagsToolbarComponent, FormSubmitFeedbackComponent, CommentAttachmentPickerComponent, CaptchaInputComponent],
   template: `
     <section class="panel">
       <h2>Гілка коментаря</h2>
@@ -113,32 +115,20 @@ import { FormSubmitFeedbackComponent } from '../../shared/form-submit-feedback/f
                   <p class="meta">{{ previewMessage }}</p>
                 }
 
-                <label class="wide">
-                  Вкладення (png/jpg/gif/txt, до 1MB)
-                  <input type="file" (change)="onAttachmentSelected($event)" accept=".txt,image/png,image/jpeg,image/gif,text/plain" data-testid="thread-attachment-input" />
-                </label>
-                @if (attachmentMessage) {
-                  <p class="meta">{{ attachmentMessage }}</p>
-                }
-                @if (attachmentImagePreviewDataUrl) {
-                  <div class="attachment-selection-block">
-                    <figure class="attachment-selection-preview" data-testid="thread-selected-image-preview">
-                      <img [src]="attachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
-                      <figcaption class="meta">Preview вибраного зображення</figcaption>
-                    </figure>
-                    <button type="button" class="attachment-remove" (click)="clearReplyAttachment()">Видалити зображення</button>
-                  </div>
-                }
+                <app-comment-attachment-picker
+                  [message]="attachmentMessage"
+                  [imagePreviewDataUrl]="attachmentImagePreviewDataUrl"
+                  inputTestId="thread-attachment-input"
+                  previewTestId="thread-selected-image-preview"
+                  (attachmentSelected)="onAttachmentSelected($event)"
+                  (clearRequested)="clearReplyAttachment()" />
 
-                <div class="captcha-block wide">
-                  @if (captchaImageDataUrl) {
-                    <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" data-testid="thread-captcha-image" />
-                  }
-                  <label class="captcha-answer-label">
-                    CAPTCHA (цифри і букви латинського алфавіту)
-                    <input type="text" formControlName="captchaAnswer" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.captchaAnswer)" data-testid="thread-captcha-answer-input" />
-                  </label>
-                </div>
+                <app-captcha-input
+                  class="wide"
+                  [imageDataUrl]="captchaImageDataUrl"
+                  [isInvalid]="shouldHighlightInvalid(replyForm.controls.captchaAnswer)"
+                  imageTestId="thread-captcha-image"
+                  answerTestId="thread-captcha-answer-input" />
 
                 @if (captchaMessage) {
                   <p class="error wide">{{ captchaMessage }}</p>
@@ -160,19 +150,11 @@ import { FormSubmitFeedbackComponent } from '../../shared/form-submit-feedback/f
       .error { color: #b42318; }
       .meta, .attachment-meta { color: #475467; }
       .attachment-inline { margin-top: 8px; }
-      .attachment-thumb { max-width: 260px; max-height: 180px; border: 1px solid #d0d7de; border-radius: 8px; }
       .attachment-text { white-space: pre-wrap; background: #f8fafc; border: 1px solid #d9e0ec; border-radius: 8px; padding: 8px; }
-      .attachment-selection-preview { margin: 0; }
-      .attachment-selection-block { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
-      .attachment-remove { margin-top: 0; font-size: 12px; padding: 4px 8px; background: #b42318; color: #fff; border: 1px solid #912018; border-radius: 6px; cursor: pointer; }
-      .attachment-remove:hover { background: #912018; }
       .thread-node { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; margin-top: 10px; background: #fcfcfd; }
       .comment-header { display: flex; gap: 10px; flex-wrap: wrap; background: #e5e7eb; padding: 6px 8px; border-radius: 8px; margin: 0 0 8px; }
       .thread-actions { margin-top: 8px; display: flex; justify-content: flex-end; }
       .tree { list-style: none; margin: 0; padding-left: 14px; }
-      .captcha { width: 160px; height: 60px; border: 1px solid #d9e0ec; border-radius: 6px; }
-      .captcha-block { display: flex; align-items: flex-start; gap: 12px; }
-      .captcha-answer-label { flex: 1; min-width: 240px; }
       .reply-modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
       .reply-modal { width: min(760px, 100%); max-height: 92vh; overflow-y: auto; background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25); }
       .modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }

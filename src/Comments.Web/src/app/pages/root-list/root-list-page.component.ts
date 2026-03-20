@@ -15,12 +15,14 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
 import { CommentTreeComponent } from '../../shared/comment-tree/comment-tree.component';
 import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick-tags-toolbar.component';
 import { FormSubmitFeedbackComponent } from '../../shared/form-submit-feedback/form-submit-feedback.component';
+import { CommentAttachmentPickerComponent } from '../../shared/comment-attachment-picker/comment-attachment-picker.component';
+import { CaptchaInputComponent } from '../../shared/captcha-input/captcha-input.component';
 
 
 @Component({
   selector: 'app-root-list-page',
   // Тримаймо лише фактично використані standalone-імпорти без зайвих пайпів.
-  imports: [ReactiveFormsModule, CommentTreeComponent, QuickTagsToolbarComponent, FormSubmitFeedbackComponent],
+  imports: [ReactiveFormsModule, CommentTreeComponent, QuickTagsToolbarComponent, FormSubmitFeedbackComponent, CommentAttachmentPickerComponent, CaptchaInputComponent],
   template: `
     <section class="panel">
       <button class="btn-answer" type="button" (click)="openCreateModal()" data-testid="root-open-create-modal-button">Коментувати</button>
@@ -102,32 +104,20 @@ import { FormSubmitFeedbackComponent } from '../../shared/form-submit-feedback/f
                 <p class="meta">{{ previewMessage }}</p>
               }
 
-              <label class="wide">
-                Вкладення (png/jpg/gif/txt, до 1MB)
-                <input type="file" (change)="onAttachmentSelected($event)" accept=".txt,image/png,image/jpeg,image/gif,text/plain" data-testid="root-attachment-input" />
-              </label>
-              @if (attachmentMessage) {
-                <p class="meta">{{ attachmentMessage }}</p>
-              }
-              @if (attachmentImagePreviewDataUrl) {
-                <div class="attachment-selection-block">
-                  <figure class="attachment-selection-preview" data-testid="root-selected-image-preview">
-                    <img [src]="attachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
-                    <figcaption class="meta">Preview вибраного зображення</figcaption>
-                  </figure>
-                  <button type="button" class="attachment-remove" (click)="clearCreateAttachment()">Видалити зображення</button>
-                </div>
-              }
+              <app-comment-attachment-picker
+                [message]="attachmentMessage"
+                [imagePreviewDataUrl]="attachmentImagePreviewDataUrl"
+                inputTestId="root-attachment-input"
+                previewTestId="root-selected-image-preview"
+                (attachmentSelected)="onAttachmentSelected($event)"
+                (clearRequested)="clearCreateAttachment()" />
 
-              <div class="captcha-block wide">
-                @if (captchaImageDataUrl) {
-                  <img [src]="captchaImageDataUrl" alt="Captcha" class="captcha" data-testid="root-captcha-image" />
-                }
-                <label class="captcha-answer-label">
-                  CAPTCHA (цифри і букви латинського алфавіту)
-                  <input type="text" formControlName="captchaAnswer" [class.field-invalid]="shouldHighlightInvalid(createForm.controls.captchaAnswer)" data-testid="root-captcha-answer-input" />
-                </label>
-              </div>
+              <app-captcha-input
+                class="wide"
+                [imageDataUrl]="captchaImageDataUrl"
+                [isInvalid]="shouldHighlightInvalid(createForm.controls.captchaAnswer)"
+                imageTestId="root-captcha-image"
+                answerTestId="root-captcha-answer-input" />
 
               @if (captchaMessage) {
                 <p class="error wide">{{ captchaMessage }}</p>
@@ -219,32 +209,16 @@ import { FormSubmitFeedbackComponent } from '../../shared/form-submit-feedback/f
                   <p class="meta">{{ replyPreviewMessage }}</p>
                 }
 
-                <label class="wide">
-                  Вкладення (png/jpg/gif/txt, до 1MB)
-                  <input type="file" (change)="onReplyAttachmentSelected($event)" accept=".txt,image/png,image/jpeg,image/gif,text/plain" />
-                </label>
-                @if (replyAttachmentMessage) {
-                  <p class="meta">{{ replyAttachmentMessage }}</p>
-                }
-                @if (replyAttachmentImagePreviewDataUrl) {
-                  <div class="attachment-selection-block">
-                    <figure class="attachment-selection-preview">
-                      <img [src]="replyAttachmentImagePreviewDataUrl" alt="Preview вибраного зображення" class="attachment-thumb" />
-                      <figcaption class="meta">Preview вибраного зображення</figcaption>
-                    </figure>
-                    <button type="button" class="attachment-remove" (click)="clearReplyAttachment()">Видалити зображення</button>
-                  </div>
-                }
+                <app-comment-attachment-picker
+                  [message]="replyAttachmentMessage"
+                  [imagePreviewDataUrl]="replyAttachmentImagePreviewDataUrl"
+                  (attachmentSelected)="onReplyAttachmentSelected($event)"
+                  (clearRequested)="clearReplyAttachment()" />
 
-                <div class="captcha-block wide">
-                  @if (replyCaptchaImageDataUrl) {
-                    <img [src]="replyCaptchaImageDataUrl" alt="Captcha" class="captcha" />
-                  }
-                  <label class="captcha-answer-label">
-                    CAPTCHA (цифри і букви латинського алфавіту)
-                    <input type="text" formControlName="captchaAnswer" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.captchaAnswer)" />
-                  </label>
-                </div>
+                <app-captcha-input
+                  class="wide"
+                  [imageDataUrl]="replyCaptchaImageDataUrl"
+                  [isInvalid]="shouldHighlightInvalid(replyForm.controls.captchaAnswer)" />
 
                 @if (replyCaptchaMessage) {
                   <p class="error wide">{{ replyCaptchaMessage }}</p>
@@ -273,18 +247,10 @@ import { FormSubmitFeedbackComponent } from '../../shared/form-submit-feedback/f
       .thread-actions { margin-top: 8px; display: flex; justify-content: flex-end; }
       .tree { list-style: none; margin: 0; padding-left: 14px; }
       .attachment-inline { margin-top: 8px; }
-      .attachment-thumb { max-width: 260px; max-height: 180px; border: 1px solid #d0d7de; border-radius: 8px; }
       .attachment-text { white-space: pre-wrap; background: #f8fafc; border: 1px solid #d9e0ec; border-radius: 8px; padding: 8px; }
-      .attachment-selection-preview { margin: 0; }
-      .attachment-selection-block { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
-      .attachment-remove { margin-top: 0; font-size: 12px; padding: 4px 8px; background: #b42318; color: #fff; border: 1px solid #912018; border-radius: 6px; cursor: pointer; }
-      .attachment-remove:hover { background: #912018; }
       .error-list { color: #b42318; margin: 6px 0 0; }
       .form-error-top { border: 1px solid #fecdca; background: #fef3f2; border-radius: 8px; padding: 10px; }
       .field-invalid { border-color: #d92d20; box-shadow: 0 0 0 1px #d92d20 inset; }
-      .captcha { width: 160px; height: 60px; border: 1px solid #d9e0ec; border-radius: 6px; }
-      .captcha-block { display: flex; align-items: flex-start; gap: 12px; }
-      .captcha-answer-label { flex: 1; min-width: 240px; }
       .text-preview { border: 1px dashed #d0d5dd; border-radius: 8px; padding: 8px; background: #f8fafc; }
       .text-preview-title { color: #344054; font-size: 14px; margin-bottom: 6px; font-weight: 600; }
       .text-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
