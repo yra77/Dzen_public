@@ -1,4 +1,4 @@
-import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Component, OnDestroy, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
@@ -13,13 +13,13 @@ import { CommentsGraphqlApiService } from '../../core/comments-graphql-api.servi
 import { ApiErrorPresenterService, UiValidationError } from '../../core/api-error-presenter.service';
 import { environment } from '../../../environments/environment';
 import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
-import { CommentNodeCardComponent } from '../../shared/comment-node-card/comment-node-card.component';
+import { CommentTreeComponent } from '../../shared/comment-tree/comment-tree.component';
 import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick-tags-toolbar.component';
 
 
 @Component({
   selector: 'app-root-list-page',
-  imports: [DatePipe, ReactiveFormsModule, NgTemplateOutlet, CommentNodeCardComponent, QuickTagsToolbarComponent],
+  imports: [DatePipe, ReactiveFormsModule, CommentTreeComponent, QuickTagsToolbarComponent],
   template: `
     <section class="panel">
       <button class="btn-answer" type="button" (click)="openCreateModal()" data-testid="root-open-create-modal-button">Коментувати</button>
@@ -161,11 +161,16 @@ import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick
         <p>Поки що коментарів немає.</p>
       } @else {
         <ul class="comments-list" data-testid="root-comments-list">
-          @for (comment of comments; track comment.id) {
-            <li>
-              <ng-container *ngTemplateOutlet="commentTreeNode; context: { $implicit: comment }"></ng-container>
-            </li>
-          }
+          <li>
+            <app-comment-tree
+              [comments]="comments"
+              [renderText]="renderCommentText.bind(this)"
+              [resolveAttachmentUrl]="getAttachmentUrl.bind(this)"
+              [textPreviewByPath]="attachmentTextPreviewByPath"
+              [loadingPaths]="attachmentTextLoadingByPath"
+              (requestTextPreview)="loadTextAttachment($event)"
+              (replyClicked)="openReplyModal($event)" />
+          </li>
         </ul>
 
         <div class="pagination">
@@ -173,28 +178,6 @@ import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick
           <span>Сторінка {{ page }} з {{ totalPages }}</span>
           <button type="button" (click)="goToNextPage()" [disabled]="page >= totalPages || isLoading">Наступна →</button>
         </div>
-
-        <ng-template #commentTreeNode let-node>
-          <app-comment-node-card
-            [comment]="node"
-            [renderedTextHtml]="renderCommentText(node.text)"
-            [attachmentUrl]="node.attachment ? getAttachmentUrl(node.attachment.storagePath) : ''"
-            [textPreviewContent]="node.attachment ? (attachmentTextPreviewByPath[node.attachment.storagePath] ?? '') : ''"
-            [isTextPreviewLoading]="node.attachment ? attachmentTextLoadingByPath.has(node.attachment.storagePath) : false"
-            (requestTextPreview)="loadTextAttachment($event)"
-            (replyClicked)="openReplyModal($event)" />
-
-           @if ((node.replies ?? []).length > 0) {
-            <ul class="tree">
-              @for (childReply of (node.replies ?? []); track childReply.id) {
-                <li>
-                  <ng-container *ngTemplateOutlet="commentTreeNode; context: { $implicit: childReply }"></ng-container>
-                </li>
-              }
-            </ul>
-          }
-        </ng-template>
-
         @if (isReplyModalOpen) {
           <div class="reply-modal-backdrop" (click)="closeReplyModal()">
             <div class="reply-modal" (click)="$event.stopPropagation()">
