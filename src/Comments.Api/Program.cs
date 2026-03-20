@@ -16,6 +16,8 @@ using Microsoft.EntityFrameworkCore;
 using MediatR;
 using FluentValidation;
 using Microsoft.Extensions.FileProviders;
+using MassTransit;
+using Elastic.Clients.Elasticsearch;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -69,21 +71,23 @@ builder.Services.AddSingleton(elasticsearchOptions);
 
 if (elasticsearchOptions.Enabled)
 {
-    builder.Services.AddHttpClient<ElasticsearchCommentCreatedChannel>(client =>
+    // Реєструє офіційний typed-клієнт Elasticsearch для index/search операцій.
+    builder.Services.AddSingleton(sp =>
     {
-        client.BaseAddress = new Uri(elasticsearchOptions.Uri);
+        var settings = new ElasticsearchClientSettings(new Uri(elasticsearchOptions.Uri))
+            .DefaultIndex(elasticsearchOptions.IndexName);
+        return new ElasticsearchClient(settings);
     });
 
-    builder.Services.AddHttpClient<ElasticsearchCommentSearchService>(client =>
-    {
-        client.BaseAddress = new Uri(elasticsearchOptions.Uri);
-    });
+    builder.Services.AddScoped<ElasticsearchCommentCreatedChannel>();
+    builder.Services.AddScoped<ElasticsearchCommentSearchService>();
 
     // Реєструємо repository fallback навіть у режимі Elasticsearch,
     // щоб search не «падав в нуль» при тимчасовій недоступності кластера.
     builder.Services.AddScoped<RepositoryCommentSearchService>();
     builder.Services.AddScoped<ICommentCreatedChannel>(sp => sp.GetRequiredService<ElasticsearchCommentCreatedChannel>());
     builder.Services.AddScoped<ICommentSearchService, ResilientCommentSearchService>();
+    builder.Services.AddHostedService<ElasticsearchIndexInitializerHostedService>();
     builder.Services.AddHostedService<ElasticsearchBackfillHostedService>();
 }
 else
@@ -96,11 +100,62 @@ if (rabbitMqOptions.Enabled)
 {
     builder.Services.AddSingleton(rabbitMqOptions);
     builder.Services.AddSingleton(processedMessageCleanupOptions);
-    builder.Services.AddScoped<ICommentCreatedChannel, RabbitMqCommentCreatedPublisher>();
+    builder.Services.AddScoped<ICommentCreatedChannel, MassTransitCommentCreatedPublisher>();
+
+    builder.Services.AddMassTransit(configurator =>
+    {
+        configurator.AddConsumer<CommentIndexingRequestedConsumer>();
+        configurator.AddConsumer<CommentFileProcessingRequestedConsumer>();
+
+        configurator.UsingRabbitMq((context, busConfigurator) =>
+        {
+            busConfigurator.Host(rabbitMqOptions.HostName, rabbitMqOptions.Port, "/", hostConfigurator =>
+            {
+                hostConfigurator.Username(rabbitMqOptions.UserName);
+                hostConfigurator.Password(rabbitMqOptions.Password);
+            });
+
+            busConfigurator.Message<CommentIndexingRequested>(messageConfigurator =>
+            {
+                messageConfigurator.SetEntityName(rabbitMqOptions.IndexingQueueName);
+            });
+
+            busConfigurator.Message<CommentFileProcessingRequested>(messageConfigurator =>
+            {
+                messageConfigurator.SetEntityName(rabbitMqOptions.FileProcessingQueueName);
+            });
+
+            busConfigurator.Publish<CommentIndexingRequested>(publishConfigurator =>
+            {
+                publishConfigurator.ExchangeType = "direct";
+            });
+
+            busConfigurator.Publish<CommentFileProcessingRequested>(publishConfigurator =>
+            {
+                publishConfigurator.ExchangeType = "direct";
+            });
+
+            if (rabbitMqOptions.ConsumerEnabled)
+            {
+                busConfigurator.ReceiveEndpoint(rabbitMqOptions.IndexingQueueName, endpointConfigurator =>
+                {
+                    endpointConfigurator.UseMessageRetry(retryConfigurator => retryConfigurator.Interval(rabbitMqOptions.MaxRetryCount, TimeSpan.FromSeconds(2)));
+                    endpointConfigurator.UseInMemoryOutbox(context);
+                    endpointConfigurator.ConfigureConsumer<CommentIndexingRequestedConsumer>(context);
+                });
+
+                busConfigurator.ReceiveEndpoint(rabbitMqOptions.FileProcessingQueueName, endpointConfigurator =>
+                {
+                    endpointConfigurator.UseMessageRetry(retryConfigurator => retryConfigurator.Interval(rabbitMqOptions.MaxRetryCount, TimeSpan.FromSeconds(2)));
+                    endpointConfigurator.UseInMemoryOutbox(context);
+                    endpointConfigurator.ConfigureConsumer<CommentFileProcessingRequestedConsumer>(context);
+                });
+            }
+        });
+    });
 
     if (rabbitMqOptions.ConsumerEnabled)
     {
-        builder.Services.AddHostedService<RabbitMqTaskQueuesConsumerHostedService>();
         builder.Services.AddHostedService<ProcessedMessageCleanupHostedService>();
     }
 }

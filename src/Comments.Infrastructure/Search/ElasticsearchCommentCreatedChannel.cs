@@ -1,27 +1,27 @@
-using System.Text;
-using System.Text.Json;
-using Comments.Application.DTOs;
 using Comments.Application.Abstractions;
+using Comments.Application.DTOs;
+
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.Core.Indexing;
 
 namespace Comments.Infrastructure.Search;
 
 /// <summary>
-/// Канал публікації створених коментарів у Elasticsearch-індекс.
+/// Канал публікації створених коментарів у Elasticsearch-індекс через офіційний .NET client.
 /// </summary>
 public sealed class ElasticsearchCommentCreatedChannel : ICommentCreatedChannel
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
-    private readonly HttpClient _httpClient;
+    private readonly ElasticsearchClient _client;
     private readonly ElasticsearchOptions _options;
 
     /// <summary>
-    /// Ініціалізує Elasticsearch-канал із HTTP-клієнтом та налаштуваннями індексу.
+    /// Ініціалізує Elasticsearch-канал із typed client та налаштуваннями індексу.
     /// </summary>
-    /// <param name="httpClient">HTTP-клієнт для звернення до Elasticsearch API.</param>
+    /// <param name="client">Офіційний Elasticsearch .NET client.</param>
     /// <param name="options">Параметри індексації та імені індексу.</param>
-    public ElasticsearchCommentCreatedChannel(HttpClient httpClient, ElasticsearchOptions options)
+    public ElasticsearchCommentCreatedChannel(ElasticsearchClient client, ElasticsearchOptions options)
     {
-        _httpClient = httpClient;
+        _client = client;
         _options = options;
     }
 
@@ -32,22 +32,30 @@ public sealed class ElasticsearchCommentCreatedChannel : ICommentCreatedChannel
     /// <param name="cancellationToken">Токен скасування.</param>
     public async Task PublishAsync(CommentDto comment, CancellationToken cancellationToken)
     {
-        var payload = JsonSerializer.Serialize(new
-        {
-            id = comment.Id,
-            parentId = comment.ParentId,
-            userName = comment.UserName,
-            email = comment.Email,
-            homePage = comment.HomePage,
-            text = comment.Text,
-            createdAtUtc = comment.CreatedAtUtc
-        }, SerializerOptions);
+        var document = ToDocument(comment);
+        var response = await _client.IndexAsync(document, request => request
+            .Index(_options.IndexName)
+            .Id(comment.Id)
+            .Refresh(Refresh.True), cancellationToken);
 
-        using var request = new HttpRequestMessage(HttpMethod.Put, $"/{_options.IndexName}/_doc/{comment.Id}?refresh=true")
+        if (!response.IsValidResponse)
         {
-            Content = new StringContent(payload, Encoding.UTF8, "application/json")
-        };
-
-        await _httpClient.SendAsync(request, cancellationToken);
+            var error = response.ElasticsearchServerError?.ToString() ?? "unknown error";
+            throw new InvalidOperationException($"Elasticsearch index operation failed: {error}");
+        }
     }
+
+    /// <summary>
+    /// Перетворює DTO коментаря в typed документ Elasticsearch.
+    /// </summary>
+    private static CommentSearchDocument ToDocument(CommentDto comment) => new()
+    {
+        Id = comment.Id,
+        ParentId = comment.ParentId,
+        UserName = comment.UserName,
+        Email = comment.Email,
+        HomePage = comment.HomePage,
+        Text = comment.Text,
+        CreatedAtUtc = comment.CreatedAtUtc
+    };
 }

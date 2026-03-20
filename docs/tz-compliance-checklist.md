@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-20 (ітерація graphql-addreply-negative-contract).
+Останнє оновлення: 2026-03-20 (ітерація masstransit-elastic-official-client).
 
 > Документ містить лише актуальний стан реалізації, поточний план і найближчі кроки.
 
@@ -14,8 +14,8 @@
 | Entity Framework Core + SQLite | ✅ Виконано | Для `Persistence:Provider=Sqlite` використовується `UseSqlite(...)`, на старті застосовуються міграції. | Підтримувати консистентність SQLite-міграцій. |
 | GraphQL (HotChocolate) | ✅ Виконується за планом | Працює endpoint `/graphql`; CI перевіряє root query/mutation поля, негативний invalid field case, негативний `createComment` (`BAD_USER_INPUT` + `validationErrors`) і негативний `addReply` для неіснуючого `parentId`. | Зафіксувати snapshot-контракт для помилок `addReply`, щоб стабілізувати `extensions` для бізнес-помилок. |
 | CQRS + MediatR | ✅ Виконано | Команди/запити реалізовані в `Comments.Application`, валідація підключена через `ValidationBehavior`. | Додати e2e перевірки CQRS-сценаріїв. |
-| RabbitMQ (MassTransit) | ⚠️ Частково | Поточна інтеграція побудована на `RabbitMQ.Client`; MassTransit ще не інтегровано. | Міграція на MassTransit: retry, DLQ, outbox, idempotency. |
-| Elasticsearch (офіційний .NET client) | ⚠️ Частково | Пошук працює через HTTP-адаптери; є resilient fallback на repository search при збоях Elasticsearch. | Перейти на офіційний .NET client Elasticsearch + typed mapping/templates. |
+| RabbitMQ (MassTransit) | ✅ Виконано | Інтеграція переведена на MassTransit + RabbitMQ transport; producer/consumer працюють через typed contracts, увімкнені retry + error queue (DLQ), in-memory outbox і idempotency через `ProcessedMessage`. | Додати окремі інтеграційні smoke-check сценарії для транспортного контуру. |
+| Elasticsearch (офіційний .NET client) | ✅ Виконано | Search/indexing переведено на `Elastic.Clients.Elasticsearch`; додано typed document і стартовий index initializer з typed mapping, збережено resilient fallback на repository search. | Додати smoke-перевірку створення індексу та backfill у CI-оточенні з Elasticsearch. |
 | SignalR | ✅ Виконано | Працює `CommentsHub` (`/hubs/comments`) з розсилкою подій про нові коментарі. | Додати регрес-перевірки reconnect/backoff. |
 | Clean Architecture + SOLID | ✅ Базово виконано | Шари Domain/Application/Infrastructure/Api розділені, залежності винесені через абстракції. | Додати automated architecture-guard перевірки. |
 
@@ -30,26 +30,27 @@
 
 ## 2) Пріоритетний план робіт
 
-1. **P0 — Messaging:** перейти з `RabbitMQ.Client` на MassTransit (producer/consumer + retry + DLQ + outbox/idempotency).
-2. **P1 — Search:** перейти з low-level HTTP інтеграції Elasticsearch на офіційний .NET client.
-3. **P1 — Frontend/RxJS UX:** додати e2e покриття для search/list/thread flow (debounce + URL-sync + paging/sort + auto-retry).
-4. **P1 — GraphQL quality:** зафіксувати snapshot-контракт `error.extensions` для бізнес-помилок `addReply`/`createComment`.
-5. **P2 — Architecture quality:** додати автоматичні перевірки дозволених напрямків залежностей між шарами.
-6. **P2 — Build quality gates:** винести Angular warning-gate в окремий CI job і зробити його блокуючим.
+1. **P1 — Frontend/RxJS UX:** додати e2e покриття для search/list/thread flow (debounce + URL-sync + paging/sort + auto-retry).
+2. **P1 — GraphQL quality:** зафіксувати snapshot-контракт `error.extensions` для бізнес-помилок `addReply`/`createComment`.
+3. **P2 — Architecture quality:** додати автоматичні перевірки дозволених напрямків залежностей між шарами.
+4. **P2 — Build quality gates:** винести Angular warning-gate в окремий CI job і зробити його блокуючим.
 
 ## 3) Що внесено в цій ітерації
 
-- Оновлено `scripts/check-graphql-contract.sh`:
-  - збережено перевірки схеми та негативного кейсу для невідомого GraphQL поля;
-  - збережено негативний mutation-кейс `createComment` (перевірка `BAD_USER_INPUT` + `validationErrors`);
-  - додано негативний mutation-кейс `addReply` з неіснуючим `parentId`;
-  - додано перевірки очікуваних `errors[0].message` і `errors[0].path[0] == "addReply"` для доменної помилки.
-- Актуалізовано checklist: прибрано неактуальний пункт про «потрібно додати негативні кейси для addReply», оскільки вони вже інтегровані в contract-gate.
+- **RabbitMQ / MassTransit:**
+  - замінено `RabbitMQ.Client` інтеграцію на MassTransit transport для RabbitMQ;
+  - додано typed message contracts і окремі consumer-и для indexing/file-processing;
+  - налаштовано retry policy, error queue (DLQ-поведінка за замовчуванням MassTransit), in-memory outbox;
+  - збережено idempotency на стороні consumer-ів через `ProcessedMessageRepository`.
+- **Elasticsearch / official .NET client:**
+  - замінено low-level HTTP інтеграцію на `Elastic.Clients.Elasticsearch`;
+  - додано typed документ `CommentSearchDocument`;
+  - додано startup-initializer індексу з typed mapping;
+  - збережено backfill на старті та resilient fallback до repository search.
+- Актуалізовано checklist: прибрано неактуальні кроки «мігрувати на MassTransit» і «перейти на офіційний Elasticsearch client», оскільки ці роботи виконані в поточній ітерації.
 
 ## 4) Що ще треба зробити у проєкті
 
-- **P0 Messaging:** реалізувати MassTransit-інтеграцію (retry, DLQ, outbox, idempotency).
-- **P1 Search:** перевести Elasticsearch на офіційний .NET client та описати typed index mapping/templates.
 - **P1 Frontend:** додати e2e сценарії search/list/thread (debounce, URL-sync, paging/sort, retry UX).
 - **P1 GraphQL:** стабілізувати unified error-contract (`error.extensions`) для бізнес-помилок, включно з `addReply`.
 - **P2 Architecture:** впровадити автоматичну перевірку правил залежностей між шарами.

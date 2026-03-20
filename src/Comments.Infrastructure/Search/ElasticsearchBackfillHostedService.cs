@@ -1,23 +1,24 @@
-
-
 using Comments.Application.Abstractions;
+using Comments.Application.DTOs;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-
-
 namespace Comments.Infrastructure.Search;
+
+/// <summary>
+/// Hosted service для початкового backfill індексації коментарів у Elasticsearch.
+/// </summary>
 public sealed class ElasticsearchBackfillHostedService : IHostedService
 {
-
-
     private readonly IServiceProvider _serviceProvider;
     private readonly ElasticsearchOptions _options;
     private readonly ILogger<ElasticsearchBackfillHostedService> _logger;
 
-
+    /// <summary>
+    /// Ініціалізує backfill-сервіс із доступом до репозиторію коментарів та каналу індексації.
+    /// </summary>
     public ElasticsearchBackfillHostedService(
         IServiceProvider serviceProvider,
         ElasticsearchOptions options,
@@ -28,7 +29,9 @@ public sealed class ElasticsearchBackfillHostedService : IHostedService
         _logger = logger;
     }
 
-
+    /// <summary>
+    /// На старті застосунку виконує одноразову індексацію існуючих коментарів.
+    /// </summary>
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         if (!_options.BackfillOnStartup)
@@ -50,7 +53,7 @@ public sealed class ElasticsearchBackfillHostedService : IHostedService
 
         foreach (var comment in comments)
         {
-            var dto = new Comments.Application.DTOs.CommentDto(
+            var dto = new CommentDto(
                 comment.Id,
                 comment.ParentId,
                 comment.UserName,
@@ -59,7 +62,7 @@ public sealed class ElasticsearchBackfillHostedService : IHostedService
                 comment.Text,
                 comment.CreatedAtUtc,
                 null,
-                Array.Empty<Comments.Application.DTOs.CommentDto>());
+                Array.Empty<CommentDto>());
 
             await elasticChannel.PublishAsync(dto, cancellationToken);
         }
@@ -67,5 +70,8 @@ public sealed class ElasticsearchBackfillHostedService : IHostedService
         _logger.LogInformation("Elasticsearch backfill completed.");
     }
 
+    /// <summary>
+    /// Для цього сервісу додаткова логіка зупинки не потрібна.
+    /// </summary>
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }
