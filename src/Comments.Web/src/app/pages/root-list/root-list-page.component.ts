@@ -23,6 +23,7 @@ import { CommentModalLayoutComponent } from '../../shared/comment-modal-layout/c
 import { ModalCloseReason } from '../../shared/comment-modal-layout/comment-modal-layout.component';
 import { canCloseModal } from '../../shared/comment-modal-layout/modal-close.guard';
 import { buildQuickTagInsertResult, readAttachmentAsRequest } from '../../shared/comment-form/comment-form-helpers';
+import { applyServerValidationErrorsToControls, ServerFieldControlMapping, setupServerValidationReset } from '../../shared/comment-form/comment-form-server-validation';
 
 
 @Component({
@@ -228,6 +229,34 @@ export class RootListPageComponent implements OnDestroy {
 
   private signalRConnection: HubConnection | null = null;
 
+  /** Мапінг server-side полів на FormControl для root/create форми. */
+  private readonly createFormServerFieldMapping: ServerFieldControlMapping = {
+    'request.username': 'userName',
+    username: 'userName',
+    'request.email': 'email',
+    email: 'email',
+    'request.homepage': 'homePage',
+    homepage: 'homePage',
+    'request.text': 'text',
+    text: 'text',
+    'request.captchatoken': 'captchaAnswer',
+    captchatoken: 'captchaAnswer',
+    captchaanswer: 'captchaAnswer'
+  };
+
+  /** Мапінг server-side полів на FormControl для reply форми без homePage. */
+  private readonly replyFormServerFieldMapping: ServerFieldControlMapping = {
+    'request.username': 'userName',
+    username: 'userName',
+    'request.email': 'email',
+    email: 'email',
+    'request.text': 'text',
+    text: 'text',
+    'request.captchatoken': 'captchaAnswer',
+    captchatoken: 'captchaAnswer',
+    captchaanswer: 'captchaAnswer'
+  };
+
   comments: ReadonlyArray<CommentNode> = [];
   /** Поточна сторінка root-коментарів. */
   page = 1;
@@ -329,15 +358,15 @@ export class RootListPageComponent implements OnDestroy {
   }
 
   constructor() {
-    this.setupServerValidationReset(this.createForm.controls.userName);
-    this.setupServerValidationReset(this.createForm.controls.email);
-    this.setupServerValidationReset(this.createForm.controls.homePage);
-    this.setupServerValidationReset(this.createForm.controls.text);
-    this.setupServerValidationReset(this.createForm.controls.captchaAnswer);
-    this.setupServerValidationReset(this.replyForm.controls.userName);
-    this.setupServerValidationReset(this.replyForm.controls.email);
-    this.setupServerValidationReset(this.replyForm.controls.text);
-    this.setupServerValidationReset(this.replyForm.controls.captchaAnswer);
+    setupServerValidationReset(this.createForm.controls.userName);
+    setupServerValidationReset(this.createForm.controls.email);
+    setupServerValidationReset(this.createForm.controls.homePage);
+    setupServerValidationReset(this.createForm.controls.text);
+    setupServerValidationReset(this.createForm.controls.captchaAnswer);
+    setupServerValidationReset(this.replyForm.controls.userName);
+    setupServerValidationReset(this.replyForm.controls.email);
+    setupServerValidationReset(this.replyForm.controls.text);
+    setupServerValidationReset(this.replyForm.controls.captchaAnswer);
 
     this.load();
     this.reloadCaptcha();
@@ -598,7 +627,7 @@ export class RootListPageComponent implements OnDestroy {
           this.submitMessage = uiError.summary;
           this.submitValidationErrors = uiError.validationErrors;
           this.showRetryHint = uiError.canRetry;
-          this.applyServerValidationErrors(this.createForm.controls, uiError.validationErrors);
+          applyServerValidationErrorsToControls(this.createForm.controls, uiError.validationErrors, this.createFormServerFieldMapping);
           this.reloadCaptcha();
           this.isSubmitting = false;
         }
@@ -770,7 +799,7 @@ export class RootListPageComponent implements OnDestroy {
           this.replySubmitMessage = uiError.summary;
           this.replySubmitValidationErrors = uiError.validationErrors;
           this.replyShowRetryHint = uiError.canRetry;
-          this.applyServerValidationErrors(this.replyForm.controls, uiError.validationErrors);
+          applyServerValidationErrorsToControls(this.replyForm.controls, uiError.validationErrors, this.replyFormServerFieldMapping);
           this.reloadReplyCaptcha();
           this.isReplySubmitting = false;
         }
@@ -814,69 +843,6 @@ export class RootListPageComponent implements OnDestroy {
     });
   }
 
-
-  /**
-   * Позначає поля форми як помилкові на основі server-side validation ключів.
-   */
-  private applyServerValidationErrors(
-    controls: Record<string, AbstractControl>,
-    validationErrors: ReadonlyArray<UiValidationError>
-  ): void {
-    for (const validationError of validationErrors) {
-      const normalizedField = validationError.field.toLowerCase();
-      const mappedControl = this.mapServerFieldToControl(controls, normalizedField);
-      if (!mappedControl) {
-        continue;
-      }
-
-      const existingErrors = mappedControl.errors ?? {};
-      mappedControl.setErrors({ ...existingErrors, server: true });
-      mappedControl.markAsTouched();
-    }
-  }
-
-  /**
-   * Повертає FormControl для заданого server-side поля, якщо мапінг відомий.
-   */
-  private mapServerFieldToControl(
-    controls: Record<string, AbstractControl>,
-    normalizedField: string
-  ): AbstractControl | null {
-    const mapping: Record<string, string> = {
-      'request.username': 'userName',
-      username: 'userName',
-      'request.email': 'email',
-      email: 'email',
-      'request.homepage': 'homePage',
-      homepage: 'homePage',
-      'request.text': 'text',
-      text: 'text',
-      'request.captchatoken': 'captchaAnswer',
-      captchatoken: 'captchaAnswer',
-      captchaanswer: 'captchaAnswer'
-    };
-
-    const controlName = mapping[normalizedField];
-    if (!controlName) {
-      return null;
-    }
-
-    return controls[controlName] ?? null;
-  }
-
-  /**
-   * Автоматично очищає server-помилку конкретного поля при зміні його значення.
-   */
-  private setupServerValidationReset(control: AbstractControl): void {
-    control.valueChanges.subscribe(() => {
-      if (!control.errors || !control.errors['server']) {
-        return;
-      }
-
-      const { server: _server, ...restErrors } = control.errors;
-      control.setErrors(Object.keys(restErrors).length > 0 ? restErrors : null);
-    });
-  }
 
   /**
    * Ініціалізує SignalR-підписку, щоб оновлювати список при нових коментарях.
