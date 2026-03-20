@@ -85,7 +85,8 @@ if (elasticsearchOptions.Enabled)
 }
 else
 {
-    builder.Services.AddScoped<ICommentSearchService, NoOpCommentSearchService>();
+    // Фолбек на репозиторний пошук, щоб search UI працював навіть без Elasticsearch.
+    builder.Services.AddScoped<ICommentSearchService, RepositoryCommentSearchService>();
 }
 
 if (rabbitMqOptions.Enabled)
