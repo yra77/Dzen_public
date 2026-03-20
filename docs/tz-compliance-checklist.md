@@ -39,10 +39,10 @@
 
 ## 3) Що внесено в цій ітерації
 
-- У `RootListPageComponent` і `ThreadPageComponent` закріплено керування модалками через `closeRequested`: під час submit `closeMode` автоматично переходить у `disabled`, тому backdrop/Escape/close-кнопки не закривають форму до завершення запиту.
-- Додано централізовані обробники закриття модалок із guard-логікою, щоб уникнути втрати стану форми під час відправки коментаря або відповіді.
-- В `CommentModalLayoutComponent` тип причини закриття (`ModalCloseReason`) експортовано для типобезпечного перевикористання на сторінках.
-- Чекліст актуалізовано: застарілі формулювання прибрано, залишено лише поточний стан і релевантні наступні кроки.
+- Додано shared-guard `canCloseModal(...)` для централізованого правила закриття модалок у стані submit (`src/app/shared/comment-modal-layout/modal-close.guard.ts`).
+- `RootListPageComponent` переведено на єдиний API `closeCreateModal(reason, force)` / `closeReplyModal(reason, force)` з використанням `ModalCloseReason` і нового shared-guard.
+- `ThreadPageComponent` уніфіковано з root-сторінкою: закриття reply-модалки також працює через `closeReplyModal(reason, force)` + `canCloseModal(...)`.
+- `docs/tz-compliance-checklist.md` синхронізовано з поточним станом без історичних приміток, що втратили актуальність.
 
 ## 4) Що ще треба зробити у проєкті
 
