@@ -17,12 +17,14 @@ import { FormSubmitFeedbackComponent } from '../../shared/form-submit-feedback/f
 import { CommentAttachmentPickerComponent } from '../../shared/comment-attachment-picker/comment-attachment-picker.component';
 import { CaptchaInputComponent } from '../../shared/captcha-input/captcha-input.component';
 import { CommentAuthorTextFieldsComponent } from '../../shared/comment-author-text-fields/comment-author-text-fields.component';
+import { CommentModalHeaderComponent } from '../../shared/comment-modal-header/comment-modal-header.component';
+import { CommentFormActionsComponent } from '../../shared/comment-form-actions/comment-form-actions.component';
 
 
 @Component({
   selector: 'app-root-list-page',
   // Тримаймо лише фактично використані standalone-імпорти без зайвих пайпів.
-  imports: [ReactiveFormsModule, CommentTreeComponent, FormSubmitFeedbackComponent, CommentAttachmentPickerComponent, CaptchaInputComponent, CommentAuthorTextFieldsComponent],
+  imports: [ReactiveFormsModule, CommentTreeComponent, FormSubmitFeedbackComponent, CommentAttachmentPickerComponent, CaptchaInputComponent, CommentAuthorTextFieldsComponent, CommentModalHeaderComponent, CommentFormActionsComponent],
   template: `
     <section class="panel">
       <button class="btn-answer" type="button" (click)="openCreateModal()" data-testid="root-open-create-modal-button">Коментувати</button>
@@ -52,10 +54,7 @@ import { CommentAuthorTextFieldsComponent } from '../../shared/comment-author-te
       @if (isCreateModalOpen) {
         <div class="reply-modal-backdrop" (click)="closeCreateModal()">
           <div class="reply-modal" (click)="$event.stopPropagation()">
-            <div class="modal-header">
-              <h3>Новий коментар</h3>
-              <button type="button" class="modal-close-button" (click)="closeCreateModal()">Закрити</button>
-            </div>
+            <app-comment-modal-header title="Новий коментар" (closeClicked)="closeCreateModal()" />
             <form class="form-grid" [formGroup]="createForm" (ngSubmit)="submitComment()" data-testid="root-create-form">
               <app-form-submit-feedback
                 [message]="submitMessage"
@@ -100,9 +99,10 @@ import { CommentAuthorTextFieldsComponent } from '../../shared/comment-author-te
                 <p class="error wide">{{ captchaMessage }}</p>
               }
 
-              <div class="actions wide">
-                <button type="submit" [disabled]="createForm.invalid || isSubmitting || hasBlockingErrors(createForm)" data-testid="root-submit-button">Створити коментар</button>
-              </div>
+              <app-comment-form-actions
+                submitLabel="Створити коментар"
+                [submitDisabled]="createForm.invalid || isSubmitting || hasBlockingErrors(createForm)"
+                submitTestId="root-submit-button" />
             </form>
           </div>
         </div>
@@ -139,10 +139,7 @@ import { CommentAuthorTextFieldsComponent } from '../../shared/comment-author-te
         @if (isReplyModalOpen) {
           <div class="reply-modal-backdrop" (click)="closeReplyModal()">
             <div class="reply-modal" (click)="$event.stopPropagation()">
-              <div class="modal-header">
-                <h3>Нова відповідь</h3>
-                <button type="button" class="modal-close-button" (click)="closeReplyModal()">Закрити</button>
-              </div>
+              <app-comment-modal-header title="Нова відповідь" (closeClicked)="closeReplyModal()" />
               <p class="meta">Відповідь для: <strong>{{ activeReplyTarget?.userName }}</strong></p>
 
               <form class="form-grid" [formGroup]="replyForm" (ngSubmit)="submitReplyComment()">
@@ -177,9 +174,9 @@ import { CommentAuthorTextFieldsComponent } from '../../shared/comment-author-te
                   <p class="error wide">{{ replyCaptchaMessage }}</p>
                 }
 
-                <div class="actions wide">
-                  <button type="submit" [disabled]="replyForm.invalid || isReplySubmitting || hasBlockingErrors(replyForm)">Створити коментар</button>
-                </div>
+                <app-comment-form-actions
+                  submitLabel="Створити коментар"
+                  [submitDisabled]="replyForm.invalid || isReplySubmitting || hasBlockingErrors(replyForm)" />
               </form>
             </div>
           </div>
@@ -210,10 +207,6 @@ import { CommentAuthorTextFieldsComponent } from '../../shared/comment-author-te
       .text-toolbar-label { color: #344054; font-size: 14px; }
       .reply-modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
       .reply-modal { width: min(760px, 100%); max-height: 92vh; overflow-y: auto; background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25); }
-      .modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
-      .modal-header h3 { margin: 0; }
-      .modal-close-button { margin-left: auto; }
-      @media (max-width: 900px) { .actions { flex-direction: column; } }
     `
   ]
 })
