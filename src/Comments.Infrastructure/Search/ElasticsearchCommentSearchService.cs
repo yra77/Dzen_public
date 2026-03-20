@@ -55,7 +55,10 @@ public sealed class ElasticsearchCommentSearchService : ICommentSearchService
             .Select(MapHit)
             .ToArray();
 
-        var totalCount = checked((int)(response.HitsMetadata?.Total?.Value ?? 0));
+        var totalCountValue = response.HitsMetadata?.Total?.Match(
+            totalHits => totalHits.Value,
+            value => value) ?? 0;
+        var totalCount = checked((int)totalCountValue);
         return new PagedResult<CommentDto>(page, pageSize, totalCount, items);
     }
 
