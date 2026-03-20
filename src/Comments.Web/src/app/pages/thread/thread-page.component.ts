@@ -37,14 +37,13 @@ import { CommentAttachmentComponent } from '../../shared/comment-attachment/comm
           <p class="comment-header"><strong>{{ thread.userName }}</strong><span>{{ thread.email }}</span><span>{{ thread.createdAtUtc | date: 'dd.MM.yy HH:mm' }}</span></p>
           <p>{{ thread.text }}</p>
           @if (thread.attachment) {
-            <app-comment-attachment
+             <app-comment-attachment
               [attachment]="thread.attachment"
               [attachmentUrl]="getAttachmentUrl(thread.attachment.storagePath)"
               [textPreviewContent]="attachmentTextPreviewByPath[thread.attachment.storagePath] ?? ''"
               [isTextPreviewLoading]="attachmentTextLoadingByPath.has(thread.attachment.storagePath)"
               [showContentType]="true"
-              (requestTextPreview)="loadTextAttachment($event)"
-            />
+              (requestTextPreview)="loadTextAttachment($event)"/>
           }
           <div class="thread-actions">
             <button type="button" (click)="openReplyModal(thread)">Відповісти</button>
@@ -72,8 +71,7 @@ import { CommentAttachmentComponent } from '../../shared/comment-attachment/comm
                       [textPreviewContent]="attachmentTextPreviewByPath[reply.attachment.storagePath] ?? ''"
                       [isTextPreviewLoading]="attachmentTextLoadingByPath.has(reply.attachment.storagePath)"
                       [showContentType]="true"
-                      (requestTextPreview)="loadTextAttachment($event)"
-                    />
+                      (requestTextPreview)="loadTextAttachment($event)"/>
                   }
                   <div class="thread-actions">
                     <button type="button" (click)="openReplyModal(reply)">Відповісти</button>
