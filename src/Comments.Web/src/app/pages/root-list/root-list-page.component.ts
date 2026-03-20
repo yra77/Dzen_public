@@ -14,11 +14,12 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
 import { environment } from '../../../environments/environment';
 import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
 import { CommentAttachmentComponent } from '../../shared/comment-attachment/comment-attachment.component';
+import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick-tags-toolbar.component';
 
 
 @Component({
   selector: 'app-root-list-page',
-  imports: [DatePipe, ReactiveFormsModule, NgTemplateOutlet, CommentAttachmentComponent],
+  imports: [DatePipe, ReactiveFormsModule, NgTemplateOutlet, CommentAttachmentComponent, QuickTagsToolbarComponent],
   template: `
     <section class="panel">
       <button class="btn-answer" type="button" (click)="openCreateModal()" data-testid="root-open-create-modal-button">Коментувати</button>
@@ -92,12 +93,11 @@ import { CommentAttachmentComponent } from '../../shared/comment-attachment/comm
                 <p class="error wide">{{ getTextValidationMessage(createForm.controls.text) }}</p>
               }
 
-              <div class="wide text-toolbar" role="group" aria-label="Швидкі теги форматування" data-testid="root-quick-tags">
-                <span class="text-toolbar-label">Швидкі теги:</span>
-                <button type="button" (click)="insertQuickTag('i', rootTextArea)">[i]</button>
-                <button type="button" (click)="insertQuickTag('strong', rootTextArea)">[strong]</button>
-                <button type="button" (click)="insertQuickTag('code', rootTextArea)">[code]</button>
-                <button type="button" (click)="insertQuickTag('a', rootTextArea)">[a]</button>
+              <div class="wide">
+                <app-quick-tags-toolbar
+                  ariaLabel="Швидкі теги форматування"
+                  testId="root-quick-tags"
+                  (tagSelected)="insertQuickTag($event, rootTextArea)" />
               </div>
 
               @if (textPreviewHtml) {
@@ -246,12 +246,10 @@ import { CommentAttachmentComponent } from '../../shared/comment-attachment/comm
                   <p class="error wide">{{ getTextValidationMessage(replyForm.controls.text) }}</p>
                 }
 
-                <div class="wide text-toolbar" role="group" aria-label="Швидкі теги форматування для відповіді">
-                  <span class="text-toolbar-label">Швидкі теги:</span>
-                  <button type="button" (click)="insertReplyQuickTag('i', replyTextArea)">[i]</button>
-                  <button type="button" (click)="insertReplyQuickTag('strong', replyTextArea)">[strong]</button>
-                  <button type="button" (click)="insertReplyQuickTag('code', replyTextArea)">[code]</button>
-                  <button type="button" (click)="insertReplyQuickTag('a', replyTextArea)">[a]</button>
+                <div class="wide">
+                  <app-quick-tags-toolbar
+                    ariaLabel="Швидкі теги форматування для відповіді"
+                    (tagSelected)="insertReplyQuickTag($event, replyTextArea)" />
                 </div>
 
                 @if (replyTextPreviewHtml) {
