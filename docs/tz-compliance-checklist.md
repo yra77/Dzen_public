@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-20 (ітерація frontend-decomposition: shared submit-state helper).
+Останнє оновлення: 2026-03-20 (ітерація frontend-decomposition: shared preview-state helper).
 
 > Документ містить лише актуальний стан реалізації, поточний план і наступні кроки без історичних застарілих нотаток.
 
@@ -23,7 +23,7 @@
 
 | Вимога ТЗ | Статус | Поточний стан у репозиторії | Що робимо далі |
 |---|---|---|---|
-| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`, header/actions модалок — у `CommentModalHeaderComponent` та `CommentFormActionsComponent`, layout модалки (`backdrop/panel`) — у `CommentModalLayoutComponent` з уніфікованими `test-id`, `closeMode`/`closeRequested` і причинами закриття (`backdrop` / `escape` / `close-button`). | Поширити modal API на нові modal-сценарії (редагування/підтвердження дій), щоби не повертати дублювання. |
+| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`, header/actions модалок — у `CommentModalHeaderComponent` та `CommentFormActionsComponent`, layout модалки (`backdrop/panel`) — у `CommentModalLayoutComponent` з уніфікованими `test-id`, `closeMode`/`closeRequested` і причинами закриття (`backdrop` / `escape` / `close-button`). Також create/reply preview-стани уніфіковані через shared helper. | Поширити modal API на нові modal-сценарії (редагування/підтвердження дій), щоби не повертати дублювання. |
 | Apollo Client (GraphQL) | ✅ Виконано | Apollo Angular інтегровано; запити/мутації працюють через GraphQL API. | Нормалізувати cache-policy та обробку мережевих/GraphQL помилок. |
 | RxJS | ✅ Виконано | RxJS використовується в сервісах та UI-компонентах. | Уніфікувати потоки стану для сценаріїв list/thread/search/realtime. |
 | Якість збірки (Angular compiler warnings) | ⚠️ Частково | Додано скрипт `scripts/check-angular-build.sh`: production build падає при наявності `WARNING` у логах. Скрипт інтегровано в `scripts/go-no-go-check.sh` як окремий quality gate. | Додати окремий CI job, який запускає цей gate на кожному PR. |
@@ -39,16 +39,16 @@
 
 ## 3) Що внесено в цій ітерації
 
-- Додано shared helper `comment-form-submit-state.ts` для уніфікації submit/loading/error станів create/reply форм.
-- `RootListPageComponent` переведено на shared submit-state helper-и для обох модалок (create/reply), щоб прибрати дублювання reset/start/error/success сценаріїв.
-- `ThreadPageComponent` переведено на shared submit-state helper для reply-модалки, щоб узгодити поведінку submit-циклу зі сторінкою списку.
-- Checklist оновлено: прибрано неактуальні ітераційні формулювання, залишено лише поточний статус та наступні кроки.
+- Додано shared helper `comment-form-preview-state.ts` для уніфікації preview/fallback станів create/reply форм.
+- `RootListPageComponent` переведено на shared preview-state helper-и для create/reply flow, щоб прибрати дублювання `previewHtml/previewMessage` reset/success/fallback сценаріїв.
+- `ThreadPageComponent` переведено на shared preview-state helper для reply-модалки, щоб синхронізувати логіку preview/reset/fallback зі сторінкою списку.
+- Checklist синхронізовано з поточним станом фронтенд-декомпозиції без застарілих нотаток.
 
 ## 4) Що ще треба зробити у проєкті
 
 - **P0 Messaging:** перейти з поточного `RabbitMQ.Client` на MassTransit (retry, DLQ, outbox, idempotency).
 - **P1 Search:** замінити low-level HTTP інтеграцію Elasticsearch на офіційний .NET client із typed mapping/templates.
-- **P1 Frontend decomposition (продовження):** винести captcha/preview та modal-visibility стани create/reply форм у shared facade/store, щоб максимально прибрати state-дублювання з page-компонентів.
+- **P1 Frontend decomposition (продовження):** винести captcha і modal-visibility стани create/reply форм у shared facade/store, щоб максимально прибрати state-дублювання з page-компонентів (preview-state вже винесений у shared helper).
 - **P1 GraphQL quality:** додати контрактні перевірки GraphQL-операцій (позитивні + негативні кейси) у CI.
 - **P2 Architecture quality:** додати перевірки напрямків залежностей між шарами як автоматичний quality gate.
 - **P2 Build quality gates:** винести `scripts/check-angular-build.sh` в окремий CI job і зробити warning-blocking політику обов’язковою.

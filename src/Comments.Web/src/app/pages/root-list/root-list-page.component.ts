@@ -31,6 +31,12 @@ import {
   createSubmittingCommentFormState,
   createSucceededCommentFormState
 } from '../../shared/comment-form/comment-form-submit-state';
+import {
+  CommentFormPreviewState,
+  createInitialCommentFormPreviewState,
+  createResolvedCommentFormPreviewState,
+  createUnavailableCommentFormPreviewState
+} from '../../shared/comment-form/comment-form-preview-state';
 
 
 @Component({
@@ -502,19 +508,18 @@ export class RootListPageComponent implements OnDestroy {
   previewText(): void {
     const text = this.createForm.controls.text.value;
     if (!text || !text.trim()) {
-      this.textPreviewHtml = '';
-      this.previewMessage = '';
+      this.setCreatePreviewState(createInitialCommentFormPreviewState());
       return;
     }
 
     this.commentsGraphqlApi.previewComment(text).subscribe({
       next: (preview) => {
-        this.textPreviewHtml = preview;
-        this.previewMessage = '';
+        this.setCreatePreviewState(createResolvedCommentFormPreviewState(preview));
       },
       error: () => {
-        this.textPreviewHtml = '';
-        this.previewMessage = 'Preview тимчасово недоступний. Ви можете продовжити відправку коментаря без preview.';
+        this.setCreatePreviewState(
+          createUnavailableCommentFormPreviewState('Preview тимчасово недоступний. Ви можете продовжити відправку коментаря без preview.')
+        );
       }
     });
   }
@@ -614,8 +619,7 @@ export class RootListPageComponent implements OnDestroy {
             text: '',
             captchaAnswer: ''
           });
-          this.textPreviewHtml = '';
-          this.previewMessage = '';
+          this.setCreatePreviewState(createInitialCommentFormPreviewState());
           this.attachment = null;
           this.attachmentMessage = '';
           this.attachmentImagePreviewDataUrl = '';
@@ -639,8 +643,7 @@ export class RootListPageComponent implements OnDestroy {
     this.activeReplyTarget = target;
     this.isReplyModalOpen = true;
     this.setReplySubmitState(createInitialCommentFormSubmitState());
-    this.replyTextPreviewHtml = '';
-    this.replyPreviewMessage = '';
+    this.setReplyPreviewState(createInitialCommentFormPreviewState());
     this.replyAttachment = null;
     this.replyAttachmentMessage = '';
     this.replyAttachmentImagePreviewDataUrl = '';
@@ -678,19 +681,18 @@ export class RootListPageComponent implements OnDestroy {
   previewReplyText(): void {
     const text = this.replyForm.controls.text.value;
     if (!text || !text.trim()) {
-      this.replyTextPreviewHtml = '';
-      this.replyPreviewMessage = '';
+      this.setReplyPreviewState(createInitialCommentFormPreviewState());
       return;
     }
 
     this.commentsGraphqlApi.previewComment(text).subscribe({
       next: (preview) => {
-        this.replyTextPreviewHtml = preview;
-        this.replyPreviewMessage = '';
+        this.setReplyPreviewState(createResolvedCommentFormPreviewState(preview));
       },
       error: () => {
-        this.replyTextPreviewHtml = '';
-        this.replyPreviewMessage = 'Preview тимчасово недоступний. Ви можете продовжити відправку відповіді без preview.';
+        this.setReplyPreviewState(
+          createUnavailableCommentFormPreviewState('Preview тимчасово недоступний. Ви можете продовжити відправку відповіді без preview.')
+        );
       }
     });
   }
@@ -812,6 +814,22 @@ export class RootListPageComponent implements OnDestroy {
     this.replySubmitMessage = state.message;
     this.replySubmitValidationErrors = state.validationErrors;
     this.replyShowRetryHint = state.showRetryHint;
+  }
+
+  /**
+   * Оновлює preview-стан create-форми та синхронізує template-поля.
+   */
+  private setCreatePreviewState(state: CommentFormPreviewState): void {
+    this.textPreviewHtml = state.html;
+    this.previewMessage = state.message;
+  }
+
+  /**
+   * Оновлює preview-стан reply-форми та синхронізує template-поля.
+   */
+  private setReplyPreviewState(state: CommentFormPreviewState): void {
+    this.replyTextPreviewHtml = state.html;
+    this.replyPreviewMessage = state.message;
   }
 
 

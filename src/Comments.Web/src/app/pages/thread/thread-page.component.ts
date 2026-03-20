@@ -31,6 +31,12 @@ import {
   createSubmittingCommentFormState,
   createSucceededCommentFormState
 } from '../../shared/comment-form/comment-form-submit-state';
+import {
+  CommentFormPreviewState,
+  createInitialCommentFormPreviewState,
+  createResolvedCommentFormPreviewState,
+  createUnavailableCommentFormPreviewState
+} from '../../shared/comment-form/comment-form-preview-state';
 
 @Component({
   selector: 'app-thread-page',
@@ -300,19 +306,18 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
   previewText(): void {
     const text = this.replyForm.controls.text.value;
     if (!text || !text.trim()) {
-      this.textPreviewHtml = '';
-      this.previewMessage = '';
+      this.setPreviewState(createInitialCommentFormPreviewState());
       return;
     }
 
     this.commentsGraphqlApi.previewComment(text).subscribe({
       next: (preview) => {
-        this.textPreviewHtml = preview;
-        this.previewMessage = '';
+        this.setPreviewState(createResolvedCommentFormPreviewState(preview));
       },
       error: () => {
-        this.textPreviewHtml = '';
-        this.previewMessage = 'Preview тимчасово недоступний. Ви можете продовжити відправку відповіді без preview.';
+        this.setPreviewState(
+          createUnavailableCommentFormPreviewState('Preview тимчасово недоступний. Ви можете продовжити відправку відповіді без preview.')
+        );
       }
     });
   }
@@ -407,8 +412,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
         next: () => {
           this.setSubmitState(createSucceededCommentFormState('Відповідь додано.'));
           this.replyForm.reset({ userName: raw.userName, email: raw.email, text: '', captchaAnswer: '' });
-          this.textPreviewHtml = '';
-          this.previewMessage = '';
+          this.setPreviewState(createInitialCommentFormPreviewState());
           this.attachment = null;
           this.attachmentMessage = '';
           this.attachmentImagePreviewDataUrl = '';
@@ -432,6 +436,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     this.activeReplyTarget = comment;
     this.isReplyModalOpen = true;
     this.setSubmitState(createInitialCommentFormSubmitState());
+    this.setPreviewState(createInitialCommentFormPreviewState());
     this.reloadCaptcha();
   }
 
@@ -454,8 +459,7 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     this.activeReplyTarget = null;
     this.replyForm.controls.text.reset('');
     this.replyForm.controls.captchaAnswer.reset('');
-    this.textPreviewHtml = '';
-    this.previewMessage = '';
+    this.setPreviewState(createInitialCommentFormPreviewState());
     this.attachment = null;
     this.attachmentMessage = '';
     this.attachmentImagePreviewDataUrl = '';
@@ -571,6 +575,14 @@ export class ThreadPageComponent implements OnInit, OnDestroy {
     this.submitMessage = state.message;
     this.submitValidationErrors = state.validationErrors;
     this.showRetryHint = state.showRetryHint;
+  }
+
+  /**
+   * Оновлює preview-стан reply-форми та синхронізує template-поля.
+   */
+  private setPreviewState(state: CommentFormPreviewState): void {
+    this.textPreviewHtml = state.html;
+    this.previewMessage = state.message;
   }
 
 }
