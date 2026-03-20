@@ -17,11 +17,13 @@ import { FormSubmitFeedbackComponent } from '../../shared/form-submit-feedback/f
 import { CommentAttachmentPickerComponent } from '../../shared/comment-attachment-picker/comment-attachment-picker.component';
 import { CaptchaInputComponent } from '../../shared/captcha-input/captcha-input.component';
 import { CommentAuthorTextFieldsComponent } from '../../shared/comment-author-text-fields/comment-author-text-fields.component';
+import { CommentModalHeaderComponent } from '../../shared/comment-modal-header/comment-modal-header.component';
+import { CommentFormActionsComponent } from '../../shared/comment-form-actions/comment-form-actions.component';
 
 @Component({
   selector: 'app-thread-page',
   // Тримаймо лише фактично використані standalone-імпорти без зайвих пайпів.
-  imports: [ReactiveFormsModule, RouterLink, CommentNodeCardComponent, CommentTreeComponent, FormSubmitFeedbackComponent, CommentAttachmentPickerComponent, CaptchaInputComponent, CommentAuthorTextFieldsComponent],
+  imports: [ReactiveFormsModule, RouterLink, CommentNodeCardComponent, CommentTreeComponent, FormSubmitFeedbackComponent, CommentAttachmentPickerComponent, CaptchaInputComponent, CommentAuthorTextFieldsComponent, CommentModalHeaderComponent, CommentFormActionsComponent],
   template: `
     <section class="panel">
       <h2>Гілка коментаря</h2>
@@ -66,10 +68,7 @@ import { CommentAuthorTextFieldsComponent } from '../../shared/comment-author-te
         @if (isReplyModalOpen && activeReplyTarget) {
           <div class="reply-modal-backdrop" (click)="closeReplyModal()">
             <div class="reply-modal" (click)="$event.stopPropagation()">
-              <div class="modal-header">
-                <h3>Нова відповідь</h3>
-                <button type="button" class="modal-close-button" (click)="closeReplyModal()">Закрити</button>
-              </div>
+              <app-comment-modal-header title="Нова відповідь" (closeClicked)="closeReplyModal()" />
               <p class="meta">Відповідь на: <strong>{{ activeReplyTarget.userName }}</strong></p>
 
               <form class="form-grid" [formGroup]="replyForm" (ngSubmit)="submitReply()" data-testid="thread-reply-form">
@@ -114,10 +113,13 @@ import { CommentAuthorTextFieldsComponent } from '../../shared/comment-author-te
                   <p class="error wide">{{ captchaMessage }}</p>
                 }
 
-                <div class="actions wide">
-                  <button type="button" (click)="closeReplyModal()">Закрити</button>
-                  <button type="submit" [disabled]="replyForm.invalid || isSubmitting || hasBlockingErrors(replyForm)" data-testid="thread-submit-button">Створити коментар</button>
-                </div>
+                <app-comment-form-actions
+                  [showCloseButton]="true"
+                  closeLabel="Закрити"
+                  (closeClicked)="closeReplyModal()"
+                  submitLabel="Створити коментар"
+                  [submitDisabled]="replyForm.invalid || isSubmitting || hasBlockingErrors(replyForm)"
+                  submitTestId="thread-submit-button" />
               </form>
             </div>
           </div>
@@ -137,9 +139,6 @@ import { CommentAuthorTextFieldsComponent } from '../../shared/comment-author-te
       .tree { list-style: none; margin: 0; padding-left: 14px; }
       .reply-modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
       .reply-modal { width: min(760px, 100%); max-height: 92vh; overflow-y: auto; background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25); }
-      .modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
-      .modal-header h3 { margin: 0; }
-      .modal-close-button { margin-left: auto; }
       .text-preview { border: 1px dashed #d0d5dd; border-radius: 8px; padding: 8px; background: #f8fafc; }
       .text-preview-title { color: #344054; font-size: 14px; margin-bottom: 6px; font-weight: 600; }
       .text-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -147,7 +146,6 @@ import { CommentAuthorTextFieldsComponent } from '../../shared/comment-author-te
       .error-list { color: #b42318; margin: 6px 0 0; }
       .form-error-top { border: 1px solid #fecdca; background: #fef3f2; border-radius: 8px; padding: 10px; }
       .field-invalid { border-color: #d92d20; box-shadow: 0 0 0 1px #d92d20 inset; }
-      @media (max-width: 900px) { .actions { flex-direction: column; } }
     `
   ]
 })
