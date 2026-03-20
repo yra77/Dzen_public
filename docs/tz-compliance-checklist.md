@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-20 (ітерація frontend-decomposition: shared comment form helpers).
+Останнє оновлення: 2026-03-20 (ітерація frontend-decomposition: root-list shared form helpers).
 
 > Документ містить лише актуальний стан реалізації, поточний план і наступні кроки без історичних застарілих нотаток.
 
@@ -32,21 +32,21 @@
 
 1. **P0 — Messaging:** перевести RabbitMQ інтеграцію з `RabbitMQ.Client` на MassTransit (producer/consumer + retry + DLQ + outbox/idempotency).
 2. **P1 — Search:** замінити `HttpClient`-реалізацію Elasticsearch на офіційний .NET client із typed mapping/templates.
-3. **P1 — Frontend decomposition:** стандартизувати modal API у shared-компонентах (керування причинами закриття, test-id, перевикористання в нових сценаріях), зберігаючи сторінки `RootListPageComponent` і `ThreadPageComponent` тонкими.
+3. **P1 — Frontend decomposition:** завершити декомпозицію state-management для форм (виділити shared facade/store для create/reply flow), зберігаючи сторінки `RootListPageComponent` і `ThreadPageComponent` тонкими.
 4. **P1 — GraphQL quality:** додати контрактні перевірки GraphQL-запитів/мутацій (включно з негативними кейсами) у CI.
 5. **P2 — Architecture quality:** додати автоматичні перевірки дозволених напрямків залежностей між шарами.
 6. **P2 — Build quality gates:** винести `scripts/check-angular-build.sh` в CI та зробити build warning/error блокуючим критерієм.
 
 ## 3) Що внесено в цій ітерації
 
-- Додано `src/Comments.Web/src/app/shared/comment-form/comment-form-helpers.ts` із централізованими helper-ами для quick-tags та обробки attachment (валідація + читання DataURL).
-- `ThreadPageComponent` переведено на shared helper-и: прибрано дублювання логіки вставки quick-tags і читання вкладень.
-- `docs/tz-compliance-checklist.md` очищено від неактуальних нотаток і синхронізовано зі станом поточної ітерації.
+- `RootListPageComponent` переведено на shared helper-и `buildQuickTagInsertResult` та `readAttachmentAsRequest`: прибрано локальне дублювання вставки quick-tags і DataURL-читання вкладень.
+- У `RootListPageComponent` видалено приватні дублікати `insertTagIntoTextarea` і `processAttachmentSelection`; правила тепер централізовані в `shared/comment-form/comment-form-helpers.ts`.
+- `docs/tz-compliance-checklist.md` оновлено відповідно до поточного фактичного стану ітерації.
 
 ## 4) Що ще треба зробити у проєкті
 
 - Закрити вимоги ТЗ по production-ready messaging: перейти на MassTransit і додати retry/DLQ/outbox/idempotency.
 - Закрити вимоги ТЗ по стеку пошуку: перейти з low-level HTTP-обгортки на офіційний Elasticsearch .NET client.
-- Довести frontend-декомпозицію до DoD: перевести `RootListPageComponent` на нові shared helper-и форми (quick-tags/attachment), щоби повністю прибрати дублювання між list/thread сценаріями.
+- Довести frontend-декомпозицію до DoD: винести create/reply form state (submit/loading/error/captcha/preview) у shared facade/store, щоби прибрати дублювання між list/thread сценаріями.
 - Підсилити quality-gates: додати GraphQL contract checks та architecture checks у CI/CD.
 - Формалізувати DoD для ТЗ: чекліст «готово до релізу» з прив’язкою до автоперевірок.
