@@ -20,6 +20,7 @@ import {
   GET_SEARCH_COMMENTS_QUERY,
   PREVIEW_COMMENT_QUERY
 } from './comments-graphql-documents';
+import { GraphqlErrorEntry, GraphqlRequestError } from './graphql-request-error';
 
 /** GraphQL-значення enum для сортування коментарів (HotChocolate naming convention). */
 type GraphqlCommentSortField = 'CREATED_AT_UTC' | 'USER_NAME' | 'EMAIL';
@@ -187,7 +188,8 @@ export class CommentsGraphqlApiService {
     return this.httpClient.post<GraphqlResponse<TData>>(this.graphqlEndpoint, { query, variables }).pipe(
       map(response => {
         if (response.errors && response.errors.length > 0) {
-          throw new Error(response.errors.map(error => error.message).join('; '));
+          // Проксіюємо структуровані GraphQL-помилки вище у UI-слой для кращого retry/validation UX.
+          throw new GraphqlRequestError(response.errors);
         }
 
         if (!response.data) {
@@ -250,5 +252,5 @@ export class CommentsGraphqlApiService {
 
 interface GraphqlResponse<TData> {
   data?: TData;
-  errors?: Array<{ message: string }>;
+  errors?: GraphqlErrorEntry[];
 }

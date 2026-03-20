@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { GraphqlRequestError } from './graphql-request-error';
 
 /**
  * Нормалізована помилка валідації для показу у UI.
@@ -28,7 +29,28 @@ export class ApiErrorPresenterService {
    * Будує повідомлення для користувача з HttpErrorResponse.
    */
   present(error: unknown, fallbackMessage: string): UiApiError {
+    if (error instanceof GraphqlRequestError) {
+      const validationErrors = this.extractGraphqlValidationErrorsFromException(error);
+      if (validationErrors.length > 0) {
+        return {
+          summary: this.buildValidationSummary(validationErrors),
+          validationErrors,
+          canRetry: false
+        };
+      }
+
+      return {
+        summary: error.message || fallbackMessage,
+        validationErrors: [],
+        canRetry: error.canRetry
+      };
+    }
+
     if (!(error instanceof HttpErrorResponse)) {
+      if (error instanceof Error && error.message.trim().length > 0) {
+        return { summary: error.message, validationErrors: [], canRetry: false };
+      }
+
       return { summary: fallbackMessage, validationErrors: [], canRetry: false };
     }
 
@@ -128,6 +150,29 @@ export class ApiErrorPresenterService {
 
       const validationErrors = (extensions as Record<string, unknown>)['validationErrors'];
       if (!validationErrors || typeof validationErrors !== 'object' || Array.isArray(validationErrors)) {
+        return [];
+      }
+
+      return Object.entries(validationErrors).flatMap(([field, value]) => {
+        if (!Array.isArray(value)) {
+          return [];
+        }
+
+        const messages = value.filter((item): item is string => typeof item === 'string');
+        if (messages.length === 0) {
+          return [];
+        }
+
+        return [{ field, messages }];
+      });
+    });
+  }
+
+  /** Витягує validation-помилки безпосередньо з `GraphqlRequestError.errors[].extensions.validationErrors`. */
+  private extractGraphqlValidationErrorsFromException(error: GraphqlRequestError): UiValidationError[] {
+    return error.errors.flatMap((entry) => {
+      const validationErrors = entry.extensions?.validationErrors;
+      if (!validationErrors) {
         return [];
       }
 
