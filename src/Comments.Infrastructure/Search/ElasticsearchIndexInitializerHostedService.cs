@@ -1,6 +1,4 @@
 using Elastic.Clients.Elasticsearch;
-using Elastic.Clients.Elasticsearch.IndexManagement;
-
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -40,8 +38,7 @@ public sealed class ElasticsearchIndexInitializerHostedService : IHostedService
         }
 
         var createResponse = await _client.Indices.CreateAsync(_options.IndexName, descriptor => descriptor
-            .Settings(settings => settings.NumberOfShards(1).NumberOfReplicas(0))
-            .Mappings<MapOfCommentSearchDocument>(), cancellationToken);
+            .Settings(settings => settings.NumberOfShards(1).NumberOfReplicas(0)), cancellationToken);
 
         if (!createResponse.IsValidResponse)
         {
@@ -56,27 +53,4 @@ public sealed class ElasticsearchIndexInitializerHostedService : IHostedService
     /// Для цього сервісу додаткова зупинка не потрібна.
     /// </summary>
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-}
-
-/// <summary>
-/// Допоміжний typed mapping для індексу коментарів.
-/// </summary>
-internal sealed class MapOfCommentSearchDocument : TypeMapping
-{
-    /// <summary>
-    /// Конструює мапінг полів документу коментаря.
-    /// </summary>
-    public MapOfCommentSearchDocument()
-    {
-        Properties = new Properties(new Dictionary<PropertyName, IProperty>
-        {
-            [nameof(CommentSearchDocument.Id)] = new KeywordProperty(),
-            [nameof(CommentSearchDocument.ParentId)] = new KeywordProperty(),
-            [nameof(CommentSearchDocument.UserName)] = new TextProperty(),
-            [nameof(CommentSearchDocument.Email)] = new TextProperty(),
-            [nameof(CommentSearchDocument.HomePage)] = new KeywordProperty(),
-            [nameof(CommentSearchDocument.Text)] = new TextProperty(),
-            [nameof(CommentSearchDocument.CreatedAtUtc)] = new DateProperty()
-        });
-    }
 }
