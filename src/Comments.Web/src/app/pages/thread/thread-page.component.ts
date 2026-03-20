@@ -13,10 +13,11 @@ import { environment } from '../../../environments/environment';
 import { ApiErrorPresenterService, UiValidationError } from '../../core/api-error-presenter.service';
 import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
 import { CommentAttachmentComponent } from '../../shared/comment-attachment/comment-attachment.component';
+import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick-tags-toolbar.component';
 
 @Component({
   selector: 'app-thread-page',
-  imports: [DatePipe, ReactiveFormsModule, RouterLink, NgTemplateOutlet, CommentAttachmentComponent],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink, NgTemplateOutlet, CommentAttachmentComponent, QuickTagsToolbarComponent],
   template: `
     <section class="panel">
       <h2>Гілка коментаря</h2>
@@ -130,12 +131,11 @@ import { CommentAttachmentComponent } from '../../shared/comment-attachment/comm
                   <p class="error wide">{{ getTextValidationMessage(replyForm.controls.text) }}</p>
                 }
 
-                <div class="wide text-toolbar" role="group" aria-label="Швидкі теги форматування" data-testid="thread-quick-tags">
-                  <span class="text-toolbar-label">Швидкі теги:</span>
-                  <button type="button" (click)="insertQuickTag('i', threadTextArea)">[i]</button>
-                  <button type="button" (click)="insertQuickTag('strong', threadTextArea)">[strong]</button>
-                  <button type="button" (click)="insertQuickTag('code', threadTextArea)">[code]</button>
-                  <button type="button" (click)="insertQuickTag('a', threadTextArea)">[a]</button>
+                <div class="wide">
+                  <app-quick-tags-toolbar
+                    ariaLabel="Швидкі теги форматування"
+                    testId="thread-quick-tags"
+                    (tagSelected)="insertQuickTag($event, threadTextArea)" />
                 </div>
 
                 @if (textPreviewHtml) {
