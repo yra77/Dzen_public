@@ -23,7 +23,7 @@
 
 | Вимога ТЗ | Статус | Поточний стан у репозиторії | Що робимо далі |
 |---|---|---|---|
-| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, а блоки вибору вкладення/вводу CAPTCHA форми — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`. | Продовжити декомпозицію page-компонентів: винести повторно використовувані частини модальних форм (наприклад, блоки полів user/email/text) у спільні standalone-компоненти. |
+| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, а поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`. | Продовжити декомпозицію page-компонентів: винести наступні повторювані блоки (модальні header/actions) у спільні standalone-компоненти. |
 | Apollo Client (GraphQL) | ✅ Виконано | Apollo Angular інтегровано; запити/мутації працюють через GraphQL API. | Нормалізувати cache-policy та обробку мережевих/GraphQL помилок. |
 | RxJS | ✅ Виконано | RxJS використовується в сервісах та UI-компонентах. | Уніфікувати потоки стану для сценаріїв list/thread/search/realtime. |
 | Якість збірки (Angular compiler warnings) | ✅ Виконано | Поточна SPA збірка проходить без доданих у цій ітерації попереджень компілятора. | Закріпити вимогу окремим CI-кроком із fail при warning/error. |
@@ -32,21 +32,21 @@
 
 1. **P0 — Messaging:** перевести RabbitMQ інтеграцію з `RabbitMQ.Client` на MassTransit (producer/consumer + retry + DLQ + outbox/idempotency).
 2. **P1 — Search:** замінити `HttpClient`-реалізацію Elasticsearch на офіційний .NET client із typed mapping/templates.
-3. **P1 — Frontend decomposition:** продовжити винесення повторюваних UI-блоків зі сторінок `RootListPageComponent` і `ThreadPageComponent` в окремі standalone-компоненти (наступний крок: спільний блок полів user/email/text + toolbar/preview).
+3. **P1 — Frontend decomposition:** продовжити винесення повторюваних UI-блоків зі сторінок `RootListPageComponent` і `ThreadPageComponent` в окремі standalone-компоненти (наступний крок: спільні modal-header/actions, щоб прибрати залишкове дублювання).
 4. **P1 — GraphQL quality:** додати контрактні перевірки GraphQL-запитів/мутацій (включно з негативними кейсами) у CI.
 5. **P2 — Architecture quality:** додати автоматичні перевірки дозволених напрямків залежностей між шарами.
 6. **P2 — Build quality gates:** додати окремий CI-крок на fail при Angular warning/error у production-збірці.
 
 ## 3) Що внесено в цій ітерації
 
-- Продовжено frontend-декомпозицію за планом: додано standalone-компоненти `CommentAttachmentPickerComponent` (вибір вкладення + preview) та `CaptchaInputComponent` (зображення CAPTCHA + поле відповіді).
-- На сторінках `RootListPageComponent` і `ThreadPageComponent` прибрано дублювання шаблонних блоків attachment picker та CAPTCHA, замінено на спільні компоненти.
-- Актуалізовано цей чекліст: видалено застарілі примітки, залишено тільки поточний стан і актуальні наступні кроки.
+- Продовжено frontend-декомпозицію за планом: додано standalone-компонент `CommentAuthorTextFieldsComponent` для перевикористання полів `userName/email/homePage/text`, quick-tags та preview-блоку.
+- На сторінках `RootListPageComponent` і `ThreadPageComponent` прибрано дублювання шаблонів полів автора/тексту у create/reply формах, замінено на спільний компонент.
+- Актуалізовано цей чекліст: видалено неактуальні примітки, залишено поточний стан і наступні кроки.
 
 ## 4) Що ще треба зробити у проєкті
 
 - Закрити вимоги ТЗ по production-ready messaging: перейти на MassTransit і додати retry/DLQ/outbox/idempotency.
 - Закрити вимоги ТЗ по стеку пошуку: перейти з low-level HTTP-обгортки на офіційний Elasticsearch .NET client.
-- Продовжити frontend-декомпозицію: винести у shared-компоненти поля `userName/email/text` разом із quick-tags і preview, щоб прибрати залишкове дублювання root/reply форм.
+- Продовжити frontend-декомпозицію: винести у shared-компоненти залишкові модальні блоки (`modal-header`, `actions`) для root/thread форм, щоб завершити уніфікацію UI-патернів.
 - Підсилити quality-gates: додати GraphQL contract checks, architecture checks та перевірку збірки без Angular warnings у CI/CD.
 - Формалізувати DoD для ТЗ: чекліст «готово до релізу» з прив’язкою до автоперевірок.

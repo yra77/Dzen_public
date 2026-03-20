@@ -13,16 +13,16 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
 import { environment } from '../../../environments/environment';
 import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
 import { CommentTreeComponent } from '../../shared/comment-tree/comment-tree.component';
-import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick-tags-toolbar.component';
 import { FormSubmitFeedbackComponent } from '../../shared/form-submit-feedback/form-submit-feedback.component';
 import { CommentAttachmentPickerComponent } from '../../shared/comment-attachment-picker/comment-attachment-picker.component';
 import { CaptchaInputComponent } from '../../shared/captcha-input/captcha-input.component';
+import { CommentAuthorTextFieldsComponent } from '../../shared/comment-author-text-fields/comment-author-text-fields.component';
 
 
 @Component({
   selector: 'app-root-list-page',
   // Тримаймо лише фактично використані standalone-імпорти без зайвих пайпів.
-  imports: [ReactiveFormsModule, CommentTreeComponent, QuickTagsToolbarComponent, FormSubmitFeedbackComponent, CommentAttachmentPickerComponent, CaptchaInputComponent],
+  imports: [ReactiveFormsModule, CommentTreeComponent, FormSubmitFeedbackComponent, CommentAttachmentPickerComponent, CaptchaInputComponent, CommentAuthorTextFieldsComponent],
   template: `
     <section class="panel">
       <button class="btn-answer" type="button" (click)="openCreateModal()" data-testid="root-open-create-modal-button">Коментувати</button>
@@ -63,46 +63,23 @@ import { CaptchaInputComponent } from '../../shared/captcha-input/captcha-input.
                 [showRetryHint]="showRetryHint"
                 testId="root-submit-message" />
 
-              <label>
-                Ім'я
-                <input type="text" formControlName="userName" [class.field-invalid]="shouldHighlightInvalid(createForm.controls.userName)" data-testid="root-user-name-input" />
-              </label>
-
-              <label>
-                Email
-                <input type="email" formControlName="email" [class.field-invalid]="shouldHighlightInvalid(createForm.controls.email)" data-testid="root-email-input" />
-              </label>
-
-              <label>
-                Homepage
-                <input type="url" formControlName="homePage" [class.field-invalid]="shouldHighlightInvalid(createForm.controls.homePage)" placeholder="https://example.com" data-testid="root-home-page-input" />
-              </label>
-
-              <label class="wide">
-                Текст
-                <textarea #rootTextArea rows="5" formControlName="text" [class.field-invalid]="shouldHighlightInvalid(createForm.controls.text)" (input)="previewText()" data-testid="root-text-input"></textarea>
-              </label>
-              @if (getTextValidationMessage(createForm.controls.text)) {
-                <p class="error wide">{{ getTextValidationMessage(createForm.controls.text) }}</p>
-              }
-
-              <div class="wide">
-                <app-quick-tags-toolbar
-                  ariaLabel="Швидкі теги форматування"
-                  testId="root-quick-tags"
-                  (tagSelected)="insertQuickTag($event, rootTextArea)" />
-              </div>
-
-              @if (textPreviewHtml) {
-                <div class="text-preview" data-testid="root-preview-container">
-                  <div class="text-preview-title">Preview повідомлення</div>
-                  <div [innerHTML]="textPreviewHtml"></div>
-                </div>
-              }
-
-              @if (previewMessage) {
-                <p class="meta">{{ previewMessage }}</p>
-              }
+              <app-comment-author-text-fields
+                class="wide"
+                [formGroup]="createForm"
+                [shouldHighlightInvalid]="shouldHighlightInvalid.bind(this)"
+                [showHomePage]="true"
+                [textValidationMessage]="getTextValidationMessage(createForm.controls.text)"
+                [previewHtml]="textPreviewHtml"
+                [previewMessage]="previewMessage"
+                quickTagsAriaLabel="Швидкі теги форматування"
+                userNameTestId="root-user-name-input"
+                emailTestId="root-email-input"
+                homePageTestId="root-home-page-input"
+                textTestId="root-text-input"
+                quickTagsTestId="root-quick-tags"
+                previewContainerTestId="root-preview-container"
+                (textChanged)="previewText()"
+                (quickTagSelected)="insertQuickTag($event.tag, $event.textArea)" />
 
               <app-comment-attachment-picker
                 [message]="attachmentMessage"
@@ -174,40 +151,16 @@ import { CaptchaInputComponent } from '../../shared/captcha-input/captcha-input.
                   [validationErrors]="replySubmitValidationErrors"
                   [showRetryHint]="replyShowRetryHint" />
 
-                <label>
-                  Ім'я
-                  <input type="text" formControlName="userName" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.userName)" />
-                </label>
-
-                <label>
-                  Email
-                  <input type="email" formControlName="email" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.email)" />
-                </label>
-
-                <label class="wide">
-                  Текст
-                  <textarea #replyTextArea rows="5" formControlName="text" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.text)" (input)="previewReplyText()"></textarea>
-                </label>
-                @if (getTextValidationMessage(replyForm.controls.text)) {
-                  <p class="error wide">{{ getTextValidationMessage(replyForm.controls.text) }}</p>
-                }
-
-                <div class="wide">
-                  <app-quick-tags-toolbar
-                    ariaLabel="Швидкі теги форматування для відповіді"
-                    (tagSelected)="insertReplyQuickTag($event, replyTextArea)" />
-                </div>
-
-                @if (replyTextPreviewHtml) {
-                  <div class="text-preview">
-                    <div class="text-preview-title">Preview повідомлення</div>
-                    <div [innerHTML]="replyTextPreviewHtml"></div>
-                  </div>
-                }
-
-                @if (replyPreviewMessage) {
-                  <p class="meta">{{ replyPreviewMessage }}</p>
-                }
+                <app-comment-author-text-fields
+                  class="wide"
+                  [formGroup]="replyForm"
+                  [shouldHighlightInvalid]="shouldHighlightInvalid.bind(this)"
+                  [textValidationMessage]="getTextValidationMessage(replyForm.controls.text)"
+                  [previewHtml]="replyTextPreviewHtml"
+                  [previewMessage]="replyPreviewMessage"
+                  quickTagsAriaLabel="Швидкі теги форматування для відповіді"
+                  (textChanged)="previewReplyText()"
+                  (quickTagSelected)="insertReplyQuickTag($event.tag, $event.textArea)" />
 
                 <app-comment-attachment-picker
                   [message]="replyAttachmentMessage"
