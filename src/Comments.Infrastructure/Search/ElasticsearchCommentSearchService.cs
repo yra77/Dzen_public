@@ -40,8 +40,7 @@ public sealed class ElasticsearchCommentSearchService : ICommentSearchService
                     .Query(query)
                     .Fields(new[] { "text", "userName", "email" })))
             .Sort(sortDescriptor => sortDescriptor
-                .Field(fieldDescriptor => fieldDescriptor
-                    .Field(nameof(CommentSearchDocument.CreatedAtUtc))
+                .Field(field => field.CreatedAtUtc, fieldSortDescriptor => fieldSortDescriptor
                     .Order(SortOrder.Desc))), cancellationToken);
 
         if (!response.IsValidResponse)
