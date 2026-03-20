@@ -1,99 +1,80 @@
-using System.Text;
-using System.Text.Json;
 using Comments.Application.Abstractions;
 using Comments.Application.DTOs;
 
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.QueryDsl;
+using Elastic.Clients.Elasticsearch.SortOptions;
+
 namespace Comments.Infrastructure.Search;
 
+/// <summary>
+/// Сервіс пошуку коментарів через офіційний Elasticsearch .NET client.
+/// </summary>
 public sealed class ElasticsearchCommentSearchService : ICommentSearchService
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
-    private readonly HttpClient _httpClient;
+    private readonly ElasticsearchClient _client;
     private readonly ElasticsearchOptions _options;
 
-    public ElasticsearchCommentSearchService(HttpClient httpClient, ElasticsearchOptions options)
+    /// <summary>
+    /// Ініціалізує сервіс пошуку із typed client Elasticsearch.
+    /// </summary>
+    /// <param name="client">Офіційний Elasticsearch .NET client.</param>
+    /// <param name="options">Налаштування індексу.</param>
+    public ElasticsearchCommentSearchService(ElasticsearchClient client, ElasticsearchOptions options)
     {
-        _httpClient = httpClient;
+        _client = client;
         _options = options;
     }
 
-    public async Task<PagedResult<CommentDto>> SearchAsync(
-        string query,
-        int page,
-        int pageSize,
-        CancellationToken cancellationToken)
+    /// <summary>
+    /// Виконує пагінований пошук коментарів за текстовим запитом.
+    /// </summary>
+    public async Task<PagedResult<CommentDto>> SearchAsync(string query, int page, int pageSize, CancellationToken cancellationToken)
     {
         var from = (page - 1) * pageSize;
 
-        var payload = JsonSerializer.Serialize(new
-        {
-            from,
-            size = pageSize,
-            query = new
+        var response = await _client.SearchAsync<CommentSearchDocument>(request => request
+            .Index(_options.IndexName)
+            .From(from)
+            .Size(pageSize)
+            .Query(new Query(new MultiMatchQuery
             {
-                multi_match = new
-                {
-                    query,
-                    fields = new[] { "text", "userName", "email" }
-                }
-            },
-            sort = new object[]
+                Query = query,
+                Fields = new[] { "text", "userName", "email" }
+            }))
+            .Sort(new SortOptions(new FieldSort
             {
-                new { createdAtUtc = "desc" }
-            }
-        }, SerializerOptions);
+                Field = nameof(CommentSearchDocument.CreatedAtUtc),
+                Order = SortOrder.Desc
+            })), cancellationToken);
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, $"/{_options.IndexName}/_search")
+        if (!response.IsValidResponse)
         {
-            Content = new StringContent(payload, Encoding.UTF8, "application/json")
-        };
+            var error = response.ElasticsearchServerError?.ToString() ?? "unknown error";
+            throw new InvalidOperationException($"Elasticsearch search operation failed: {error}");
+        }
 
-        using var response = await _httpClient.SendAsync(request, cancellationToken);
-        response.EnsureSuccessStatusCode();
-
-        await using var content = await response.Content.ReadAsStreamAsync(cancellationToken);
-        using var document = await JsonDocument.ParseAsync(content, cancellationToken: cancellationToken);
-
-        var totalCount = document.RootElement
-            .GetProperty("hits")
-            .GetProperty("total")
-            .GetProperty("value")
-            .GetInt32();
-
-        var items = document.RootElement
-            .GetProperty("hits")
-            .GetProperty("hits")
-            .EnumerateArray()
+        var items = response.Hits
+            .Select(hit => hit.Source)
+            .Where(source => source is not null)
             .Select(MapHit)
             .ToArray();
 
+        var totalCount = checked((int)(response.HitsMetadata?.Total?.Value ?? 0));
         return new PagedResult<CommentDto>(page, pageSize, totalCount, items);
     }
 
-    private static CommentDto MapHit(JsonElement hit)
-    {
-        var source = hit.GetProperty("_source");
-        var id = source.GetProperty("id").GetGuid();
-
-        Guid? parentId = null;
-        if (source.TryGetProperty("parentId", out var parentElement) && parentElement.ValueKind != JsonValueKind.Null)
-        {
-            parentId = parentElement.GetGuid();
-        }
-
-        var homePage = source.TryGetProperty("homePage", out var homePageElement) && homePageElement.ValueKind != JsonValueKind.Null
-            ? homePageElement.GetString()
-            : null;
-
-        return new CommentDto(
-            id,
-            parentId,
-            source.GetProperty("userName").GetString() ?? string.Empty,
-            source.GetProperty("email").GetString() ?? string.Empty,
-            homePage,
-            source.GetProperty("text").GetString() ?? string.Empty,
-            source.GetProperty("createdAtUtc").GetDateTime(),
-            null,
-            Array.Empty<CommentDto>());
-    }
+    /// <summary>
+    /// Мапить typed документ Elasticsearch у DTO коментаря.
+    /// </summary>
+    private static CommentDto MapHit(CommentSearchDocument source) => new(
+        source.Id,
+        source.ParentId,
+        source.UserName,
+        source.Email,
+        source.HomePage,
+        source.Text,
+        source.CreatedAtUtc,
+        null,
+        Array.Empty<CommentDto>());
 }
