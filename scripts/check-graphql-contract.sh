@@ -118,6 +118,8 @@ validate_negative_contract_cases() {
   local endpoint="$1"
   local invalid_query_payload
   local invalid_response_file
+  local invalid_mutation_payload
+  local invalid_mutation_response_file
 
   # Unknown field must produce GraphQL validation errors without crashing endpoint.
   invalid_query_payload='{"query":"query ContractNegativeCase { unknownContractField }"}'
@@ -136,6 +138,31 @@ validate_negative_contract_cases() {
 
   if ! jq -e '.errors[0].path == null or (.errors[0].path | type == "array")' "$invalid_response_file" >/dev/null; then
     echo "ERROR: invalid field case has incompatible error.path shape." >&2
+    exit 1
+  fi
+
+  # Invalid createComment payload must be transformed into BAD_USER_INPUT with validationErrors extension.
+  invalid_mutation_payload='{"query":"mutation ContractInvalidCreateComment($input: CreateCommentInput!) { createComment(input: $input) { id } }","variables":{"input":{"parentId":null,"userName":"invalid user","email":"invalid-email","homePage":"notaurl","text":"<b>broken","captchaToken":"bad-token","attachment":null}}}'
+  invalid_mutation_response_file="$WORKDIR/negative-invalid-create-comment.json"
+  post_graphql "$endpoint" "$invalid_mutation_payload" "$invalid_mutation_response_file"
+
+  if ! jq -e '.errors | type == "array" and length > 0' "$invalid_mutation_response_file" >/dev/null; then
+    echo "ERROR: invalid createComment case did not return GraphQL errors array." >&2
+    exit 1
+  fi
+
+  if ! jq -e '.errors[0].extensions.code == "BAD_USER_INPUT"' "$invalid_mutation_response_file" >/dev/null; then
+    echo "ERROR: invalid createComment case did not return BAD_USER_INPUT code." >&2
+    exit 1
+  fi
+
+  if ! jq -e '.errors[0].extensions.validationErrors | type == "object" and length > 0' "$invalid_mutation_response_file" >/dev/null; then
+    echo "ERROR: invalid createComment case does not include validationErrors extension." >&2
+    exit 1
+  fi
+
+  if ! jq -e '.errors[0].message == "Validation failed"' "$invalid_mutation_response_file" >/dev/null; then
+    echo "ERROR: invalid createComment case does not include expected validation message." >&2
     exit 1
   fi
 
