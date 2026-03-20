@@ -283,7 +283,9 @@ export class RootListPageComponent implements OnDestroy {
     (request) => request.searchQuery
       ? this.commentsGraphqlApi.searchComments(request.searchQuery, request.page, request.pageSize)
       : this.commentsGraphqlApi.getRootComments(request.page, request.pageSize, request.sortBy, request.sortDirection),
-    (error) => this.apiErrorPresenter.present(error, 'Не вдалося завантажити коментарі.')
+    (error) => this.apiErrorPresenter.present(error, 'Не вдалося завантажити коментарі.'),
+    // Для list/search дозволяємо короткий auto-retry лише на тимчасових збоях мережі.
+    { autoRetryCount: 2, autoRetryBaseDelayMs: 600 }
   );
 
   /** Мапінг server-side полів на FormControl для root/create форми. */

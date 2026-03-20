@@ -1,4 +1,4 @@
-import { BehaviorSubject, EMPTY, Observable, Subject, Subscription, switchMap, tap, catchError } from 'rxjs';
+import { BehaviorSubject, EMPTY, Observable, Subject, Subscription, catchError, retry, switchMap, tap, timer } from 'rxjs';
 
 /**
  * Уніфікований стан завантаження даних для list/thread/search/realtime сценаріїв.
@@ -27,6 +27,25 @@ export interface CommentQueryUiError {
 /**
  * RxJS-stream оркестратор для повторного використання lifecycle завантаження.
  */
+export interface CommentQueryStateStreamOptions {
+  /**
+   * Кількість автоматичних retry-спроб для тимчасових помилок (0 = вимкнено).
+   */
+  autoRetryCount?: number;
+  /**
+   * Базова затримка для backoff між retry-спробами у мілісекундах.
+   */
+  autoRetryBaseDelayMs?: number;
+}
+
+/**
+ * Значення за замовчуванням для retry UX без агресивного перевантаження API.
+ */
+const DEFAULT_STREAM_OPTIONS: Required<CommentQueryStateStreamOptions> = {
+  autoRetryCount: 0,
+  autoRetryBaseDelayMs: 500
+};
+
 export class CommentQueryStateStream<TRequest, TData> {
   private readonly reloadRequests$ = new Subject<TRequest>();
   private readonly stateSubject = new BehaviorSubject<CommentQueryState<TData>>({
@@ -39,8 +58,14 @@ export class CommentQueryStateStream<TRequest, TData> {
 
   constructor(
     private readonly requestData: (request: TRequest) => Observable<TData>,
-    private readonly presentError: (error: unknown) => CommentQueryUiError
+    private readonly presentError: (error: unknown) => CommentQueryUiError,
+    options?: CommentQueryStateStreamOptions
   ) {
+    const streamOptions = {
+      ...DEFAULT_STREAM_OPTIONS,
+      ...options
+    };
+
     this.subscription = this.reloadRequests$
       .pipe(
         tap(() => {
@@ -54,6 +79,18 @@ export class CommentQueryStateStream<TRequest, TData> {
         }),
         switchMap((request) =>
           this.requestData(request).pipe(
+            retry({
+              count: streamOptions.autoRetryCount,
+              delay: (error, retryCount) => {
+                const uiError = this.presentError(error);
+                if (!uiError.canRetry) {
+                  throw error;
+                }
+
+                // Лінійний backoff: 500мс, 1000мс, 1500мс...
+                return timer(streamOptions.autoRetryBaseDelayMs * retryCount);
+              }
+            }),
             tap((response) => {
               this.stateSubject.next({
                 data: response,
