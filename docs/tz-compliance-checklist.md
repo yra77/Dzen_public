@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-20 (ітерація frontend-decomposition: shared form-state facade для root create/reply flow).
+Останнє оновлення: 2026-03-20 (ітерація frontend-decomposition: shared attachment-state для root/thread create/reply flow).
 
 > Документ містить лише актуальний стан реалізації, поточний план і наступні кроки без історичних застарілих нотаток.
 
@@ -23,7 +23,7 @@
 
 | Вимога ТЗ | Статус | Поточний стан у репозиторії | Що робимо далі |
 |---|---|---|---|
-| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`, header/actions модалок — у `CommentModalHeaderComponent` та `CommentFormActionsComponent`, layout модалки (`backdrop/panel`) — у `CommentModalLayoutComponent` з уніфікованими `test-id`, `closeMode`/`closeRequested` і причинами закриття (`backdrop` / `escape` / `close-button`). Для обох сторінок (`RootListPageComponent` і `ThreadPageComponent`) застосовано shared `CommentFormStateFacade` для submit/preview/captcha/modal станів. | Наступний крок: виділити shared helper/store для attachment-підстану форм, щоб прибрати залишкове дублювання між root/thread flow. |
+| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`, header/actions модалок — у `CommentModalHeaderComponent` та `CommentFormActionsComponent`, layout модалки (`backdrop/panel`) — у `CommentModalLayoutComponent` з уніфікованими `test-id`, `closeMode`/`closeRequested` і причинами закриття (`backdrop` / `escape` / `close-button`). Для обох сторінок (`RootListPageComponent` і `ThreadPageComponent`) застосовано shared `CommentFormStateFacade` та `CommentFormAttachmentState` для submit/preview/captcha/modal/attachment станів. | Наступний крок: виділити shared preview/captcha orchestration helper, щоб уніфікувати `reloadCaptcha` і preview fallback-поведінку між list/thread flow. |
 | Apollo Client (GraphQL) | ✅ Виконано | Apollo Angular інтегровано; запити/мутації працюють через GraphQL API. | Нормалізувати cache-policy та обробку мережевих/GraphQL помилок. |
 | RxJS | ✅ Виконано | RxJS використовується в сервісах та UI-компонентах. | Уніфікувати потоки стану для сценаріїв list/thread/search/realtime. |
 | Якість збірки (Angular compiler warnings) | ⚠️ Частково | Додано скрипт `scripts/check-angular-build.sh`: production build падає при наявності `WARNING` у логах. Скрипт інтегровано в `scripts/go-no-go-check.sh` як окремий quality gate. | Додати окремий CI job, який запускає цей gate на кожному PR. |
@@ -32,22 +32,22 @@
 
 1. **P0 — Messaging:** перевести RabbitMQ інтеграцію з `RabbitMQ.Client` на MassTransit (producer/consumer + retry + DLQ + outbox/idempotency).
 2. **P1 — Search:** замінити `HttpClient`-реалізацію Elasticsearch на офіційний .NET client із typed mapping/templates.
-3. **P1 — Frontend decomposition:** виділити shared attachment-state helper/store для create/reply flow і прибрати залишкове дублювання attachment/captcha reset-послідовностей між `RootListPageComponent` та `ThreadPageComponent`.
+3. **P1 — Frontend decomposition:** виділити shared preview/captcha orchestration helper для create/reply flow і прибрати дублювання `reloadCaptcha`/preview fallback-послідовностей між `RootListPageComponent` та `ThreadPageComponent`.
 4. **P1 — GraphQL quality:** додати контрактні перевірки GraphQL-запитів/мутацій (включно з негативними кейсами) у CI.
 5. **P2 — Architecture quality:** додати автоматичні перевірки дозволених напрямків залежностей між шарами.
 6. **P2 — Build quality gates:** винести `scripts/check-angular-build.sh` в CI та зробити build warning/error блокуючим критерієм.
 
 ## 3) Що внесено в цій ітерації
 
-- `RootListPageComponent` переведено на `CommentFormStateFacade` для двох форм (create + reply): submit/preview/captcha/modal стани тепер керуються через shared facade з getter-ами.
-- Прибрано локальні дублікати state-полів і синхронізаційні set*State реалізації, які вручну мапили submit/preview/captcha/modal значення у template.
-- Checklist оновлено за фактичним поточним станом і очищено від неактуальних пунктів про «незавершену» міграцію `RootListPageComponent` на facade.
+- Додано shared `CommentFormAttachmentState` (payload + status message + image preview) для уніфікації attachment-підстану.
+- `RootListPageComponent` і `ThreadPageComponent` переведено на `CommentFormAttachmentState`: прибрано дубльовані ручні reset-послідовності attachment/message/preview.
+- Checklist синхронізовано з фактичним станом: видалено неактуальний пункт про «виділити attachment-state helper/store», бо він реалізований.
 
 ## 4) Що ще треба зробити у проєкті
 
 - **P0 Messaging:** перейти з поточного `RabbitMQ.Client` на MassTransit (retry, DLQ, outbox, idempotency).
 - **P1 Search:** замінити low-level HTTP інтеграцію Elasticsearch на офіційний .NET client із typed mapping/templates.
-- **P1 Frontend decomposition (продовження):** виділити shared attachment-state helper/store (включно з очисткою attachment preview/message при submit/cancel) для `RootListPageComponent` і `ThreadPageComponent`.
+- **P1 Frontend decomposition (продовження):** виділити shared preview/captcha orchestration helper для `RootListPageComponent` і `ThreadPageComponent`, щоб прибрати дублювання `reloadCaptcha` та preview fallback-обробки.
 - **P1 GraphQL quality:** додати контрактні перевірки GraphQL-операцій (позитивні + негативні кейси) у CI.
 - **P2 Architecture quality:** додати перевірки напрямків залежностей між шарами як автоматичний quality gate.
 - **P2 Build quality gates:** винести `scripts/check-angular-build.sh` в окремий CI job і зробити warning-blocking політику обов’язковою.

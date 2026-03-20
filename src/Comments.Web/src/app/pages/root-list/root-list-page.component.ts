@@ -4,7 +4,6 @@ import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 
 import {
   CommentNode,
-  CreateCommentAttachmentRequest,
   RootCommentsSortDirection,
   RootCommentsSortField
 } from '../../core/comments.models';
@@ -43,6 +42,7 @@ import {
   createResolvedCommentFormCaptchaState
 } from '../../shared/comment-form/comment-form-ui-state';
 import { CommentFormStateFacade } from '../../shared/comment-form/comment-form-state.facade';
+import { CommentFormAttachmentState } from '../../shared/comment-form/comment-form-attachment-state';
 
 
 @Component({
@@ -295,19 +295,16 @@ export class RootListPageComponent implements OnDestroy {
   private readonly createFormState = new CommentFormStateFacade();
   /** Поточний статус realtime-з'єднання SignalR. */
   signalRStatusMessage = '';
-  attachmentMessage = '';
-  attachment: CreateCommentAttachmentRequest | null = null;
-  /** Data URL для preview вибраного зображення перед submit. */
-  attachmentImagePreviewDataUrl = '';
+  /** Shared state вкладення create-форми (payload + message + image preview). */
+  private readonly createAttachmentState = new CommentFormAttachmentState();
   /** Кеш preview-вмісту text-вкладень за storagePath; значення може бути відсутнім до першого завантаження. */
   attachmentTextPreviewByPath: Record<string, string | undefined> = {};
   attachmentTextLoadingByPath = new Set<string>();
   activeReplyTarget: CommentNode | null = null;
   /** Shared facade для reply-форми: submit/preview/captcha/modal стани. */
   private readonly replyFormState = new CommentFormStateFacade();
-  replyAttachmentMessage = '';
-  replyAttachment: CreateCommentAttachmentRequest | null = null;
-  replyAttachmentImagePreviewDataUrl = '';
+  /** Shared state вкладення reply-форми (payload + message + image preview). */
+  private readonly replyAttachmentState = new CommentFormAttachmentState();
 
   readonly createForm = this.formBuilder.nonNullable.group({
     userName: ['', [Validators.required, Validators.maxLength(100)]],
@@ -438,6 +435,16 @@ export class RootListPageComponent implements OnDestroy {
     return this.createFormState.captchaMessage;
   }
 
+  /** Повідомлення стану вкладення create-форми для attachment picker. */
+  get attachmentMessage(): string {
+    return this.createAttachmentState.statusMessage;
+  }
+
+  /** Data URL preview вибраного зображення create-форми. */
+  get attachmentImagePreviewDataUrl(): string {
+    return this.createAttachmentState.previewDataUrl;
+  }
+
   /** Прапорець активного submit у reply-формі. */
   get isReplySubmitting(): boolean {
     return this.replyFormState.isSubmitting;
@@ -481,6 +488,16 @@ export class RootListPageComponent implements OnDestroy {
   /** Повідомлення про стан CAPTCHA для reply-форми. */
   get replyCaptchaMessage(): string {
     return this.replyFormState.captchaMessage;
+  }
+
+  /** Повідомлення стану вкладення reply-форми для attachment picker. */
+  get replyAttachmentMessage(): string {
+    return this.replyAttachmentState.statusMessage;
+  }
+
+  /** Data URL preview вибраного зображення reply-форми. */
+  get replyAttachmentImagePreviewDataUrl(): string {
+    return this.replyAttachmentState.previewDataUrl;
   }
 
   /**
@@ -627,9 +644,7 @@ export class RootListPageComponent implements OnDestroy {
   async onAttachmentSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    this.attachment = null;
-    this.attachmentMessage = '';
-    this.attachmentImagePreviewDataUrl = '';
+    this.createAttachmentState.reset();
 
     if (!file) {
       return;
@@ -637,9 +652,7 @@ export class RootListPageComponent implements OnDestroy {
 
     // Використовуємо shared helper, щоб не дублювати валідацію/читання вкладень між list/thread сценаріями.
     const readResult = await readAttachmentAsRequest(file);
-    this.attachment = readResult.attachment;
-    this.attachmentMessage = readResult.message;
-    this.attachmentImagePreviewDataUrl = readResult.imagePreviewDataUrl;
+    this.createAttachmentState.applyReadResult(readResult);
 
     if (!readResult.attachment) {
       input.value = '';
@@ -649,9 +662,7 @@ export class RootListPageComponent implements OnDestroy {
 
   /** Очищає вибране вкладення у формі створення кореневого коментаря. */
   clearCreateAttachment(): void {
-    this.attachment = null;
-    this.attachmentImagePreviewDataUrl = '';
-    this.attachmentMessage = '';
+    this.createAttachmentState.reset();
   }
 
   /**
@@ -704,7 +715,7 @@ export class RootListPageComponent implements OnDestroy {
         text: raw.text,
         parentId: null,
         captchaToken: `${this.captchaChallengeId}:${raw.captchaAnswer}`,
-        attachment: this.attachment
+        attachment: this.createAttachmentState.value
       })
       .subscribe({
         next: () => {
@@ -717,9 +728,7 @@ export class RootListPageComponent implements OnDestroy {
             captchaAnswer: ''
           });
           this.setCreatePreviewState(createInitialCommentFormPreviewState());
-          this.attachment = null;
-          this.attachmentMessage = '';
-          this.attachmentImagePreviewDataUrl = '';
+          this.createAttachmentState.reset();
           this.closeCreateModal('backdrop', true);
           this.load();
           this.reloadCaptcha();
@@ -741,9 +750,7 @@ export class RootListPageComponent implements OnDestroy {
     this.setReplyModalState(createOpenedCommentFormModalState());
     this.setReplySubmitState(createInitialCommentFormSubmitState());
     this.setReplyPreviewState(createInitialCommentFormPreviewState());
-    this.replyAttachment = null;
-    this.replyAttachmentMessage = '';
-    this.replyAttachmentImagePreviewDataUrl = '';
+    this.replyAttachmentState.reset();
     this.replyForm.reset({
       userName: this.createForm.controls.userName.value,
       email: this.createForm.controls.email.value,
@@ -811,9 +818,7 @@ export class RootListPageComponent implements OnDestroy {
   async onReplyAttachmentSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    this.replyAttachment = null;
-    this.replyAttachmentMessage = '';
-    this.replyAttachmentImagePreviewDataUrl = '';
+    this.replyAttachmentState.reset();
 
     if (!file) {
       return;
@@ -821,9 +826,7 @@ export class RootListPageComponent implements OnDestroy {
 
     // Shared helper тримає однакові правила attachment для форми root-коментаря та reply-коментаря.
     const readResult = await readAttachmentAsRequest(file);
-    this.replyAttachment = readResult.attachment;
-    this.replyAttachmentMessage = readResult.message;
-    this.replyAttachmentImagePreviewDataUrl = readResult.imagePreviewDataUrl;
+    this.replyAttachmentState.applyReadResult(readResult);
 
     if (!readResult.attachment) {
       input.value = '';
@@ -833,9 +836,7 @@ export class RootListPageComponent implements OnDestroy {
 
   /** Очищає вибране вкладення у формі створення відповіді. */
   clearReplyAttachment(): void {
-    this.replyAttachment = null;
-    this.replyAttachmentImagePreviewDataUrl = '';
-    this.replyAttachmentMessage = '';
+    this.replyAttachmentState.reset();
   }
 
   /**
@@ -877,7 +878,7 @@ export class RootListPageComponent implements OnDestroy {
         text: raw.text,
         parentId: this.activeReplyTarget.id,
         captchaToken: `${this.replyCaptchaChallengeId}:${raw.captchaAnswer}`,
-        attachment: this.replyAttachment
+        attachment: this.replyAttachmentState.value
       })
       .subscribe({
         next: () => {
