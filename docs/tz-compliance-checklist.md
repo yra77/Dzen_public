@@ -26,14 +26,12 @@
 | Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` на standalone-компонентах; list/thread працюють через shared form/query/realtime state. | Додати e2e перевірки search-flow (debounce + URL-state + paging/sort). |
 | Apollo Client (GraphQL) | ✅ Виконується за планом | Запити/мутації працюють через GraphQL API; помилки уніфіковані через `GraphqlRequestError` + `ApiErrorPresenterService`. | Закріпити UX-поведінку помилок e2e-сценаріями. |
 | RxJS | ✅ Виконано | `CommentQueryStateStream` покриває list/thread/search; для search реалізовано debounce та обмежений auto-retry для transient-помилок. | Додати e2e перевірки debounce/URL-sync/auto-retry. |
-| Якість збірки (Angular compiler warnings) | ⚠️ Частково | Є скрипт `scripts/check-angular-build.sh`; він інтегрований у `scripts/go-no-go-check.sh`. | Винести Angular warning-gate в окремий блокуючий CI workflow. |
 
 ## 2) Пріоритетний план робіт
 
 1. **P1 — Frontend/RxJS UX:** додати e2e покриття для search/list/thread flow (debounce + URL-sync + paging/sort + auto-retry).
 2. **P2 — Architecture quality:** додати автоматичні перевірки дозволених напрямків залежностей між шарами.
-3. **P2 — Build quality gates:** винести Angular warning-gate в окремий CI job і зробити його блокуючим.
-4. **P2 — GraphQL quality (hardening):** додати snapshot-артефакт для `error.extensions` у негативних кейсах.
+3. **P2 — GraphQL quality (hardening):** додати snapshot-артефакт для `error.extensions` у негативних кейсах.
 
 ## 3) Що внесено в цій ітерації
 
@@ -41,11 +39,11 @@
   - додано окремий `BusinessRuleExceptionErrorFilter` для `InvalidOperationException`;
   - бізнес-помилки тепер віддаються у стабільному контракті `BAD_USER_INPUT` + `extensions.businessError`;
   - контрактна перевірка `scripts/check-graphql-contract.sh` доповнена перевірками `extensions.code` і `extensions.businessError` для `addReply` з неіснуючим `parentId`.
+- **Актуалізація checklist на запит:** видалено неактуальні пункти про Angular compiler warnings і окремий фокус на директорії `scripts/`, які не впливають на функціональність коду.
 - Checklist очищено від застарілих формулювань і оновлено до поточного стану.
 
 ## 4) Що ще треба зробити у проєкті
 
 - **P1 Frontend:** додати e2e сценарії search/list/thread (debounce, URL-sync, paging/sort, retry UX).
 - **P2 Architecture:** впровадити автоматичну перевірку правил залежностей між шарами.
-- **P2 Build quality:** зробити Angular warning-check обовʼязковим у CI.
 - **P2 GraphQL:** додати snapshot baseline для `errors[0].extensions` у негативних мутаційних кейсах.
