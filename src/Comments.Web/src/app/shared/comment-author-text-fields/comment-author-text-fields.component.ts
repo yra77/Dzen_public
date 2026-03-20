@@ -14,67 +14,69 @@ import { QuickTagsToolbarComponent } from '../quick-tags-toolbar/quick-tags-tool
   standalone: true,
   imports: [ReactiveFormsModule, QuickTagsToolbarComponent],
   template: `
-    <label>
-      Ім'я
-      <input
-        type="text"
-        formControlName="userName"
-        [class.field-invalid]="isInvalidControl('userName')"
-        [attr.data-testid]="userNameTestId || null" />
-    </label>
-
-    <label>
-      Email
-      <input
-        type="email"
-        formControlName="email"
-        [class.field-invalid]="isInvalidControl('email')"
-        [attr.data-testid]="emailTestId || null" />
-    </label>
-
-    @if (showHomePage) {
+    <div [formGroup]="formGroup">
       <label>
-        Homepage
+        Ім'я
         <input
-          type="url"
-          formControlName="homePage"
-          [class.field-invalid]="isInvalidControl('homePage')"
-          placeholder="https://example.com"
-          [attr.data-testid]="homePageTestId || null" />
+          type="text"
+          formControlName="userName"
+          [class.field-invalid]="isInvalidControl('userName')"
+          [attr.data-testid]="userNameTestId || null" />
       </label>
-    }
 
-    <label class="wide">
-      Текст
-      <textarea
-        #textArea
-        rows="5"
-        formControlName="text"
-        [class.field-invalid]="isInvalidControl('text')"
-        (input)="textChanged.emit()"
-        [attr.data-testid]="textTestId || null"></textarea>
-    </label>
-    @if (textValidationMessage) {
-      <p class="error wide">{{ textValidationMessage }}</p>
-    }
+      <label>
+        Email
+        <input
+          type="email"
+          formControlName="email"
+          [class.field-invalid]="isInvalidControl('email')"
+          [attr.data-testid]="emailTestId || null" />
+      </label>
 
-    <div class="wide">
-      <app-quick-tags-toolbar
-        [ariaLabel]="quickTagsAriaLabel"
-        [testId]="quickTagsTestId"
-        (tagSelected)="emitQuickTagSelection($event, textArea)" />
-    </div>
+      @if (showHomePage) {
+        <label>
+          Homepage
+          <input
+            type="url"
+            formControlName="homePage"
+            [class.field-invalid]="isInvalidControl('homePage')"
+            placeholder="https://example.com"
+            [attr.data-testid]="homePageTestId || null" />
+        </label>
+      }
 
-    @if (previewHtml) {
-      <div class="text-preview" [attr.data-testid]="previewContainerTestId || null">
-        <div class="text-preview-title">Preview повідомлення</div>
-        <div [innerHTML]="previewHtml"></div>
+      <label class="wide">
+        Текст
+        <textarea
+          #textArea
+          rows="5"
+          formControlName="text"
+          [class.field-invalid]="isInvalidControl('text')"
+          (input)="textChanged.emit()"
+          [attr.data-testid]="textTestId || null"></textarea>
+      </label>
+      @if (textValidationMessage) {
+        <p class="error wide">{{ textValidationMessage }}</p>
+      }
+
+      <div class="wide">
+        <app-quick-tags-toolbar
+          [ariaLabel]="quickTagsAriaLabel"
+          [testId]="quickTagsTestId"
+          (tagSelected)="emitQuickTagSelection($event, textArea)" />
       </div>
-    }
 
-    @if (previewMessage) {
-      <p class="meta">{{ previewMessage }}</p>
-    }
+      @if (previewHtml) {
+        <div class="text-preview" [attr.data-testid]="previewContainerTestId || null">
+          <div class="text-preview-title">Preview повідомлення</div>
+          <div [innerHTML]="previewHtml"></div>
+        </div>
+      }
+
+      @if (previewMessage) {
+        <p class="meta">{{ previewMessage }}</p>
+      }
+    </div>
   `,
   styles: [
     `
