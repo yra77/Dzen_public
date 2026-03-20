@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-20 (ітерація frontend-rxjs-state: search flow у shared stream + realtime fallback у search-mode).
+Останнє оновлення: 2026-03-20 (ітерація frontend-rxjs-state: debounce + URL-sync для search/list стану).
 
 > Документ містить лише актуальний стан реалізації, поточний план і наступні кроки без історичних застарілих нотаток.
 
@@ -23,33 +23,32 @@
 
 | Вимога ТЗ | Статус | Поточний стан у репозиторії | Що робимо далі |
 |---|---|---|---|
-| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`, header/actions модалок — у `CommentModalHeaderComponent` та `CommentFormActionsComponent`, layout модалки (`backdrop/panel`) — у `CommentModalLayoutComponent` з уніфікованими `test-id`, `closeMode`/`closeRequested` і причинами закриття (`backdrop` / `escape` / `close-button`). Для обох сторінок (`RootListPageComponent` і `ThreadPageComponent`) застосовано shared `CommentFormStateFacade`, `CommentFormAttachmentState`, shared `CommentQueryStateStream` і orchestration helpers (`refreshCommentPreview`, `reloadCommentCaptcha`, `runCommentSubmitWorkflow`) для submit/preview/captcha/modal/attachment/load станів; для root-list додано search UI + search/list unified state через той самий stream; realtime channel використовує локальний merge payload у list/thread, а у search-mode переходить на безпечний reload. | Наступний крок: додати debounce + синхронізацію search-параметрів з URL та покрити це e2e-тестами. |
+| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`, header/actions модалок — у `CommentModalHeaderComponent` та `CommentFormActionsComponent`, layout модалки (`backdrop/panel`) — у `CommentModalLayoutComponent` з уніфікованими `test-id`, `closeMode`/`closeRequested` і причинами закриття (`backdrop` / `escape` / `close-button`). Для обох сторінок (`RootListPageComponent` і `ThreadPageComponent`) застосовано shared `CommentFormStateFacade`, `CommentFormAttachmentState`, shared `CommentQueryStateStream` і orchestration helpers (`refreshCommentPreview`, `reloadCommentCaptcha`, `runCommentSubmitWorkflow`) для submit/preview/captcha/modal/attachment/load станів; для root-list додано search UI + search/list unified state через той самий stream, debounce для input-пошуку та URL-sync (`page/sort/query`) для reload/back-forward; realtime channel використовує локальний merge payload у list/thread, а у search-mode переходить на безпечний reload. | Наступний крок: покрити search flow e2e-тестами (debounce + URL-state + paging/sort). |
 | Apollo Client (GraphQL) | ✅ Виконано | Apollo Angular інтегровано; запити/мутації працюють через GraphQL API. | Нормалізувати cache-policy та обробку мережевих/GraphQL помилок. |
-| RxJS | ✅ Виконано | RxJS використовується в сервісах та UI-компонентах; `CommentQueryStateStream` вже покриває list/thread/search/realtime-load сценарії. | Додати URL-synced state та debounce/retry політику для search UX. |
+| RxJS | ✅ Виконано | RxJS використовується в сервісах та UI-компонентах; `CommentQueryStateStream` покриває list/thread/search/realtime-load сценарії, а root-search має debounced input-stream через `Subject + debounceTime + distinctUntilChanged`. | Додати e2e перевірки debounce-логіки та UX-політики retry для search-запитів. |
 | Якість збірки (Angular compiler warnings) | ⚠️ Частково | Додано скрипт `scripts/check-angular-build.sh`: production build падає при наявності `WARNING` у логах. Скрипт інтегровано в `scripts/go-no-go-check.sh` як окремий quality gate. | Додати окремий CI job, який запускає цей gate на кожному PR. |
 
 ## 2) Пріоритетний план робіт
 
 1. **P0 — Messaging:** перевести RabbitMQ інтеграцію з `RabbitMQ.Client` на MassTransit (producer/consumer + retry + DLQ + outbox/idempotency).
 2. **P1 — Search:** замінити `HttpClient`-реалізацію Elasticsearch на офіційний .NET client із typed mapping/templates.
-3. **P1 — Frontend/RxJS state UX:** додати debounce, URL-sync і e2e покриття для search flow у shared state-stream.
+3. **P1 — Frontend/RxJS state UX:** завершити e2e покриття для search flow (debounce + URL-sync + paging/sort сценарії).
 4. **P1 — GraphQL quality:** додати контрактні перевірки GraphQL-запитів/мутацій (включно з негативними кейсами) у CI.
 5. **P2 — Architecture quality:** додати автоматичні перевірки дозволених напрямків залежностей між шарами.
 6. **P2 — Build quality gates:** винести `scripts/check-angular-build.sh` в CI та зробити build warning/error блокуючим критерієм.
 
 ## 3) Що внесено в цій ітерації
 
-- У `comments-graphql-documents.ts` додано `GET_SEARCH_COMMENTS_QUERY` із тими самими tree fragments, що й у list/thread запитах.
-- У `CommentsGraphqlApiService` додано `searchComments(query, page, pageSize)` з нормалізацією payload до `PagedCommentsResponse`.
-- `RootListPageComponent` переведено на unified request-контракт (`list + search`) у `CommentQueryStateStream`; додано search UI (input + submit + reset) і пагінацію в search-mode.
-- Для realtime на root-сторінці: у звичайному list-mode лишається локальний merge, у search-mode використовується гарантовано коректний fallback `load()`.
-- Checklist очищено від застарілої нотатки «додати search flow у shared stream», бо цей крок вже реалізовано.
+- У `RootListPageComponent` додано debounced search-input поток (`Subject + debounceTime + distinctUntilChanged`) без API-виклику на кожен символ.
+- У `RootListPageComponent` додано URL-sync через query params (`page`, `sortBy`, `sortDirection`, `query`) із відновленням стану під час першого завантаження.
+- Логіку пошуку узгоджено між enter/submit/reset сценаріями: сторінка скидається на `1`, стан синхронізується в URL, далі виконується єдиний `load()`.
+- Checklist очищено від застарілої нотатки про «майбутнє додавання debounce + URL-sync», оскільки цей крок уже реалізований.
 
 ## 4) Що ще треба зробити у проєкті
 
 - **P0 Messaging:** перейти з поточного `RabbitMQ.Client` на MassTransit (retry, DLQ, outbox, idempotency).
 - **P1 Search:** замінити low-level HTTP інтеграцію Elasticsearch на офіційний .NET client із typed mapping/templates.
-- **P1 Frontend/RxJS UX:** додати debounce і URL-sync для search, щоб стан пошуку зберігався при reload/back-forward навігації.
+- **P1 Frontend/RxJS UX:** додати e2e перевірки debounce + URL-sync для search, щоб закріпити поведінку в CI.
 - **P1 GraphQL quality:** додати контрактні перевірки GraphQL-операцій (позитивні + негативні кейси) у CI.
 - **P2 Architecture quality:** додати перевірки напрямків залежностей між шарами як автоматичний quality gate.
 - **P2 Build quality gates:** винести `scripts/check-angular-build.sh` в окремий CI job і зробити warning-blocking політику обов’язковою.
