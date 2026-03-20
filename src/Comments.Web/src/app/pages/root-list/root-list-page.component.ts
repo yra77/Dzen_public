@@ -37,6 +37,15 @@ import {
   createResolvedCommentFormPreviewState,
   createUnavailableCommentFormPreviewState
 } from '../../shared/comment-form/comment-form-preview-state';
+import {
+  CommentFormCaptchaState,
+  CommentFormModalState,
+  createClosedCommentFormModalState,
+  createFailedCommentFormCaptchaState,
+  createInitialCommentFormCaptchaState,
+  createOpenedCommentFormModalState,
+  createResolvedCommentFormCaptchaState
+} from '../../shared/comment-form/comment-form-ui-state';
 
 
 @Component({
@@ -289,10 +298,7 @@ export class RootListPageComponent implements OnDestroy {
   submitMessage = '';
   submitValidationErrors: ReadonlyArray<UiValidationError> = [];
   showRetryHint = false;
-  captchaChallengeId = '';
-  captchaImageDataUrl = '';
-  /** Повідомлення про помилку завантаження CAPTCHA. */
-  captchaMessage = '';
+  private createCaptchaState: CommentFormCaptchaState = createInitialCommentFormCaptchaState();
   textPreviewHtml = '';
   /** Повідомлення про fallback-стан, коли preview тимчасово недоступний. */
   previewMessage = '';
@@ -306,15 +312,13 @@ export class RootListPageComponent implements OnDestroy {
   attachmentTextPreviewByPath: Record<string, string | undefined> = {};
   attachmentTextLoadingByPath = new Set<string>();
   activeReplyTarget: CommentNode | null = null;
-  isReplyModalOpen = false;
-  isCreateModalOpen = false;
+  private createModalState: CommentFormModalState = createClosedCommentFormModalState();
+  private replyModalState: CommentFormModalState = createClosedCommentFormModalState();
   isReplySubmitting = false;
   replySubmitMessage = '';
   replySubmitValidationErrors: ReadonlyArray<UiValidationError> = [];
   replyShowRetryHint = false;
-  replyCaptchaChallengeId = '';
-  replyCaptchaImageDataUrl = '';
-  replyCaptchaMessage = '';
+  private replyCaptchaState: CommentFormCaptchaState = createInitialCommentFormCaptchaState();
   replyTextPreviewHtml = '';
   replyPreviewMessage = '';
   replyAttachmentMessage = '';
@@ -386,6 +390,46 @@ export class RootListPageComponent implements OnDestroy {
     this.initializeSignalR();
   }
 
+  /** Прапорець видимості create-модалки для template. */
+  get isCreateModalOpen(): boolean {
+    return this.createModalState.isOpen;
+  }
+
+  /** Прапорець видимості reply-модалки для template. */
+  get isReplyModalOpen(): boolean {
+    return this.replyModalState.isOpen;
+  }
+
+  /** Активний challenge id CAPTCHA для create-форми. */
+  get captchaChallengeId(): string {
+    return this.createCaptchaState.challengeId;
+  }
+
+  /** Data URL CAPTCHA для create-форми. */
+  get captchaImageDataUrl(): string {
+    return this.createCaptchaState.imageDataUrl;
+  }
+
+  /** Повідомлення про стан CAPTCHA для create-форми. */
+  get captchaMessage(): string {
+    return this.createCaptchaState.message;
+  }
+
+  /** Активний challenge id CAPTCHA для reply-форми. */
+  get replyCaptchaChallengeId(): string {
+    return this.replyCaptchaState.challengeId;
+  }
+
+  /** Data URL CAPTCHA для reply-форми. */
+  get replyCaptchaImageDataUrl(): string {
+    return this.replyCaptchaState.imageDataUrl;
+  }
+
+  /** Повідомлення про стан CAPTCHA для reply-форми. */
+  get replyCaptchaMessage(): string {
+    return this.replyCaptchaState.message;
+  }
+
   /**
    * Коректно завершує SignalR-з'єднання при знищенні компонента.
    */
@@ -400,7 +444,7 @@ export class RootListPageComponent implements OnDestroy {
    * Відкриває модальне вікно створення кореневого коментаря.
    */
   openCreateModal(): void {
-    this.isCreateModalOpen = true;
+    this.setCreateModalState(createOpenedCommentFormModalState());
     this.setCreateSubmitState(createInitialCommentFormSubmitState());
     this.reloadCaptcha();
   }
@@ -420,7 +464,7 @@ export class RootListPageComponent implements OnDestroy {
       return;
     }
 
-    this.isCreateModalOpen = false;
+    this.setCreateModalState(createClosedCommentFormModalState());
   }
 
   /**
@@ -572,17 +616,17 @@ export class RootListPageComponent implements OnDestroy {
    * Перезавантажує CAPTCHA для форми створення.
    */
   reloadCaptcha(): void {
-    this.captchaMessage = '';
+    this.setCreateCaptchaState(createInitialCommentFormCaptchaState());
 
     this.commentsGraphqlApi.getCaptcha().subscribe({
       next: (response) => {
-        this.captchaChallengeId = response.challengeId;
-        this.captchaImageDataUrl = `data:${response.mimeType};base64,${response.imageBase64}`;
-        this.captchaMessage = '';
+        this.setCreateCaptchaState(
+          createResolvedCommentFormCaptchaState(response.challengeId, `data:${response.mimeType};base64,${response.imageBase64}`)
+        );
       },
       error: (error) => {
         const uiError = this.apiErrorPresenter.present(error, 'Не вдалося завантажити CAPTCHA.');
-        this.captchaMessage = uiError.summary;
+        this.setCreateCaptchaState(createFailedCommentFormCaptchaState(uiError.summary));
       }
     });
   }
@@ -641,7 +685,7 @@ export class RootListPageComponent implements OnDestroy {
    */
   openReplyModal(target: CommentNode): void {
     this.activeReplyTarget = target;
-    this.isReplyModalOpen = true;
+    this.setReplyModalState(createOpenedCommentFormModalState());
     this.setReplySubmitState(createInitialCommentFormSubmitState());
     this.setReplyPreviewState(createInitialCommentFormPreviewState());
     this.replyAttachment = null;
@@ -671,7 +715,7 @@ export class RootListPageComponent implements OnDestroy {
       return;
     }
 
-    this.isReplyModalOpen = false;
+    this.setReplyModalState(createClosedCommentFormModalState());
     this.activeReplyTarget = null;
   }
 
@@ -745,16 +789,17 @@ export class RootListPageComponent implements OnDestroy {
    * Перезавантажує CAPTCHA для модального вікна відповіді.
    */
   reloadReplyCaptcha(): void {
-    this.replyCaptchaMessage = '';
+    this.setReplyCaptchaState(createInitialCommentFormCaptchaState());
 
     this.commentsGraphqlApi.getCaptcha().subscribe({
       next: (response) => {
-        this.replyCaptchaChallengeId = response.challengeId;
-        this.replyCaptchaImageDataUrl = `data:${response.mimeType};base64,${response.imageBase64}`;
+        this.setReplyCaptchaState(
+          createResolvedCommentFormCaptchaState(response.challengeId, `data:${response.mimeType};base64,${response.imageBase64}`)
+        );
       },
       error: (error) => {
         const uiError = this.apiErrorPresenter.present(error, 'Не вдалося завантажити CAPTCHA для відповіді.');
-        this.replyCaptchaMessage = uiError.summary;
+        this.setReplyCaptchaState(createFailedCommentFormCaptchaState(uiError.summary));
       }
     });
   }
@@ -830,6 +875,34 @@ export class RootListPageComponent implements OnDestroy {
   private setReplyPreviewState(state: CommentFormPreviewState): void {
     this.replyTextPreviewHtml = state.html;
     this.replyPreviewMessage = state.message;
+  }
+
+  /**
+   * Оновлює UI-стан видимості create-модалки.
+   */
+  private setCreateModalState(state: CommentFormModalState): void {
+    this.createModalState = state;
+  }
+
+  /**
+   * Оновлює UI-стан видимості reply-модалки.
+   */
+  private setReplyModalState(state: CommentFormModalState): void {
+    this.replyModalState = state;
+  }
+
+  /**
+   * Оновлює CAPTCHA-стан create-форми.
+   */
+  private setCreateCaptchaState(state: CommentFormCaptchaState): void {
+    this.createCaptchaState = state;
+  }
+
+  /**
+   * Оновлює CAPTCHA-стан reply-форми.
+   */
+  private setReplyCaptchaState(state: CommentFormCaptchaState): void {
+    this.replyCaptchaState = state;
   }
 
 

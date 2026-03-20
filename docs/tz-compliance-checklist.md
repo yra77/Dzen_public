@@ -1,6 +1,6 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-20 (ітерація frontend-decomposition: shared preview-state helper).
+Останнє оновлення: 2026-03-20 (ітерація frontend-decomposition: shared preview + modal/captcha ui-state helpers).
 
 > Документ містить лише актуальний стан реалізації, поточний план і наступні кроки без історичних застарілих нотаток.
 
@@ -23,7 +23,7 @@
 
 | Вимога ТЗ | Статус | Поточний стан у репозиторії | Що робимо далі |
 |---|---|---|---|
-| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`, header/actions модалок — у `CommentModalHeaderComponent` та `CommentFormActionsComponent`, layout модалки (`backdrop/panel`) — у `CommentModalLayoutComponent` з уніфікованими `test-id`, `closeMode`/`closeRequested` і причинами закриття (`backdrop` / `escape` / `close-button`). Також create/reply preview-стани уніфіковані через shared helper. | Поширити modal API на нові modal-сценарії (редагування/підтвердження дій), щоби не повертати дублювання. |
+| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення перегляду — у `CommentAttachmentComponent`, submit-помилки форм — у `FormSubmitFeedbackComponent`, блоки attachment/CAPTCHA — у `CommentAttachmentPickerComponent` і `CaptchaInputComponent`, поля автора+тексту+quick-tags+preview — у `CommentAuthorTextFieldsComponent`, header/actions модалок — у `CommentModalHeaderComponent` та `CommentFormActionsComponent`, layout модалки (`backdrop/panel`) — у `CommentModalLayoutComponent` з уніфікованими `test-id`, `closeMode`/`closeRequested` і причинами закриття (`backdrop` / `escape` / `close-button`). Create/reply preview-стани і modal/captcha UI-стани уніфіковані через shared helper-и. | Винести next-step: shared facade/store для зменшення imperative-коду в page-компонентах (після уніфікації helper-рівня). |
 | Apollo Client (GraphQL) | ✅ Виконано | Apollo Angular інтегровано; запити/мутації працюють через GraphQL API. | Нормалізувати cache-policy та обробку мережевих/GraphQL помилок. |
 | RxJS | ✅ Виконано | RxJS використовується в сервісах та UI-компонентах. | Уніфікувати потоки стану для сценаріїв list/thread/search/realtime. |
 | Якість збірки (Angular compiler warnings) | ⚠️ Частково | Додано скрипт `scripts/check-angular-build.sh`: production build падає при наявності `WARNING` у логах. Скрипт інтегровано в `scripts/go-no-go-check.sh` як окремий quality gate. | Додати окремий CI job, який запускає цей gate на кожному PR. |
@@ -32,7 +32,7 @@
 
 1. **P0 — Messaging:** перевести RabbitMQ інтеграцію з `RabbitMQ.Client` на MassTransit (producer/consumer + retry + DLQ + outbox/idempotency).
 2. **P1 — Search:** замінити `HttpClient`-реалізацію Elasticsearch на офіційний .NET client із typed mapping/templates.
-3. **P1 — Frontend decomposition:** завершити декомпозицію state-management для форм (виділити shared facade/store для create/reply flow), зберігаючи сторінки `RootListPageComponent` і `ThreadPageComponent` тонкими.
+3. **P1 — Frontend decomposition:** завершити декомпозицію state-management для форм (виділити shared facade/store для create/reply flow), зберігаючи сторінки `RootListPageComponent` і `ThreadPageComponent` тонкими; helper-рівень для preview/captcha/modal уже уніфіковано.
 4. **P1 — GraphQL quality:** додати контрактні перевірки GraphQL-запитів/мутацій (включно з негативними кейсами) у CI.
 5. **P2 — Architecture quality:** додати автоматичні перевірки дозволених напрямків залежностей між шарами.
 6. **P2 — Build quality gates:** винести `scripts/check-angular-build.sh` в CI та зробити build warning/error блокуючим критерієм.
@@ -40,15 +40,18 @@
 ## 3) Що внесено в цій ітерації
 
 - Додано shared helper `comment-form-preview-state.ts` для уніфікації preview/fallback станів create/reply форм.
+- Додано shared helper `comment-form-ui-state.ts` для уніфікації modal visibility і CAPTCHA state (initial/resolved/failed).
 - `RootListPageComponent` переведено на shared preview-state helper-и для create/reply flow, щоб прибрати дублювання `previewHtml/previewMessage` reset/success/fallback сценаріїв.
+- `RootListPageComponent` переведено на shared modal/captcha state helper-и для create/reply flow (через централізовані set/get state методи).
 - `ThreadPageComponent` переведено на shared preview-state helper для reply-модалки, щоб синхронізувати логіку preview/reset/fallback зі сторінкою списку.
+- `ThreadPageComponent` переведено на shared modal/captcha state helper-и для reply-модалки, щоб синхронізувати відкриття/закриття модалки і reload CAPTCHA сценарії.
 - Checklist синхронізовано з поточним станом фронтенд-декомпозиції без застарілих нотаток.
 
 ## 4) Що ще треба зробити у проєкті
 
 - **P0 Messaging:** перейти з поточного `RabbitMQ.Client` на MassTransit (retry, DLQ, outbox, idempotency).
 - **P1 Search:** замінити low-level HTTP інтеграцію Elasticsearch на офіційний .NET client із typed mapping/templates.
-- **P1 Frontend decomposition (продовження):** винести captcha і modal-visibility стани create/reply форм у shared facade/store, щоб максимально прибрати state-дублювання з page-компонентів (preview-state вже винесений у shared helper).
+- **P1 Frontend decomposition (продовження):** винести submit/preview/captcha/modal стани create/reply форм у shared facade/store, щоб максимально прибрати imperative state-логіку з page-компонентів (helper-рівень уже уніфікований).
 - **P1 GraphQL quality:** додати контрактні перевірки GraphQL-операцій (позитивні + негативні кейси) у CI.
 - **P2 Architecture quality:** додати перевірки напрямків залежностей між шарами як автоматичний quality gate.
 - **P2 Build quality gates:** винести `scripts/check-angular-build.sh` в окремий CI job і зробити warning-blocking політику обов’язковою.
