@@ -252,7 +252,7 @@ app.MapFallbackToFile("index.html");
 app.Run();
 
 /// <summary>
-/// Normalizes SQLite file path and ensures the parent directory exists before EF opens a connection.
+/// Нормалізує шлях до файлу SQLite та гарантує існування батьківського каталогу, перш ніж EF відкриє з'єднання.
 /// </summary>
 /// <param name="connectionString">Raw SQLite connection string from configuration.</param>
 /// <param name="contentRootPath">Application content root used for resolving relative paths.</param>
@@ -267,11 +267,11 @@ static string EnsureSqliteDatabasePath(string connectionString, string contentRo
         return connectionString;
     }
 
-    var normalizedDataSource = Path.IsPathRooted(dataSource)
+    var normalizedDataSource = System.IO.Path.IsPathRooted(dataSource)
         ? dataSource
-        : Path.GetFullPath(Path.Combine(contentRootPath, dataSource));
+        : System.IO.Path.GetFullPath(System.IO.Path.Combine(contentRootPath, dataSource));
 
-    var directoryPath = Path.GetDirectoryName(normalizedDataSource);
+    var directoryPath = System.IO.Path.GetDirectoryName(normalizedDataSource);
     if (!string.IsNullOrWhiteSpace(directoryPath))
     {
         Directory.CreateDirectory(directoryPath);
