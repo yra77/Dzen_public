@@ -13,15 +13,15 @@ import { ApiErrorPresenterService, UiValidationError } from '../../core/api-erro
 import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
 import { CommentNodeCardComponent } from '../../shared/comment-node-card/comment-node-card.component';
 import { CommentTreeComponent } from '../../shared/comment-tree/comment-tree.component';
-import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick-tags-toolbar.component';
 import { FormSubmitFeedbackComponent } from '../../shared/form-submit-feedback/form-submit-feedback.component';
 import { CommentAttachmentPickerComponent } from '../../shared/comment-attachment-picker/comment-attachment-picker.component';
 import { CaptchaInputComponent } from '../../shared/captcha-input/captcha-input.component';
+import { CommentAuthorTextFieldsComponent } from '../../shared/comment-author-text-fields/comment-author-text-fields.component';
 
 @Component({
   selector: 'app-thread-page',
   // Тримаймо лише фактично використані standalone-імпорти без зайвих пайпів.
-  imports: [ReactiveFormsModule, RouterLink, CommentNodeCardComponent, CommentTreeComponent, QuickTagsToolbarComponent, FormSubmitFeedbackComponent, CommentAttachmentPickerComponent, CaptchaInputComponent],
+  imports: [ReactiveFormsModule, RouterLink, CommentNodeCardComponent, CommentTreeComponent, FormSubmitFeedbackComponent, CommentAttachmentPickerComponent, CaptchaInputComponent, CommentAuthorTextFieldsComponent],
   template: `
     <section class="panel">
       <h2>Гілка коментаря</h2>
@@ -79,41 +79,21 @@ import { CaptchaInputComponent } from '../../shared/captcha-input/captcha-input.
                   [showRetryHint]="showRetryHint"
                   testId="thread-submit-message" />
 
-                <label>
-                  Ім'я
-                  <input type="text" formControlName="userName" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.userName)" data-testid="thread-user-name-input" />
-                </label>
-
-                <label>
-                  Email
-                  <input type="email" formControlName="email" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.email)" data-testid="thread-email-input" />
-                </label>
-
-                <label class="wide">
-                  Текст
-                  <textarea #threadTextArea rows="5" formControlName="text" [class.field-invalid]="shouldHighlightInvalid(replyForm.controls.text)" (input)="previewText()" data-testid="thread-text-input"></textarea>
-                </label>
-                @if (getTextValidationMessage(replyForm.controls.text)) {
-                  <p class="error wide">{{ getTextValidationMessage(replyForm.controls.text) }}</p>
-                }
-
-                <div class="wide">
-                  <app-quick-tags-toolbar
-                    ariaLabel="Швидкі теги форматування"
-                    testId="thread-quick-tags"
-                    (tagSelected)="insertQuickTag($event, threadTextArea)" />
-                </div>
-
-                @if (textPreviewHtml) {
-                  <div class="text-preview" data-testid="thread-preview-container">
-                    <div class="text-preview-title">Preview повідомлення</div>
-                    <div [innerHTML]="textPreviewHtml"></div>
-                  </div>
-                }
-
-                @if (previewMessage) {
-                  <p class="meta">{{ previewMessage }}</p>
-                }
+                <app-comment-author-text-fields
+                  class="wide"
+                  [formGroup]="replyForm"
+                  [shouldHighlightInvalid]="shouldHighlightInvalid.bind(this)"
+                  [textValidationMessage]="getTextValidationMessage(replyForm.controls.text)"
+                  [previewHtml]="textPreviewHtml"
+                  [previewMessage]="previewMessage"
+                  quickTagsAriaLabel="Швидкі теги форматування"
+                  userNameTestId="thread-user-name-input"
+                  emailTestId="thread-email-input"
+                  textTestId="thread-text-input"
+                  quickTagsTestId="thread-quick-tags"
+                  previewContainerTestId="thread-preview-container"
+                  (textChanged)="previewText()"
+                  (quickTagSelected)="insertQuickTag($event.tag, $event.textArea)" />
 
                 <app-comment-attachment-picker
                   [message]="attachmentMessage"
