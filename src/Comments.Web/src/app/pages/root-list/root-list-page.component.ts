@@ -24,6 +24,13 @@ import { ModalCloseReason } from '../../shared/comment-modal-layout/comment-moda
 import { canCloseModal } from '../../shared/comment-modal-layout/modal-close.guard';
 import { buildQuickTagInsertResult, readAttachmentAsRequest } from '../../shared/comment-form/comment-form-helpers';
 import { applyServerValidationErrorsToControls, ServerFieldControlMapping, setupServerValidationReset } from '../../shared/comment-form/comment-form-server-validation';
+import {
+  CommentFormSubmitState,
+  createFailedCommentFormState,
+  createInitialCommentFormSubmitState,
+  createSubmittingCommentFormState,
+  createSucceededCommentFormState
+} from '../../shared/comment-form/comment-form-submit-state';
 
 
 @Component({
@@ -388,9 +395,7 @@ export class RootListPageComponent implements OnDestroy {
    */
   openCreateModal(): void {
     this.isCreateModalOpen = true;
-    this.submitMessage = '';
-    this.submitValidationErrors = [];
-    this.showRetryHint = false;
+    this.setCreateSubmitState(createInitialCommentFormSubmitState());
     this.reloadCaptcha();
   }
 
@@ -585,10 +590,7 @@ export class RootListPageComponent implements OnDestroy {
       return;
     }
 
-    this.isSubmitting = true;
-    this.submitMessage = '';
-    this.submitValidationErrors = [];
-    this.showRetryHint = false;
+    this.setCreateSubmitState(createSubmittingCommentFormState());
 
     const raw = this.createForm.getRawValue();
 
@@ -604,7 +606,7 @@ export class RootListPageComponent implements OnDestroy {
       })
       .subscribe({
         next: () => {
-          this.submitMessage = 'Коментар успішно створено.';
+          this.setCreateSubmitState(createSucceededCommentFormState('Коментар успішно створено.'));
           this.createForm.reset({
             userName: raw.userName,
             email: raw.email,
@@ -620,16 +622,12 @@ export class RootListPageComponent implements OnDestroy {
           this.closeCreateModal('backdrop', true);
           this.load();
           this.reloadCaptcha();
-          this.isSubmitting = false;
         },
         error: (error) => {
           const uiError = this.apiErrorPresenter.present(error, 'Не вдалося створити коментар. Перевірте дані форми.');
-          this.submitMessage = uiError.summary;
-          this.submitValidationErrors = uiError.validationErrors;
-          this.showRetryHint = uiError.canRetry;
+          this.setCreateSubmitState(createFailedCommentFormState(uiError.summary, uiError.validationErrors, uiError.canRetry));
           applyServerValidationErrorsToControls(this.createForm.controls, uiError.validationErrors, this.createFormServerFieldMapping);
           this.reloadCaptcha();
-          this.isSubmitting = false;
         }
       });
   }
@@ -640,10 +638,7 @@ export class RootListPageComponent implements OnDestroy {
   openReplyModal(target: CommentNode): void {
     this.activeReplyTarget = target;
     this.isReplyModalOpen = true;
-    this.isReplySubmitting = false;
-    this.replySubmitMessage = '';
-    this.replySubmitValidationErrors = [];
-    this.replyShowRetryHint = false;
+    this.setReplySubmitState(createInitialCommentFormSubmitState());
     this.replyTextPreviewHtml = '';
     this.replyPreviewMessage = '';
     this.replyAttachment = null;
@@ -770,10 +765,7 @@ export class RootListPageComponent implements OnDestroy {
       return;
     }
 
-    this.isReplySubmitting = true;
-    this.replySubmitMessage = '';
-    this.replySubmitValidationErrors = [];
-    this.replyShowRetryHint = false;
+    this.setReplySubmitState(createSubmittingCommentFormState());
 
     const raw = this.replyForm.getRawValue();
 
@@ -789,21 +781,37 @@ export class RootListPageComponent implements OnDestroy {
       })
       .subscribe({
         next: () => {
-          this.replySubmitMessage = 'Коментар успішно створено.';
+          this.setReplySubmitState(createSucceededCommentFormState('Коментар успішно створено.'));
           this.closeReplyModal('backdrop', true);
           this.load();
-          this.isReplySubmitting = false;
         },
         error: (error) => {
           const uiError = this.apiErrorPresenter.present(error, 'Не вдалося створити відповідь. Перевірте дані форми.');
-          this.replySubmitMessage = uiError.summary;
-          this.replySubmitValidationErrors = uiError.validationErrors;
-          this.replyShowRetryHint = uiError.canRetry;
+          this.setReplySubmitState(createFailedCommentFormState(uiError.summary, uiError.validationErrors, uiError.canRetry));
           applyServerValidationErrorsToControls(this.replyForm.controls, uiError.validationErrors, this.replyFormServerFieldMapping);
           this.reloadReplyCaptcha();
-          this.isReplySubmitting = false;
         }
       });
+  }
+
+  /**
+   * Оновлює submit-стан create-форми і синхронізує template-поля.
+   */
+  private setCreateSubmitState(state: CommentFormSubmitState): void {
+    this.isSubmitting = state.isSubmitting;
+    this.submitMessage = state.message;
+    this.submitValidationErrors = state.validationErrors;
+    this.showRetryHint = state.showRetryHint;
+  }
+
+  /**
+   * Оновлює submit-стан reply-форми і синхронізує template-поля.
+   */
+  private setReplySubmitState(state: CommentFormSubmitState): void {
+    this.isReplySubmitting = state.isSubmitting;
+    this.replySubmitMessage = state.message;
+    this.replySubmitValidationErrors = state.validationErrors;
+    this.replyShowRetryHint = state.showRetryHint;
   }
 
 
