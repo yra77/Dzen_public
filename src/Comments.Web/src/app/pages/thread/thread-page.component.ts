@@ -19,11 +19,12 @@ import { CaptchaInputComponent } from '../../shared/captcha-input/captcha-input.
 import { CommentAuthorTextFieldsComponent } from '../../shared/comment-author-text-fields/comment-author-text-fields.component';
 import { CommentModalHeaderComponent } from '../../shared/comment-modal-header/comment-modal-header.component';
 import { CommentFormActionsComponent } from '../../shared/comment-form-actions/comment-form-actions.component';
+import { CommentModalLayoutComponent } from '../../shared/comment-modal-layout/comment-modal-layout.component';
 
 @Component({
   selector: 'app-thread-page',
   // Тримаймо лише фактично використані standalone-імпорти без зайвих пайпів.
-  imports: [ReactiveFormsModule, RouterLink, CommentNodeCardComponent, CommentTreeComponent, FormSubmitFeedbackComponent, CommentAttachmentPickerComponent, CaptchaInputComponent, CommentAuthorTextFieldsComponent, CommentModalHeaderComponent, CommentFormActionsComponent],
+  imports: [ReactiveFormsModule, RouterLink, CommentNodeCardComponent, CommentTreeComponent, FormSubmitFeedbackComponent, CommentAttachmentPickerComponent, CaptchaInputComponent, CommentAuthorTextFieldsComponent, CommentModalHeaderComponent, CommentFormActionsComponent, CommentModalLayoutComponent],
   template: `
     <section class="panel">
       <h2>Гілка коментаря</h2>
@@ -66,8 +67,7 @@ import { CommentFormActionsComponent } from '../../shared/comment-form-actions/c
         }
 
         @if (isReplyModalOpen && activeReplyTarget) {
-          <div class="reply-modal-backdrop" (click)="closeReplyModal()">
-            <div class="reply-modal" (click)="$event.stopPropagation()">
+          <app-comment-modal-layout (backdropClicked)="closeReplyModal()">
               <app-comment-modal-header title="Нова відповідь" (closeClicked)="closeReplyModal()" />
               <p class="meta">Відповідь на: <strong>{{ activeReplyTarget.userName }}</strong></p>
 
@@ -121,8 +121,7 @@ import { CommentFormActionsComponent } from '../../shared/comment-form-actions/c
                   [submitDisabled]="replyForm.invalid || isSubmitting || hasBlockingErrors(replyForm)"
                   submitTestId="thread-submit-button" />
               </form>
-            </div>
-          </div>
+          </app-comment-modal-layout>
         }
       }
     </section>
@@ -137,8 +136,6 @@ import { CommentFormActionsComponent } from '../../shared/comment-form-actions/c
       .comment-header { display: flex; gap: 10px; flex-wrap: wrap; background: #e5e7eb; padding: 6px 8px; border-radius: 8px; margin: 0 0 8px; }
       .thread-actions { margin-top: 8px; display: flex; justify-content: flex-end; }
       .tree { list-style: none; margin: 0; padding-left: 14px; }
-      .reply-modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
-      .reply-modal { width: min(760px, 100%); max-height: 92vh; overflow-y: auto; background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25); }
       .text-preview { border: 1px dashed #d0d5dd; border-radius: 8px; padding: 8px; background: #f8fafc; }
       .text-preview-title { color: #344054; font-size: 14px; margin-bottom: 6px; font-weight: 600; }
       .text-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }

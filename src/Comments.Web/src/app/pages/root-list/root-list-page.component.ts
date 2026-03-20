@@ -19,12 +19,13 @@ import { CaptchaInputComponent } from '../../shared/captcha-input/captcha-input.
 import { CommentAuthorTextFieldsComponent } from '../../shared/comment-author-text-fields/comment-author-text-fields.component';
 import { CommentModalHeaderComponent } from '../../shared/comment-modal-header/comment-modal-header.component';
 import { CommentFormActionsComponent } from '../../shared/comment-form-actions/comment-form-actions.component';
+import { CommentModalLayoutComponent } from '../../shared/comment-modal-layout/comment-modal-layout.component';
 
 
 @Component({
   selector: 'app-root-list-page',
   // Тримаймо лише фактично використані standalone-імпорти без зайвих пайпів.
-  imports: [ReactiveFormsModule, CommentTreeComponent, FormSubmitFeedbackComponent, CommentAttachmentPickerComponent, CaptchaInputComponent, CommentAuthorTextFieldsComponent, CommentModalHeaderComponent, CommentFormActionsComponent],
+  imports: [ReactiveFormsModule, CommentTreeComponent, FormSubmitFeedbackComponent, CommentAttachmentPickerComponent, CaptchaInputComponent, CommentAuthorTextFieldsComponent, CommentModalHeaderComponent, CommentFormActionsComponent, CommentModalLayoutComponent],
   template: `
     <section class="panel">
       <button class="btn-answer" type="button" (click)="openCreateModal()" data-testid="root-open-create-modal-button">Коментувати</button>
@@ -52,8 +53,7 @@ import { CommentFormActionsComponent } from '../../shared/comment-form-actions/c
 
 
       @if (isCreateModalOpen) {
-        <div class="reply-modal-backdrop" (click)="closeCreateModal()">
-          <div class="reply-modal" (click)="$event.stopPropagation()">
+        <app-comment-modal-layout (backdropClicked)="closeCreateModal()">
             <app-comment-modal-header title="Новий коментар" (closeClicked)="closeCreateModal()" />
             <form class="form-grid" [formGroup]="createForm" (ngSubmit)="submitComment()" data-testid="root-create-form">
               <app-form-submit-feedback
@@ -104,8 +104,7 @@ import { CommentFormActionsComponent } from '../../shared/comment-form-actions/c
                 [submitDisabled]="createForm.invalid || isSubmitting || hasBlockingErrors(createForm)"
                 submitTestId="root-submit-button" />
             </form>
-          </div>
-        </div>
+        </app-comment-modal-layout>
       }
 
       @if (isLoading) {
@@ -137,8 +136,7 @@ import { CommentFormActionsComponent } from '../../shared/comment-form-actions/c
           <button type="button" (click)="goToNextPage()" [disabled]="page >= totalPages || isLoading">Наступна →</button>
         </div>
         @if (isReplyModalOpen) {
-          <div class="reply-modal-backdrop" (click)="closeReplyModal()">
-            <div class="reply-modal" (click)="$event.stopPropagation()">
+          <app-comment-modal-layout (backdropClicked)="closeReplyModal()">
               <app-comment-modal-header title="Нова відповідь" (closeClicked)="closeReplyModal()" />
               <p class="meta">Відповідь для: <strong>{{ activeReplyTarget?.userName }}</strong></p>
 
@@ -178,8 +176,7 @@ import { CommentFormActionsComponent } from '../../shared/comment-form-actions/c
                   submitLabel="Створити коментар"
                   [submitDisabled]="replyForm.invalid || isReplySubmitting || hasBlockingErrors(replyForm)" />
               </form>
-            </div>
-          </div>
+          </app-comment-modal-layout>
         }
       }
     </section>
@@ -205,8 +202,6 @@ import { CommentFormActionsComponent } from '../../shared/comment-form-actions/c
       .text-preview-title { color: #344054; font-size: 14px; margin-bottom: 6px; font-weight: 600; }
       .text-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
       .text-toolbar-label { color: #344054; font-size: 14px; }
-      .reply-modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
-      .reply-modal { width: min(760px, 100%); max-height: 92vh; overflow-y: auto; background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25); }
     `
   ]
 })
