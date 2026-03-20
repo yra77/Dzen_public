@@ -14,11 +14,12 @@ import { xhtmlFragmentValidator } from '../../core/xhtml-fragment.validator';
 import { CommentNodeCardComponent } from '../../shared/comment-node-card/comment-node-card.component';
 import { CommentTreeComponent } from '../../shared/comment-tree/comment-tree.component';
 import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick-tags-toolbar.component';
+import { FormSubmitFeedbackComponent } from '../../shared/form-submit-feedback/form-submit-feedback.component';
 
 @Component({
   selector: 'app-thread-page',
   // Тримаймо лише фактично використані standalone-імпорти без зайвих пайпів.
-  imports: [ReactiveFormsModule, RouterLink, CommentNodeCardComponent, CommentTreeComponent, QuickTagsToolbarComponent],
+  imports: [ReactiveFormsModule, RouterLink, CommentNodeCardComponent, CommentTreeComponent, QuickTagsToolbarComponent, FormSubmitFeedbackComponent],
   template: `
     <section class="panel">
       <h2>Гілка коментаря</h2>
@@ -70,21 +71,11 @@ import { QuickTagsToolbarComponent } from '../../shared/quick-tags-toolbar/quick
               <p class="meta">Відповідь на: <strong>{{ activeReplyTarget.userName }}</strong></p>
 
               <form class="form-grid" [formGroup]="replyForm" (ngSubmit)="submitReply()" data-testid="thread-reply-form">
-                @if (submitMessage) {
-                  <div class="wide form-error-top" data-testid="thread-submit-message">
-                    <p class="error">{{ submitMessage }}</p>
-                    @if (showRetryHint) {
-                      <p class="meta">Можна повторити запит без зміни даних форми.</p>
-                    }
-                    @if (submitValidationErrors.length > 0) {
-                      <ul class="error-list">
-                        @for (validationError of submitValidationErrors; track validationError.field) {
-                          <li><strong>{{ validationError.field }}</strong>: {{ validationError.messages.join('; ') }}</li>
-                        }
-                      </ul>
-                    }
-                  </div>
-                }
+                <app-form-submit-feedback
+                  [message]="submitMessage"
+                  [validationErrors]="submitValidationErrors"
+                  [showRetryHint]="showRetryHint"
+                  testId="thread-submit-message" />
 
                 <label>
                   Ім'я

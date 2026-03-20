@@ -23,10 +23,10 @@
 
 | Вимога ТЗ | Статус | Поточний стан у репозиторії | Що робимо далі |
 |---|---|---|---|
-| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; блок відображення вкладень винесено в `CommentAttachmentComponent`, дерево — у `CommentTreeComponent`. | Продовжити декомпозицію page-компонентів (форми, модалки, toolbar-блоки) у менші standalone-блоки. |
+| Angular (standalone components) | ✅ Виконується за планом | `Comments.Web` працює на standalone-компонентах; дерево винесено в `CommentTreeComponent`, вкладення — у `CommentAttachmentComponent`, а submit-помилки форм — у `FormSubmitFeedbackComponent`. | Продовжити декомпозицію page-компонентів: винести повторно використовувані частини модальних форм (CAPTCHA/attachment picker) у спільні standalone-компоненти. |
 | Apollo Client (GraphQL) | ✅ Виконано | Apollo Angular інтегровано; запити/мутації працюють через GraphQL API. | Нормалізувати cache-policy та обробку мережевих/GraphQL помилок. |
 | RxJS | ✅ Виконано | RxJS використовується в сервісах та UI-компонентах. | Уніфікувати потоки стану для сценаріїв list/thread/search/realtime. |
-| Якість збірки (Angular compiler warnings) | ✅ Виконано | Прибрано попередження `TS-998113` у `RootListPageComponent` і `ThreadPageComponent`: невикористаний `DatePipe` видалено з імпортів компонентів. | Тримати збірку без попереджень та додати перевірку в CI. |
+| Якість збірки (Angular compiler warnings) | ✅ Виконано | Поточна SPA збірка проходить без доданих у цій ітерації попереджень компілятора. | Закріпити вимогу окремим CI-кроком із fail при warning/error. |
 
 ## 2) Пріоритетний план робіт
 
@@ -39,13 +39,14 @@
 
 ## 3) Що внесено в цій ітерації
 
-- Усунуто Angular compiler warnings `TS-998113` на двох сторінках: видалено невикористаний `DatePipe` з imports standalone-компонентів `RootListPageComponent` та `ThreadPageComponent`.
-- Актуалізовано чекліст відповідності ТЗ: прибрано застарілий опис попередніх ітерацій, залишено тільки поточний стан і чинний план.
+- Продовжено frontend-декомпозицію за планом: додано standalone-компонент `FormSubmitFeedbackComponent` для єдиного відображення submit-помилок та validation details.
+- На сторінках `RootListPageComponent` і `ThreadPageComponent` прибрано дублювання шаблонного блоку server-side помилок форми, замінено на спільний компонент.
+- Актуалізовано цей чекліст: видалено застарілі примітки, залишено тільки поточний стан і актуальні наступні кроки.
 
 ## 4) Що ще треба зробити у проєкті
 
 - Закрити вимоги ТЗ по production-ready messaging: перейти на MassTransit і додати retry/DLQ/outbox/idempotency.
 - Закрити вимоги ТЗ по стеку пошуку: перейти з low-level HTTP-обгортки на офіційний Elasticsearch .NET client.
-- Продовжити frontend-декомпозицію: винести форму створення/відповіді та модальні блоки у окремі standalone-компоненти.
+- Продовжити frontend-декомпозицію: винести CAPTCHA-блок і attachment picker/preview у спільні standalone-компоненти для root/reply форм.
 - Підсилити quality-gates: додати GraphQL contract checks, architecture checks та перевірку збірки без Angular warnings у CI/CD.
 - Формалізувати DoD для ТЗ: чекліст «готово до релізу» з прив’язкою до автоперевірок.
