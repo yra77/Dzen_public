@@ -169,6 +169,7 @@ import { COMMENT_QUERY_RETRY_POLICY } from '../../core/query-retry-policy';
       .text-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
       .text-toolbar-label { color: #344054; font-size: 14px; }
       .error-list { color: #b42318; margin: 6px 0 0; }
+      .form-grid { gap:1.5em;}
       .form-error-top { border: 1px solid #fecdca; background: #fef3f2; border-radius: 8px; padding: 10px; }
       .field-invalid { border-color: #d92d20; box-shadow: 0 0 0 1px #d92d20 inset; }
     `
