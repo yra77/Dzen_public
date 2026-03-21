@@ -16,20 +16,23 @@ import { ModalCloseReason } from '../comment-modal-layout/comment-modal-layout.c
         type="button"
         class="modal-close-button"
         [attr.data-testid]="closeTestId || null"
-        (click)="closeClicked.emit('close-button')">
-        {{ closeLabel }}
-      </button>
+        (click)="closeClicked.emit('close-button')"
+        title="Закрити">
+        <img class="btn-answer-icon" [src]="closeIconPath" alt="Закрити" aria-hidden="true" />
+        </button>
     </div>
   `,
   styles: [
     `
       .modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
-      .modal-header h3 { margin: 0; }
-      .modal-close-button { margin-left: auto; }
+      .modal-header h3 { }
+      .modal-close-button { margin-left: auto; background: transparent; }
     `
   ]
 })
 export class CommentModalHeaderComponent {
+  /** Локальний SVG-asset для кнопки Close. */
+  readonly closeIconPath = '/images/red-close.svg';
   /** Текст заголовка модального вікна. */
   @Input({ required: true }) title = '';
   /** Текст кнопки закриття. */
