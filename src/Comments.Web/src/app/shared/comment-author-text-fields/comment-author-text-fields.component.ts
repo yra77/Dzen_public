@@ -14,7 +14,11 @@ import { QuickTagsToolbarComponent } from '../quick-tags-toolbar/quick-tags-tool
   standalone: true,
   imports: [ReactiveFormsModule, QuickTagsToolbarComponent],
   template: `
-    <div [formGroup]="formGroup">
+    <!--
+      Внутрішня сітка полів форми автора.
+      Дає стабільний вертикальний відступ між Ім'я / Email / Homepage у modal-вікнах root-коментарів.
+    -->
+    <div class="author-fields-grid" [formGroup]="formGroup">
       <label>
         Ім'я
         <input
@@ -82,6 +86,8 @@ import { QuickTagsToolbarComponent } from '../quick-tags-toolbar/quick-tags-tool
     `
       .error { color: #b42318; }
       .meta { color: #475467; }
+      /* Локальний layout для полів автора всередині reusable блоку форми. */
+      .author-fields-grid { display: grid; gap: 1.5em; }
       .field-invalid { border-color: #d92d20; box-shadow: 0 0 0 1px #d92d20 inset; }
       .text-preview { border: 1px dashed #d0d5dd; border-radius: 8px; padding: 8px; background: #f8fafc; }
       .text-preview-title { color: #344054; font-size: 14px; margin-bottom: 6px; font-weight: 600; }
