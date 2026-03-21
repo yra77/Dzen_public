@@ -18,19 +18,23 @@ run_go_no_go_checks() {
   require_command dotnet
   require_command npm
 
-  echo "[1/5] Running backend tests..."
+  # Fails early when the DB schema handoff artifact is missing or empty.
+  echo "[1/6] Validating DB schema artifact..."
+  ./scripts/check-db-schema-artifact.sh
+
+  echo "[2/6] Running backend tests..."
   dotnet test Comments.sln --configuration Release
 
-  echo "[2/5] Running strict Angular production build check..."
+  echo "[3/6] Running strict Angular production build check..."
   ./scripts/check-angular-build.sh
 
-  echo "[3/5] Running frontend unit tests..."
+  echo "[4/6] Running frontend unit tests..."
   npm --prefix src/Comments.Web run test -- --watch=false --browsers=ChromeHeadless
 
-  echo "[4/5] Running GraphQL schema contract check..."
+  echo "[5/6] Running GraphQL schema contract check..."
   ./scripts/check-graphql-contract.sh
 
-  echo "[5/5] Running frontend e2e smoke tests..."
+  echo "[6/6] Running frontend e2e smoke tests..."
   npm --prefix src/Comments.Web run e2e
 
   echo "Go/No-Go checks completed successfully."
