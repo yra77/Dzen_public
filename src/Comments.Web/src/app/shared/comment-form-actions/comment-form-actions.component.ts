@@ -9,7 +9,7 @@ import { Component, Input } from '@angular/core';
   selector: 'app-comment-form-actions',
   standalone: true,
   template: `
-    <div class="actions wide">
+    <div class="actions">
       <button
         [type]="submitButtonType"
         [disabled]="submitDisabled"
@@ -20,7 +20,18 @@ import { Component, Input } from '@angular/core';
   `,
   styles: [
     `
-      .actions { display: flex; justify-content: center; gap: 8px; }
+      :host {
+        display: block;
+        grid-column: 1 / -1;
+      }
+
+      .actions {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+      }
+
       @media (max-width: 900px) { .actions { flex-direction: column; } }
     `
   ]
