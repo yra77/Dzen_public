@@ -1,231 +1,269 @@
 # Dzen_public — детальний план пояснення коду (живий документ)
 
 > Оновлено: 2026-03-21  
-> Мета: дати готову «шпаргалку» для усного захисту/пояснення проєкту та фіксувати прогрес наших обговорень.
+> Мета: підготувати «шпаргалку» для пояснення проєкту на захисті + фіксувати, що вже розібрали і що ще треба закрити.
 
 ---
 
 ## 0) Як користуватися цим документом
 
-- Розділи **1–8**: структуроване пояснення архітектури та стеку.
-- Розділ **9**: «що вже пояснили / що ще лишилось» (живий трекер).
-- Розділ **10**: що було упущено (додав як додаткові теми для захисту).
+- Розділи **1–8**: архітектурний «скелет» пояснення (OOP/Clean/SOLID/стек).
+- Розділ **9**: живий прогрес-трекер «вже пояснили / ще пояснити».
+- Розділ **10**: що було упущено та додано в план.
+- Розділ **11**: покроковий план наступних сесій пояснення (щоб ми поступово закрили всі теми).
+- Розділ **12**: журнал наших обговорень (короткі записи, що саме вже проговорили).
 
 ---
 
 ## 1) Опис структури проєкту в термінах OOP + патерни
 
-### 1.1. Layered/Clean розбиття (по проєктах)
+### 1.1 Layered/Clean розбиття (по проєктах)
 
-- `Comments.Domain` — чисті доменні сутності (ядро бізнес-моделі): `Comment`, `ProcessedMessage`.
-- `Comments.Application` — use-case рівень: команди/запити, валідатори, DTO, сервіси, абстракції.
-- `Comments.Infrastructure` — технічні адаптери: EF-репозиторії, MassTransit/RabbitMQ, Elasticsearch, SignalR, Captcha, файлова storage.
-- `Comments.Api` — композиційний корінь (DI), REST/GraphQL endpoints, middleware, host.
-- `Comments.Web` — Angular SPA (standalone components) + GraphQL client + RxJS state orchestration.
+- `Comments.Domain` — ядро бізнес-моделі: `Comment`, `ProcessedMessage`, інваріанти.
+- `Comments.Application` — use-case рівень: CQRS-команди/запити, валідатори, DTO, абстракції, сервіси.
+- `Comments.Infrastructure` — технічні адаптери: EF-репозиторії, RabbitMQ/MassTransit, Elasticsearch, SignalR, Captcha, storage.
+- `Comments.Api` — composition root: DI, REST/GraphQL маршрути, middleware, startup-host.
+- `Comments.Web` — Angular SPA (standalone components) + GraphQL client layer + RxJS state/flows.
 
-### 1.2. OOP/архітектурні патерни, які реально використані
+### 1.2 OOP/архітектурні патерни, які реально використані в коді
 
-1. **Repository**
-   - Контракти в `Application` (`ICommentRepository`, `IProcessedMessageRepository`), реалізації в `Infrastructure` (`EfCommentRepository`, `EfProcessedMessageRepository`, `InMemoryCommentRepository`).
-   - Навіщо: інкапсулює доступ до БД, дозволяє міняти persistence без зміни use-cases.
+1. **Repository**  
+   Контракти у `Application` (`ICommentRepository`, `IProcessedMessageRepository`), реалізації у `Infrastructure` (`EfCommentRepository`, `EfProcessedMessageRepository`, `InMemoryCommentRepository`).
 
-2. **CQRS (Command/Query Responsibility Segregation)**
-   - `CreateCommentCommand`, `GetCommentsPageQuery`, `SearchCommentsQuery`, `GetCommentThreadQuery`, `PreviewCommentQuery` + відповідні handlers.
-   - Навіщо: чіткий поділ write/read, прозора бізнес-навігація по коду.
+2. **CQRS**  
+   Розділення write/read через `CreateCommentCommand`, `GetCommentsPageQuery`, `SearchCommentsQuery`, `GetCommentThreadQuery`, `PreviewCommentQuery`.
 
-3. **Mediator (MediatR)**
-   - API/GraphQL відправляє запити через MediatR в handlers.
-   - Навіщо: зменшує зв’язність між transport-шаром і конкретною бізнес-логікою.
+3. **Mediator (MediatR)**  
+   API/GraphQL не знає про конкретні реалізації use-cases, а шле їх через MediatR.
 
-4. **Pipeline/Decorator-подібний патерн (MediatR Behavior)**
-   - `ValidationBehavior<,>` централізує валідацію перед виконанням handlers.
-   - Навіщо: cross-cutting concern винесено з use-case коду.
+4. **Pipeline behavior (decorator-like)**  
+   `ValidationBehavior<,>` централізовано виконує FluentValidation для всіх command/query.
 
-5. **Adapter**
-   - Інфраструктурні класи адаптують зовнішні технології під внутрішні абстракції:
-     - `ElasticsearchCommentSearchService` / `ResilientCommentSearchService`;
-     - `MassTransitCommentCreatedPublisher`;
-     - `SignalRCommentCreatedChannel`;
-     - `LocalAttachmentStorage`.
+5. **Adapter**  
+   Інфраструктурні сервіси адаптують зовнішні системи до внутрішніх інтерфейсів (`ElasticsearchCommentSearchService`, `MassTransitCommentCreatedPublisher`, `SignalRCommentCreatedChannel`, `LocalAttachmentStorage`).
 
-6. **Composite**
-   - `CompositeCommentCreatedPublisher` агрегує декілька каналів публікації подій.
-   - Навіщо: легко підключати/вимикати канали без зміни доменної логіки.
+6. **Composite**  
+   `CompositeCommentCreatedPublisher` публікує подію відразу в декілька каналів (`ICommentCreatedChannel`).
 
-7. **Failover/Resilience Strategy**
-   - `ResilientCommentSearchService` має fallback на репозиторний пошук, якщо Elasticsearch недоступний.
+7. **Resilience/Fallback strategy**  
+   `ResilientCommentSearchService` переходить на репозиторний пошук при проблемах Elasticsearch.
 
 ---
 
-## 2) Коментарі в класах/методах/моделях
+## 2) Коментарі у класах/методах/моделях
 
-### Поточний стан
+### 2.1 Поточний стан
 
-У значній частині backend/frontend коду вже є XML/JSDoc коментарі на класах, DTO, методах та ключових полях.
+- У ключових частинах коду вже є XML/JSDoc-коментарі (особливо в `Application`, `Infrastructure`, `Comments.Web/core`).
+- Але пункт «у всі класи/методи/моделі» ще треба закривати системно (суцільним проходом).
 
-### Практика для повного покриття
+### 2.2 Як добиваємо 100% покриття коментарями
 
-Щоб «довести до ідеалу» пункт про коментарі, тримаємо правило:
-
-- **Domain/Application/Infrastructure (C#):**
-  - `/// <summary>` на кожному `class/record/interface`.
-  - `///` на public методах та нетривіальних private helpers.
-  - для DTO/record — `param`-коментарі.
+- **Backend (C#):**
+  - `/// <summary>` для кожного `public class/interface/record/enum`;
+  - `///` для всіх `public` методів і складних `private` helper-методів;
+  - `/// <param>` та `/// <returns>` для нетривіальних API.
 - **Frontend (TS):**
-  - JSDoc над сервісами, state-stream класами, публічними методами, важливими типами.
+  - JSDoc над сервісами, state-stream класами, фасадами;
+  - короткі коментарі на критичних RxJS pipeline-ділянках;
+  - коментарі на типах payload для GraphQL/UI-моделей.
 
-> Рекомендація для захисту: підкреслити, що коментарі тут не «замість коду», а як **архітектурна навігація** для рев’ю/оновлень.
+### 2.3 Робочий checklist по коментарях (додано)
+
+- [ ] Domain: перевірити всі сутності і domain-методи.
+- [ ] Application: перевірити всі `Features/*` (handlers/validators/contracts).
+- [ ] Infrastructure: перевірити всі адаптери (Search/Messaging/Storage/Realtime/Captcha).
+- [ ] Api: перевірити controllers/graphql/error filters/program-level хелпери.
+- [ ] Web: перевірити `core`, `pages`, `shared` (особливо `comment-form` та `comment-query-state`).
 
 ---
 
 ## 3) Опис структури БД
 
-Поточна схема (EF migration `202603180001_InitialMySqlSchema.cs`) включає:
+Поточна схема з EF migration `202603180001_InitialMySqlSchema.cs`:
 
 1. **`Comments`**
    - `Id` (PK, `Guid`)
-   - `ParentId` (FK -> `Comments.Id`, nullable) — для дерева вкладених коментарів
+   - `ParentId` (FK -> `Comments.Id`, nullable) — дерево відповідей
    - `UserName`, `Email`, `HomePage`
    - `Text`, `CreatedAtUtc`
-   - поля вкладення: `AttachmentFileName`, `AttachmentContentType`, `AttachmentStoragePath`, `AttachmentSizeBytes`
-   - індекс: `IX_Comments_ParentId`
+   - `AttachmentFileName`, `AttachmentContentType`, `AttachmentStoragePath`, `AttachmentSizeBytes`
+   - індекс `IX_Comments_ParentId`
 
 2. **`ProcessedMessages`**
-   - `Id` (PK, message id з брокера)
+   - `Id` (PK)
    - `ProcessedAtUtc`
 
-Призначення `ProcessedMessages`: ідемпотентність consumers (щоб одне й те саме повідомлення RabbitMQ не оброблялось повторно як «нове»).
+`ProcessedMessages` = журнал ідемпотентності для consumer-ів RabbitMQ (захист від повторної обробки).
 
 ---
 
-## 4) Напрям залежностей між шарами (Clean dependency rule)
+## 4) Напрям залежностей між шарами (dependency rule)
 
-Вимога і фактична реалізація:
+Ціль і фактична реалізація:
 
 - **Domain** не залежить від Application/Infrastructure/Api ✅
 - **Application** не залежить від Infrastructure/Api ✅
 - **Infrastructure** не залежить від Api ✅
-- **Api** має прямі залежності на Application та Infrastructure ✅
+- **Api** залежить від Application + Infrastructure ✅
 
-Як це видно технічно:
+Підтвердження у `.csproj`:
 
-- `Comments.Application.csproj` -> reference лише на `Comments.Domain`.
-- `Comments.Infrastructure.csproj` -> reference на `Comments.Application` + `Comments.Domain`.
-- `Comments.Api.csproj` -> reference на `Comments.Application` + `Comments.Domain` + `Comments.Infrastructure`.
-
----
-
-## 5) Clean Architecture — що це і як застосовано тут
-
-### 5.1. Коротко
-
-Clean Architecture = бізнес-правила в центрі, а транспорт/БД/черги/мережа — зовнішні деталі.
-
-### 5.2. У цьому проєкті
-
-- **Центр:** `Domain` + `Application` (сутності, use-case логіка, контракти).
-- **Зовнішнє кільце:** `Infrastructure` (EF, RabbitMQ, Elasticsearch, SignalR, files).
-- **Найзовнішній шар:** `Api` + `Web` (HTTP/GraphQL/UI).
-- Залежності направлені **всередину** через інтерфейси з `Application`.
-
-Практичний ефект:
-- легше тестувати use-cases із моками інтерфейсів;
-- легше замінити технічну реалізацію (наприклад, іншу БД або чергу).
+- `Comments.Application.csproj` -> лише `Comments.Domain`.
+- `Comments.Infrastructure.csproj` -> `Comments.Application` + `Comments.Domain`.
+- `Comments.Api.csproj` -> `Comments.Application` + `Comments.Domain` + `Comments.Infrastructure`.
 
 ---
 
-## 6) SOLID — де використано і чому
+## 5) Що таке Clean Architecture і як вона застосована тут
 
-1. **S (Single Responsibility Principle)**
-   - Окремі handlers під кожен use-case.
-   - Окремі сервіси під конкретні задачі (search/publish/storage/captcha).
+- Бізнес-правила в центрі (`Domain` + `Application`).
+- Технічні деталі на периферії (`Infrastructure`, далі `Api/Web`).
+- Залежності йдуть «всередину» через абстракції.
 
-2. **O (Open/Closed Principle)**
-   - Нові реалізації додаються через інтерфейси (наприклад, `ICommentSearchService`, `ICaptchaValidator`) без модифікації верхнього шару.
+Як це проявляється у проєкті:
 
-3. **L (Liskov Substitution Principle)**
-   - Можна підставити `RepositoryCommentSearchService` замість Elasticsearch-реалізації (і навпаки) без поломки контракту.
-
-4. **I (Interface Segregation Principle)**
-   - Невеликі спеціалізовані контракти (`IAttachmentStorage`, `ITextSanitizer`, `ICommentCreatedChannel` тощо).
-
-5. **D (Dependency Inversion Principle)**
-   - `Application` працює з абстракціями, concrete реалізації реєструє `Api` в DI-контейнері.
+- use-cases не знають про EF/HTTP/RabbitMQ/SignalR;
+- інфраструктура підключається через DI в `Program.cs`;
+- можлива заміна реалізацій без переписування бізнес-коду (наприклад, пошук).
 
 ---
 
-## 7) Backend-бібліотеки: для чого і де у коді
+## 6) SOLID — де, як і чому
+
+1. **S — Single Responsibility**  
+   Окремі handler-и для окремих use-cases; окремі адаптери під пошук/публікацію/сторедж.
+
+2. **O — Open/Closed**  
+   Розширення через нові реалізації інтерфейсів без модифікації ядра.
+
+3. **L — Liskov Substitution**  
+   `ICommentSearchService` дозволяє безпечно підставляти fallback/ES реалізації.
+
+4. **I — Interface Segregation**  
+   Маленькі інтерфейси (`ICaptchaValidator`, `IAttachmentStorage`, `ICommentCreatedChannel`, ...).
+
+5. **D — Dependency Inversion**  
+   Залежність від абстракцій у `Application`, реальні реалізації — у `Infrastructure`, wiring — у `Api`.
+
+---
+
+## 7) Backend бібліотеки: роль + де використані
 
 1. **GraphQL (HotChocolate)**
-   - Для гнучких query/mutation контрактів без over-fetching.
-   - Де: `Comments.Api/GraphQL/*`, registration у `Program.cs` (`AddGraphQLServer`, `MapGraphQL("/graphql")`).
+   - Для гнучких query/mutation контрактів (мінімізація over-fetching).
+   - `Comments.Api/GraphQL/*`, реєстрація в `Program.cs` (`AddGraphQLServer`, `MapGraphQL("/graphql")`).
 
 2. **CQRS + MediatR**
-   - Для розділення read/write use-cases та єдиного entrypoint до handlers.
-   - Де: `Comments.Application/Features/Comments/**`, registration у `Program.cs` (`AddMediatR`, `ValidationBehavior`).
+   - Розділення read/write сценаріїв.
+   - `Comments.Application/Features/Comments/*`, `AddMediatR` в `Program.cs`.
 
-3. **RabbitMQ (MassTransit)**
-   - Асинхронні події (indexing/file processing), retry, consumer pipeline.
-   - Де: `Comments.Infrastructure/Messaging/*`, registration та endpoints у `Program.cs`.
+3. **RabbitMQ + MassTransit**
+   - Асинхронні події, retry, consumer pipeline, ідемпотентність.
+   - `Comments.Infrastructure/Messaging/*`, конфіг bus/consumers у `Program.cs`.
 
-4. **Elasticsearch (офіційний .NET клієнт Elastic.Clients.Elasticsearch; за ТЗ — NEST/ES client)**
-   - Повнотекстовий пошук і масштабований search read-model.
-   - Де: `Comments.Infrastructure/Search/*`, `ElasticsearchClient` у `Program.cs`.
+4. **Elasticsearch (Elastic.Clients.Elasticsearch; за ТЗ згадується NEST/ES-клієнт)**
+   - Повнотекстовий пошук + індексація.
+   - `Comments.Infrastructure/Search/*`, `ElasticsearchClient` реєструється у `Program.cs`.
 
 5. **SignalR**
    - Realtime доставка нових коментарів у SPA.
-   - Де: `Comments.Infrastructure/Realtime/*`, endpoint `/hubs/comments` у `Program.cs`.
+   - `Comments.Infrastructure/Realtime/*`, endpoint `/hubs/comments` у `Program.cs`.
 
 ---
 
-## 8) Frontend-бібліотеки: для чого і де у коді
+## 8) Frontend бібліотеки: роль + де використані
 
 1. **Angular (standalone components)**
-   - SPA без full page reload, маршрути, компонентна композиція.
-   - Де: `Comments.Web/src/app/pages/*`, `shared/*`, `app.config.ts` + `app.routes.ts`.
+   - SPA без full reload, сторінки root/thread, компоненти shared.
+   - `Comments.Web/src/app/pages/*`, `shared/*`, `app.config.ts`, `app.routes.ts`.
 
-2. **Apollo Client (GraphQL) — у поточному коді роль GraphQL-клієнта виконує власний сервіс поверх `HttpClient`**
-   - Призначення: виконання GraphQL query/mutation та обробка GraphQL errors.
-   - Де: `core/comments-graphql-api.service.ts`, `core/comments-graphql-documents.ts`.
-   - Важливе уточнення: з точки зору поточної реалізації це **не Apollo runtime**, а typed-wrapper на `HttpClient`.
+2. **Apollo Client (GraphQL)**
+   - Пакети підключені (`@apollo/client`, `apollo-angular`) для GraphQL-екосистеми.
+   - У поточній реалізації основний runtime-клієнт — власний wrapper-сервіс на `HttpClient`:
+     `core/comments-graphql-api.service.ts` + `comments-graphql-documents.ts`.
 
 3. **RxJS**
-   - Реактивні потоки стану, retry/backoff, realtime merge, уніфікація lifecycle loading/error.
-   - Де: `shared/comment-query-state/comment-query-state.stream.ts` + RxJS у page/shared компонентах.
+   - Реактивні pipeline для loading/error/retry/realtime merge/state transitions.
+   - `shared/comment-query-state/comment-query-state.stream.ts` + page/shared фасади.
 
 ---
 
 ## 9) План пояснень (що вже обговорено / що ще пояснити)
 
-| Тема | Статус | Що саме покрити на наступному кроці |
+| Тема | Статус | Що покриваємо далі |
 |---|---|---|
-| Архітектура шарів + dependency rule | ✅ Готово | Показати на `csproj` та DI-графі в `Program.cs`. |
-| OOP-патерни в проєкті | ✅ Готово | Додати усний приклад «запит create -> handler -> service -> repo -> publish». |
-| Структура БД | ✅ Готово | Окремо проговорити self-reference (`ParentId`) і `ProcessedMessages`. |
-| Clean Architecture | ✅ Готово | Пояснити «чому бізнес не залежить від фреймворку». |
-| SOLID з прикладами | ✅ Готово | Дати 1 кодовий приклад на кожний принцип. |
-| Backend стек (GraphQL/CQRS/RabbitMQ/ES/SignalR) | ✅ Готово | Зафіксувати sequence diagram подій для create/search/realtime. |
-| Frontend стек (Angular/GraphQL/RxJS) | ✅ Готово | Проговорити state-flow для list/thread/search. |
-| Повний walkthrough одного E2E-сценарію | 🔄 В роботі | Крок за кроком: UI submit -> GraphQL -> handler -> repo -> MQ -> ES -> SignalR -> UI merge. |
-| Нефункціональні вимоги (продуктивність/надійність/безпека) | ⏳ Заплановано | Додати окремий розділ з trade-offs і ризиками. |
-| Test strategy та go/no-go | ⏳ Заплановано | Розкласти, які саме тести і що доводять при захисті. |
+| Архітектура шарів + dependency rule | ✅ Готово | Додати діаграму стрілок залежностей у окремому doc. |
+| OOP-патерни | ✅ Готово | Підкріпити прикладом одного end-to-end сценарію. |
+| Структура БД | ✅ Готово | Пояснити дерево коментарів і каскадне відображення в UI. |
+| Clean Architecture | ✅ Готово | Проговорити аргументи «чому це зручно тестувати/масштабувати». |
+| SOLID з прикладами | ✅ Готово | Дати по 1–2 конкретних класи на кожен принцип. |
+| Backend стек | ✅ Готово | Доробити sequence-flow для create/search/realtime. |
+| Frontend стек | ✅ Готово | Показати data-flow `component -> facade -> api -> stream`. |
+| Коментарі в усіх класах/методах | 🔄 В роботі | Поетапний sweep по шарах (див. чеклист 2.3). |
+| Нефункціональні вимоги | ⏳ Заплановано | Описати reliability/performance/security trade-offs. |
+| Test strategy + evidence | ⏳ Заплановано | Зібрати «які тести що доводять» для захисту. |
 
 ---
 
-## 10) Що ще було упущено (додаю обов’язково для сильного пояснення)
+## 10) Що було упущено і додано в план
 
-1. **Де проходить транзакційна межа** при створенні коментаря (DB write синхронно, індексація асинхронно).
-2. **Ідемпотентність consumer-ів** (`ProcessedMessages`) і чому це важливо при retry/delivery-at-least-once.
-3. **Fallback стратегія пошуку** (Elasticsearch down -> repository search).
-4. **Єдиний формат валідаційних помилок** для REST/GraphQL і як це спрощує UI.
-5. **Санітизація XHTML + валідація вкладень** як частина security story.
-6. **Observability/readiness**: `/health`, qa/go-no-go скрипти, артефакти handoff.
-7. **Технічний борг / roadmap**: де є scaffold/опціональні елементи і що треба добити до production.
+1. Транзакційна межа create-comment (sync DB write + async side-effects).
+2. Ідемпотентність споживачів через `ProcessedMessages`.
+3. Fallback поведінка пошуку (ES unavailable -> repository).
+4. Уніфікація валідаційних помилок (REST + GraphQL).
+5. Security-історія: sanitizer, captcha, обмеження вкладень.
+6. Readiness/операційні скрипти (`/health`, qa/go-no-go).
+7. Відмінність «за ТЗ Apollo» vs «поточна реалізація через HttpClient-wrapper».
+8. Зіставлення ТЗ/README/checklist, щоб на захисті пояснювати можливі різниці коректно.
 
 ---
 
-## 11) Пропозиція наступного кроку
+## 11) Наступні кроки (план сесій пояснення)
 
-Якщо ок — наступним кроком я зроблю **другий документ**:  
-`docs/code-walkthrough-create-comment.md` з дуже детальним «по рядках» розбором одного наскрізного сценарію (від UI до БД/MQ/SignalR).
+### Сесія A — повний walkthrough create comment (UI -> API -> DB -> MQ -> SignalR)
+- [ ] Розібрати `comment-form` стан у frontend.
+- [ ] Показати GraphQL mutation і маппінг помилок.
+- [ ] Пройти `CreateCommentCommandHandler` + validator.
+- [ ] Показати EF save + publish канали + realtime update.
 
+### Сесія B — search flow + resilience
+- [ ] Пояснити `SearchCommentsQueryHandler`.
+- [ ] Пояснити `ResilientCommentSearchService`.
+- [ ] Показати, що відбувається при недоступному Elasticsearch.
+
+### Сесія C — DB + data consistency
+- [ ] Розібрати EF migration і зв’язки.
+- [ ] Розібрати idempotency (`ProcessedMessages`).
+- [ ] Пояснити eventual consistency (DB vs Search index).
+
+### Сесія D — clean architecture + SOLID захист
+- [ ] Підготувати «коротку промову на 3–5 хв».
+- [ ] Додати таблицю: «принцип -> кодовий приклад -> користь».
+- [ ] Підготувати відповіді на типові питання рев’юера.
+
+---
+
+## 12) Журнал обговорень (оновлюємо після кожної сесії)
+
+### 2026-03-21 — сесія #1 (виконано)
+
+**Обговорили:**
+- загальну структуру шарів;
+- dependency rule між Domain/Application/Infrastructure/Api;
+- OOP-патерни (Repository, CQRS, Mediator, Adapter, Composite, Fallback);
+- БД (Comments + ProcessedMessages);
+- роль ключових backend/frontend бібліотек;
+- початковий список тем, які були упущені.
+
+**Залишилось детально розібрати:**
+- наскрізний сценарій create comment по файлах;
+- системний проход по коментарях у всіх класах/методах;
+- test evidence + operational/readiness story для захисту.
+
+---
+
+## 13) Пропозиція наступного документа
+
+Після цього плану логічний наступний артефакт:  
+`docs/code-walkthrough-create-comment.md` — «по кроках» розбір одного E2E сценарію (від фронту до persistence/realtime/indexing), який можна буквально переказати на захисті.
