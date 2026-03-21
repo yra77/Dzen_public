@@ -183,6 +183,11 @@ import { COMMENT_QUERY_RETRY_POLICY } from '../../core/query-retry-policy';
           <span>Сторінка {{ page }} з {{ totalPages }}</span>
           <button type="button" (click)="goToNextPage()" [disabled]="page >= totalPages || isLoading">Наступна →</button>
         </div>
+        <p class="pagination-summary" data-testid="root-pagination-summary">
+          Всього коментарів: {{ totalCount }}.
+          На цій сторінці: {{ commentsOnCurrentPage }}.
+          Вже переглянуто за пагінацією: {{ viewedCommentsCount }} ({{ page }} × {{ pageSize }}).
+        </p>
         @if (isReplyModalOpen) {
           <app-comment-modal-layout
             layoutTestId="root-reply-modal-layout"
@@ -240,6 +245,7 @@ import { COMMENT_QUERY_RETRY_POLICY } from '../../core/query-retry-policy';
       .meta { color: #475467; }
       .list-controls { display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0; }
       .pagination { margin-top: 12px; display: flex; align-items: center; gap: 10px; }
+      .pagination-summary { margin: 8px 0 0; color: #475467; }
       .comments-list { padding: 0; list-style: none; display: grid; gap: 10px; }
       .comment { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; background: #fcfcfd; }
       .comment-header { display: flex; gap: 10px; flex-wrap: wrap; background: #e5e7eb; padding: 6px 8px; border-radius: 8px; margin: 0 0 8px; }
@@ -631,6 +637,16 @@ export class RootListPageComponent implements OnDestroy {
   /** Загальна кількість сторінок для кореневих коментарів. */
   get totalPages(): number {
     return Math.max(1, Math.ceil(this.totalCount / this.pageSize));
+  }
+
+  /** Кількість root-коментарів, які фактично завантажені на поточній сторінці. */
+  get commentsOnCurrentPage(): number {
+    return this.comments.length;
+  }
+
+  /** Кількість коментарів, що вже «пройдені» користувачем відповідно до сторінки пагінації. */
+  get viewedCommentsCount(): number {
+    return Math.min(this.totalCount, this.page * this.pageSize);
   }
 
   /**

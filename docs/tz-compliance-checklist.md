@@ -1,8 +1,8 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-21 (уточнення checklist + UI-відступи полів автора в modal root-коментаря).
+Останнє оновлення: 2026-03-21 (додано summary по пагінації + очищено неактуальні пункти).
 
-> Документ синхронізовано з поточним станом репозиторію та скриптів handoff-перевірки.
+> Документ синхронізовано з поточним станом репозиторію.
 
 ## 1) Швидкий висновок по відповідності
 
@@ -18,7 +18,7 @@
 | Вимога | Статус | Доказ у коді | Що ще зробити |
 |---|---|---|---|
 | ASP.NET Core 8.0 (LTS) | ✅ | Проєкт API працює на .NET 8, програма сконфігурована через `WebApplication` + DI. | Тримати patch-релізи .NET 8 актуальними. |
-| EF Core + SQLite | ✅ | Підключено `UseSqlite(...)`, нормалізація шляху БД, автозастосування міграцій при старті. | Додати інтеграційний test на cold-start міграцій. |
+| EF Core + SQLite | ✅ | Підключено `UseSqlite(...)`, нормалізація шляху БД, автозастосування міграцій при старті. | Додати інтеграційний тест на cold-start міграцій. |
 | GraphQL (HotChocolate) | ✅ | Зареєстровані query/mutation типи, `ValidationExceptionErrorFilter`, `BusinessRuleExceptionErrorFilter`, endpoint `/graphql`. | Додати snapshot baseline для `errors[0].extensions`. |
 | CQRS + MediatR | ✅ | Використано команди/запити та `ValidationBehavior<,>`. | Додати e2e для сценаріїв `createComment/addReply/search`. |
 | RabbitMQ (MassTransit) | ✅ | Конфігурація transport, consumers, retry, outbox, idempotency (`ProcessedMessage`). | Додати окремий CI smoke для transport-контуру. |
@@ -32,7 +32,7 @@
 |---|---|---|---|
 | Angular standalone components | ✅ | Компоненти оголошені як `standalone`, SPA-маршрути працюють через root/thread pages. | Додати e2e smoke для всіх ключових маршрутів. |
 | Apollo Client + GraphQL | ✅ | Використовується GraphQL API контракт + обробка GraphQL помилок у shared core-сервісах. | Додати e2e UX для `BAD_USER_INPUT`/retry. |
-| Пагінація 25 за замовчуванням | ✅ | У query-моделях `PageSize = 25` за замовчуванням (REST/GraphQL шари). | Перевірити UI snapshot для дефолтного `25 / стор.`. |
+| Пагінація 25 за замовчуванням | ✅ | У query-моделях `PageSize = 25` за замовчуванням (REST/GraphQL шари), у UI додано footer-summary: `Всього`, `На цій сторінці`, `Вже переглянуто (page × 25)`. | Додати e2e-перевірку значень summary при переходах між сторінками. |
 | Сортування root-коментарів | ✅ | Підтримано сортування за полями та напрямком; дефолт — `CreatedAtUtc Desc` (LIFO). | Додати e2e на всі комбінації sort-field/sort-direction. |
 | Каскадні відповіді будь-якої глибини | ✅ (логіка дерева) | Self-reference у БД + рекурсивний merge у UI для replies. | Додати stress e2e на глибокі дерева. |
 | Preview без перезавантаження | ✅ | Є окремий preview-flow/state для форми коментаря. | Додати e2e з перевіркою fallback-повідомлень. |
@@ -61,12 +61,15 @@
 
 ## 4) Що змінено в поточній ітерації (2026-03-21)
 
-- У reusable-компоненті `CommentAuthorTextFieldsComponent` додано локальну grid-розкладку (`.author-fields-grid { gap: 1.5em; }`), щоб у modal-вікні root-коментаря були видимі відступи між блоками **Ім'я / Email / Homepage**.
-- Checklist очищено від неактуального формулювання про «P0-синхронізацію README/checklist по БД» у блоці «Останнє оновлення» та замінено на поточний фактичний контекст змін.
+- На сторінці root-коментарів під пагінацією додано інформаційний блок:
+  - **Всього коментарів**,
+  - **На цій сторінці**,
+  - **Вже переглянуто за пагінацією** у форматі `page × pageSize`.
+- Checklist очищено від застарілих формулювань про попередні ітерації та залишено лише актуальні статуси/кроки.
 
 ## 5) Актуальний план доробок до формального sign-off
 
 1. **P0: Докази виконання** — прогнати `qa-stand-check` і `go-no-go-check` з JSON-артефактами в `docs/artifacts/` на середовищі з повним стеком залежностей.
-2. **P1: e2e покриття UX** — search/list/thread, lightbox, preview, realtime reconnect + перевірка modal-layout відступів у root/reply формах.
+2. **P1: e2e покриття UX** — search/list/thread, lightbox, preview, realtime reconnect + новий пагінаційний summary-блок.
 3. **P1: Security evidence** — додати автоматизовані негативні тести для XSS/валідації вкладень.
 4. **P2: Demo & handoff** — додати демо-відео і фінальний QA handoff checklist з посиланнями на артефакти.
