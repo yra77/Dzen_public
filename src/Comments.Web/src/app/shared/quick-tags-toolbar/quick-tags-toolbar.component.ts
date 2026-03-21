@@ -9,12 +9,20 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
   template: `
     <div class="text-toolbar" role="group" [attr.aria-label]="ariaLabel" [attr.data-testid]="testId">
       <span class="text-toolbar-label">Швидкі теги:</span>
-      <button type="button" (click)="selectTag('i')">[i]</button>
-      <button type="button" (click)="selectTag('strong')">[strong]</button>
-      <button type="button" (click)="selectTag('code')">[code]</button>
-      <button type="button" (click)="selectTag('a')">[a]</button>
+      <button class="quick-tag-btn" type="button" (click)="selectTag('i')">[i]</button>
+      <button class="quick-tag-btn" type="button" (click)="selectTag('strong')">[strong]</button>
+      <button class="quick-tag-btn" type="button" (click)="selectTag('code')">[code]</button>
+      <button class="quick-tag-btn" type="button" (click)="selectTag('a')">[a]</button>
     </div>
-  `
+  `,
+  styles: [
+    `
+    .text-toolbar { background-color: #f7f5f5; max-width: 50%; }
+    .text-toolbar-label { margin-left: 1em; }
+    .quick-tag-btn { background-color: transparent; color: black; }
+    .quick-tag-btn:hover { background-color: #ececec; }
+    `
+  ]
 })
 export class QuickTagsToolbarComponent {
   /** Текст для aria-label групи швидких тегів. */
