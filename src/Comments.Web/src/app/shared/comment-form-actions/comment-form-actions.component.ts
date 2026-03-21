@@ -20,7 +20,7 @@ import { Component, Input } from '@angular/core';
   `,
   styles: [
     `
-      .actions { display: flex; justify-content: flex-end; gap: 8px; }
+      .actions { display: flex; justify-content: center; gap: 8px; }
       @media (max-width: 900px) { .actions { flex-direction: column; } }
     `
   ]
