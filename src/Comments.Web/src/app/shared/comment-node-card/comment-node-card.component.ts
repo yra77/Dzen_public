@@ -16,7 +16,7 @@ import { CommentAttachmentComponent } from '../comment-attachment/comment-attach
       <p class="comment-header">
         <strong>{{ comment.userName }}</strong>
         <span>{{ comment.email }}</span>
-        <span>{{ comment.createdAtUtc | date: 'dd.MM.yy HH:mm' }}</span>
+        <span>{{ comment.createdAtUtc | date: 'dd.MM.yy &nbsp;&nbsp;HH:mm' }}</span>
       </p>
       <p [innerHTML]="renderedTextHtml"></p>
       @if (comment.attachment) {
