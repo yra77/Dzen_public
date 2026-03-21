@@ -36,14 +36,25 @@ export function xhtmlFragmentValidator(): ValidatorFn {
 
       if (tagName === 'a') {
         const attrs = Array.from(element.attributes);
+        let hasHref = false;
         for (const attribute of attrs) {
+          // Забороняємо namespace-атрибути (xlink:href та подібні), щоб уникнути нестандартних векторів XSS.
+          if (attribute.namespaceURI) {
+            return { invalidAnchorAttributes: true };
+          }
+
           if (attribute.name.toLowerCase() !== 'href') {
             return { invalidAnchorAttributes: true };
           }
 
+          hasHref = true;
           if (!isAbsoluteHttpUrl(attribute.value)) {
             return { invalidAnchorHref: true };
           }
+        }
+
+        if (!hasHref) {
+          return { invalidAnchorHref: true };
         }
 
         continue;
