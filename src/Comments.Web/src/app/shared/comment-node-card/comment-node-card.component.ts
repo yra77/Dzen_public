@@ -42,8 +42,8 @@ import { CommentAttachmentComponent } from '../comment-attachment/comment-attach
       .comment-header { display: flex; gap: 10px; flex-wrap: wrap; background: #e5e7eb; padding: 6px 8px; border-radius: 8px; margin: 0 0 8px; }
       .thread-node { margin-top: 10px; }
       .thread-actions { margin-top: 8px; display: flex; justify-content: flex-end; }
-      .btn-answer { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 6px; background: #111827; border: 1px solid #111827; border-radius: 8px; cursor: pointer; }
-      .btn-answer:hover { background: #1f2937; }
+      .btn-answer { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 6px; background: transparent; border: 1px solid #6e6f72; border-radius: 8px; cursor: pointer; }
+      .btn-answer:hover { background: #acb8c9; border: 1px solid #ffffff;}
       .btn-answer:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
       .btn-answer-icon { width: 18px; height: 18px; display: block; }
       .tree { list-style: none; margin: 0; padding-left: 14px; }
@@ -60,7 +60,7 @@ import { CommentAttachmentComponent } from '../comment-attachment/comment-attach
 })
 export class CommentNodeCardComponent {
   /** Локальний SVG-asset для кнопки відповіді у дереві коментарів. */
-  readonly replyIconPath = '/images/answer-white.svg';
+  readonly replyIconPath = '/images/reply.svg';
   /** Поточний вузол дерева коментарів, який відображається у картці. */
   @Input({ required: true }) comment!: CommentNode;
   /** Підготовлений HTML тексту коментаря після санітизації/форматування. */
