@@ -17,7 +17,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
   `,
   styles: [
     `
-    .text-toolbar { background-color: #f7f5f5; max-width: 50%; }
+    .text-toolbar { background-color: #f7f5f5; max-width: 50%; margin-top: -1.5em; }
     .text-toolbar-label { margin-left: 1em; }
     .quick-tag-btn { background-color: transparent; color: black; }
     .quick-tag-btn:hover { background-color: #ececec; }
