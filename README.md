@@ -18,12 +18,12 @@
   - базовий HTML sanitizer,
   - Swagger в development-режимі.
 
-## База даних (узгоджено з QA handoff)
+## База даних (актуальний handoff-стан)
 
 - Runtime persistence: **SQLite** (`UseSqlite(...)`), рядок підключення — `ConnectionStrings:CommentsDb`.
-- Джерело істини для структури таблиць у коді: EF Core migration `src/Comments.Api/Migrations/202603180001_InitialMySqlSchema.cs`.
-- Артефакт схеми для handoff: `db-schema.mwb` (SQL DDL-опис), синхронізований з поточною EF-міграцією.
-- У smoke/handoff перевірках схема БД валідовується окремо скриптом `scripts/check-db-schema-artifact.sh` (викликається з `scripts/go-no-go-check.sh` як fail-fast крок).
+- Доменна схема в коді підтримується EF Core міграцією `src/Comments.Api/Migrations/202603180001_InitialMySqlSchema.cs` (назва історична, але міграція описує поточну структуру таблиць для runtime-БД).
+- Handoff-артефакт: `db-schema.mwb` містить SQL DDL-знімок поточної структури (`Comments` + `ProcessedMessages`) і синхронізується з EF-міграцією при оновленнях.
+- У smoke/handoff схема перевіряється fail-fast скриптом `scripts/check-db-schema-artifact.sh`, який запускається першим кроком у `scripts/go-no-go-check.sh`.
 
 > Якщо README і checklist розходяться, пріоритет має `docs/tz-compliance-checklist.md`.
 
