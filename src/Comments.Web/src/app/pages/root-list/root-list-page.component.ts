@@ -71,7 +71,10 @@ import { COMMENT_QUERY_RETRY_POLICY } from '../../core/query-retry-policy';
             placeholder="Текст, email або ім'я автора"
             data-testid="root-search-input" />
         </label>
-        <button type="button" (click)="onSearchSubmitted()" [disabled]="isLoading" data-testid="root-search-submit">Шукати</button>
+        <button class="btn-search" type="button" (click)="onSearchSubmitted()" [disabled]="isLoading" data-testid="root-search-submit"
+        title="Шукати">
+        <img class="btn-answer-icon" [src]="searchIconPath" alt="Шукати" aria-hidden="true" />
+        </button>
 
         <label>
           Сортувати за
@@ -246,6 +249,7 @@ import { COMMENT_QUERY_RETRY_POLICY } from '../../core/query-retry-policy';
       .attachment-inline { margin-top: 8px; }
       .attachment-text { white-space: pre-wrap; background: #f8fafc; border: 1px solid #d9e0ec; border-radius: 8px; padding: 8px; }
       .error-list { color: #b42318; margin: 6px 0 0; }
+      .form-grid { gap:1.5em;}
       .form-error-top { border: 1px solid #fecdca; background: #fef3f2; border-radius: 8px; padding: 10px; }
       .field-invalid { border-color: #d92d20; box-shadow: 0 0 0 1px #d92d20 inset; }
       .text-preview { border: 1px dashed #d0d5dd; border-radius: 8px; padding: 8px; background: #f8fafc; }
@@ -315,6 +319,9 @@ export class RootListPageComponent implements OnDestroy {
     captchatoken: 'captchaAnswer',
     captchaanswer: 'captchaAnswer'
   };
+
+  /** Локальний SVG-asset для кнопки Close. */
+  readonly searchIconPath = '/images/search.svg';
 
   comments: ReadonlyArray<CommentNode> = [];
   /** Поточна сторінка root-коментарів. */
