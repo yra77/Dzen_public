@@ -77,10 +77,13 @@ public sealed class EfCommentRepository : ICommentRepository
         if (!string.IsNullOrWhiteSpace(filter))
         {
             var normalizedFilter = filter.Trim();
+            // Escape SQL LIKE wildcard symbols from user input to avoid uncontrolled wildcard expansion.
+            var escapedFilter = EscapeLikePattern(normalizedFilter);
+            var likePattern = $"%{escapedFilter}%";
             rootsQuery = rootsQuery.Where(x =>
-                EF.Functions.Like(x.UserName, $"%{normalizedFilter}%") ||
-                EF.Functions.Like(x.Email, $"%{normalizedFilter}%") ||
-                EF.Functions.Like(x.Text, $"%{normalizedFilter}%"));
+                EF.Functions.Like(x.UserName, likePattern, "\\") ||
+                EF.Functions.Like(x.Email, likePattern, "\\") ||
+                EF.Functions.Like(x.Text, likePattern, "\\"));
         }
 
         var totalCount = await rootsQuery.CountAsync(cancellationToken);
@@ -150,5 +153,21 @@ public sealed class EfCommentRepository : ICommentRepository
             (CommentSortField.CreatedAtUtc, CommentSortDirection.Asc) => query.OrderBy(x => x.CreatedAtUtc),
             _ => query.OrderByDescending(x => x.CreatedAtUtc)
         };
+    }
+
+    /// <summary>
+    /// Escapes user-controlled LIKE pattern symbols (<c>%</c>, <c>_</c>, <c>[</c>, <c>]</c> and escape char itself)
+    /// to make search terms behave as plain text.
+    /// </summary>
+    /// <param name="value">Raw search term from user request.</param>
+    /// <returns>Escaped literal suitable for SQL LIKE pattern.</returns>
+    private static string EscapeLikePattern(string value)
+    {
+        return value
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("%", "\\%", StringComparison.Ordinal)
+            .Replace("_", "\\_", StringComparison.Ordinal)
+            .Replace("[", "\\[", StringComparison.Ordinal)
+            .Replace("]", "\\]", StringComparison.Ordinal);
     }
 }

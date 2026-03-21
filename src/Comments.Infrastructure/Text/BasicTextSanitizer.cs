@@ -88,19 +88,31 @@ public sealed class BasicTextSanitizer : ITextSanitizer
     {
         if (element.Name.LocalName.Equals("a", StringComparison.OrdinalIgnoreCase))
         {
+            var hasHref = false;
             foreach (var attribute in element.Attributes())
             {
+                if (!attribute.Name.NamespaceName.Equals(string.Empty, StringComparison.Ordinal))
+                {
+                    throw new ArgumentException("Namespaced attributes are not allowed for <a> tags.");
+                }
+
                 if (!attribute.Name.LocalName.Equals("href", StringComparison.OrdinalIgnoreCase))
                 {
                     throw new ArgumentException("Only 'href' attribute is allowed for <a> tags.");
                 }
 
+                hasHref = true;
                 var href = attribute.Value.Trim();
                 if (!Uri.TryCreate(href, UriKind.Absolute, out var uri)
                     || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
                 {
                     throw new ArgumentException("<a href> must be a valid absolute http/https URL.");
                 }
+            }
+
+            if (!hasHref)
+            {
+                throw new ArgumentException("<a> tag must include href attribute.");
             }
 
             return;

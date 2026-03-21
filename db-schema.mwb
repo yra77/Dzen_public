@@ -1,0 +1,43 @@
+-- db-schema.mwb
+-- NOTE: This repository stores the DB schema artifact in plain SQL form under .mwb filename
+-- for portability in CI environments where MySQL Workbench binary format cannot be generated.
+-- Source of truth: EF Core migration `202603180001_InitialMySqlSchema`.
+-- Last synchronized: 2026-03-21.
+
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE IF NOT EXISTS "Comments" (
+    "Id" TEXT NOT NULL,
+    "ParentId" TEXT NULL,
+    "UserName" TEXT NOT NULL,
+    "Email" TEXT NOT NULL,
+    "HomePage" TEXT NULL,
+    "Text" TEXT NOT NULL,
+    "CreatedAtUtc" TEXT NOT NULL,
+    "AttachmentFileName" TEXT NULL,
+    "AttachmentContentType" TEXT NULL,
+    "AttachmentStoragePath" TEXT NULL,
+    "AttachmentSizeBytes" INTEGER NULL,
+    CONSTRAINT "PK_Comments" PRIMARY KEY ("Id"),
+    CONSTRAINT "FK_Comments_Comments_ParentId"
+        FOREIGN KEY ("ParentId") REFERENCES "Comments" ("Id")
+        ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS "IX_Comments_ParentId"
+    ON "Comments" ("ParentId");
+
+CREATE TABLE IF NOT EXISTS "ProcessedMessages" (
+    "Id" TEXT NOT NULL,
+    "ProcessedAtUtc" TEXT NOT NULL,
+    CONSTRAINT "PK_ProcessedMessages" PRIMARY KEY ("Id")
+);
+
+-- Logical constraints from EF model (length validations are configured at application level):
+-- Comments.UserName max 128
+-- Comments.Email max 256
+-- Comments.HomePage max 512
+-- Comments.AttachmentFileName max 260
+-- Comments.AttachmentContentType max 128
+-- Comments.AttachmentStoragePath max 512
+-- ProcessedMessages.Id max 128
