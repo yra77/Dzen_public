@@ -184,9 +184,9 @@ import { COMMENT_QUERY_RETRY_POLICY } from '../../core/query-retry-policy';
           <button type="button" (click)="goToNextPage()" [disabled]="page >= totalPages || isLoading">Наступна →</button>
         </div>
         <p class="pagination-summary" data-testid="root-pagination-summary">
-          Всього коментарів: {{ totalCount }}.
-          На цій сторінці: {{ commentsOnCurrentPage }}.
-          Вже переглянуто за пагінацією: {{ viewedCommentsCount }} ({{ page }} × {{ pageSize }}).
+          Всього: <strong>{{ totalCount }}</strong>.
+          На цій сторінці: <strong>{{ commentsOnCurrentPage }}</strong>.
+          Вже переглянуто: <strong>{{ viewedCommentsCount }}</strong>.
         </p>
         @if (isReplyModalOpen) {
           <app-comment-modal-layout
