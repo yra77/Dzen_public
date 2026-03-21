@@ -18,7 +18,7 @@ import { ControlContainer, FormGroupDirective, ReactiveFormsModule } from '@angu
         <img [src]="imageDataUrl" alt="Captcha" class="captcha" [attr.data-testid]="imageTestId || null" />
       }
       <label class="captcha-answer-label">
-        CAPTCHA (цифри і букви латинського алфавіту)
+        CAPTCHA (Введіть цифри і букви з картинки)
         <input
           type="text"
           formControlName="captchaAnswer"
