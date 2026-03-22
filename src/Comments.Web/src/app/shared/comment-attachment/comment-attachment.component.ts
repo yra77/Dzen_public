@@ -28,14 +28,19 @@ import { CommentAttachment } from '../../core/comments.models';
         </button>
 
         <dialog #lightboxDialog class="lightbox" (click)="onLightboxBackdropClick($event)">
-          <button type="button" class="lightbox-close" (click)="closeImageLightbox()" aria-label="Закрити перегляд">
-            ×
-          </button>
-          <img
-            class="lightbox-image"
-            [src]="attachmentUrl"
-            [alt]="attachment.fileName"
-          />
+          <div class="lightbox-frame">
+            <!-- Кнопка закриття винесена над зображенням, щоб не перекривати контент. -->
+            <div class="lightbox-header">
+              <button type="button" class="lightbox-close" (click)="closeImageLightbox()" aria-label="Закрити перегляд">
+                ×
+              </button>
+            </div>
+            <img
+              class="lightbox-image"
+              [src]="attachmentUrl"
+              [alt]="attachment.fileName"
+            />
+          </div>
         </dialog>
       } @else if (attachment.contentType === 'text/plain') {
         <button type="button" (click)="requestTextPreview.emit(attachment.storagePath)" [disabled]="isTextPreviewLoading">
@@ -89,37 +94,52 @@ import { CommentAttachment } from '../../core/comments.models';
         border-radius: 14px;
         padding: 0;
         max-width: min(92vw, 980px);
-        max-height: 92vh;
-        overflow: hidden;
-        background: #0f172a;
+        max-height: 94vh;
+        overflow: visible;
+        background: transparent;
+      }
+      .lightbox-frame {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-end;
+      }
+      .lightbox-header {
+        display: flex;
+        justify-content: flex-end;
+        width: 100%;
       }
       .lightbox::backdrop {
-        background: rgba(2, 6, 23, 0.84);
-        backdrop-filter: blur(3px);
-        animation: lightboxBackdropFadeIn 190ms ease-out;
+        background: rgba(2, 6, 23, 0.78);
+        backdrop-filter: blur(2px);
+        animation: lightboxBackdropFadeIn 280ms ease-out;
       }
       .lightbox-image {
         display: block;
+        border-radius: 12px;
+        box-shadow: 0 16px 36px rgba(2, 6, 23, 0.36);
         max-width: min(92vw, 980px);
-        max-height: 88vh;
+        max-height: 84vh;
         width: auto;
         height: auto;
-        animation: lightboxZoomIn 220ms ease-out;
+        animation: lightboxZoomIn 320ms ease-out;
       }
       .lightbox-close {
-        position: absolute;
-        right: 10px;
-        top: 10px;
         width: 36px;
         height: 36px;
         border-radius: 999px;
-        background: rgba(15, 23, 42, 0.75);
+        background: rgba(15, 23, 42, 0.82);
         border: 1px solid #cbd5e1;
         color: #fff;
         font-size: 24px;
         line-height: 1;
         padding: 0;
         cursor: pointer;
+        transition: transform 200ms ease, background-color 200ms ease;
+      }
+      .lightbox-close:hover {
+        transform: scale(1.06);
+        background: rgba(30, 41, 59, 0.92);
       }
       .attachment-text {
         white-space: pre-wrap;
@@ -130,7 +150,7 @@ import { CommentAttachment } from '../../core/comments.models';
       }
       @keyframes lightboxZoomIn {
         from {
-          transform: scale(0.93);
+          transform: scale(0.96);
           opacity: 0;
         }
         to {
