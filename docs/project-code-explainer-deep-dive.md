@@ -232,8 +232,8 @@
 
 ### Обов’язково дорозповісти
 
-- [ ] Наскрізний сценарій: `create comment` від Angular форми до DB + MQ + SignalR.
-- [ ] Наскрізний сценарій: `search` з fallback при ES outage.
+- [x] Наскрізний сценарій: `create comment` від Angular форми до DB + MQ + SignalR (`docs/code-walkthrough-create-comment.md`).
+- [x] Наскрізний сценарій: `search` з fallback при ES outage (`docs/code-walkthrough-search-resilience.md`).
 - [ ] Таблиця «SOLID принцип -> конкретний файл -> користь».
 - [ ] Таблиця «бібліотека -> навіщо -> де підключається -> де викликається».
 - [ ] Пояснення різниці між вимогами базового ТЗ і фактичною реалізацією репозиторію.

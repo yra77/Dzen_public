@@ -202,7 +202,7 @@
 | Структура БД | ✅ Готово | Пояснити дерево коментарів і каскадне відображення в UI. |
 | Clean Architecture | ✅ Готово | Проговорити аргументи «чому це зручно тестувати/масштабувати». |
 | SOLID з прикладами | ✅ Готово | Дати по 1–2 конкретних класи на кожен принцип. |
-| Backend стек | ✅ Готово | Sequence-flow для create/search/realtime винесено в `code-walkthrough-create-comment.md`. |
+| Backend стек | ✅ Готово | Sequence-flow для create/search/realtime винесено в `code-walkthrough-create-comment.md` + `code-walkthrough-search-resilience.md`. |
 | Frontend стек | ✅ Готово | Показати data-flow `component -> facade -> api -> stream`. |
 | Коментарі в усіх класах/методах | 🔄 В роботі | Domain/Application sweep закрито, залишились Infrastructure/Api/Web (див. чеклист 2.3). |
 | Нефункціональні вимоги | ⏳ Заплановано | Описати reliability/performance/security trade-offs. |
@@ -233,9 +233,10 @@
 - [x] Підготувати окремий сценарний документ `docs/code-walkthrough-create-comment.md`.
 
 ### Сесія B — search flow + resilience
-- [ ] Пояснити `SearchCommentsQueryHandler`.
-- [ ] Пояснити `ResilientCommentSearchService`.
-- [ ] Показати, що відбувається при недоступному Elasticsearch.
+- [x] Пояснити `SearchCommentsQueryHandler`.
+- [x] Пояснити `ResilientCommentSearchService`.
+- [x] Показати, що відбувається при недоступному Elasticsearch.
+- [x] Підготувати окремий сценарний документ `docs/code-walkthrough-search-resilience.md`.
 
 ### Сесія C — DB + data consistency
 - [ ] Розібрати EF migration і зв’язки.
@@ -250,6 +251,20 @@
 ---
 
 ## 12) Журнал обговорень (оновлюємо після кожної сесії)
+
+### 2026-03-22 — сесія #4 (виконано)
+
+**Обговорили/додали:**
+- підготовлено окремий сценарний документ `docs/code-walkthrough-search-resilience.md` з E2E flow для search (frontend -> GraphQL/REST -> MediatR -> resilient search service -> ES/fallback);
+- закрили сесію B із секції 11 (усі 3 пункти + артефакт для презентації);
+- зафіксували логіку degraded mode: при збоях Elasticsearch пошук переходить на repository-level реалізацію зі стабільним DTO-контрактом;
+- додали блок «типові питання комісії + короткі відповіді» саме по search resilience.
+
+**Що залишилось:**
+- сесія C: підготувати короткий блок про eventual consistency і idempotency з прикладами race-condition;
+- сесія D: звести «SOLID -> конкретний клас -> користь» у готовий виступ на 3–5 хв.
+
+---
 
 ### 2026-03-22 — сесія #3 (виконано)
 
@@ -363,7 +378,10 @@
 ## 14) Пропозиція наступного документа
 
 Після цього плану логічний наступний артефакт:  
-`docs/code-walkthrough-create-comment.md` — «по кроках» розбір одного E2E сценарію (від фронту до persistence/realtime/indexing), який можна буквально переказати на захисті. ✅ Підготовлено.
+`docs/code-walkthrough-create-comment.md` — «по кроках» розбір create-comment E2E сценарію (від фронту до persistence/realtime/indexing). ✅ Підготовлено.
+
+Додатково для search-resilience підготовлено:  
+`docs/code-walkthrough-search-resilience.md` — «по кроках» розбір пошуку з fallback-механікою при недоступному Elasticsearch. ✅ Підготовлено.
 
 
 ## 15) Новий документ для детального пояснення коду
