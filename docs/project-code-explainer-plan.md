@@ -17,6 +17,8 @@
 - Розділ **14**: пропозиція наступного документа.
 - Розділ **15**: карта файлів для детального технічного пояснення (новий deep-dive документ).
 - Розділ **16**: окремий walkthrough по data consistency / idempotency / eventual consistency.
+- Розділ **17**: фіналізація перед захистом (dry-run + demo + testing runbook).
+- Розділ **18**: матриця відповідності ТЗ і sign-off критерії.
 
 ---
 
@@ -208,6 +210,8 @@
 | Коментарі в усіх класах/методах | 🔄 В роботі | Domain/Application sweep закрито, залишились Infrastructure/Api/Web (див. чеклист 2.3). |
 | Нефункціональні вимоги | ✅ Готово | Reliability + security + performance + ops-readiness зведено в `docs/code-walkthrough-performance-security-ops.md`. |
 | Test strategy + evidence | ✅ Готово | Підготовлено `docs/code-walkthrough-test-evidence.md` з матрицею перевірок і коротким захисним скриптом. |
+| Dry-run + testing runbook | ✅ Готово | Підготовлено `docs/defense-dry-run-checklist.md` і `docs/testing-runbook.md` для передзахистного прогону. |
+| ТЗ-compliance matrix | ✅ Готово | Підготовлено `docs/tz-compliance-checklist.md` (статуси, докази, plan до formal sign-off). |
 
 ---
 
@@ -258,9 +262,27 @@
 - [x] Пояснити operations-readiness (health/check scripts, go-no-go/readiness narrative).
 - [x] Підготувати окремий сценарний документ `docs/code-walkthrough-performance-security-ops.md`.
 
+### Сесія F — final rehearsal + compliance evidence
+- [x] Підготувати dry-run чеклист виступу 5–7 хв з двома обов’язковими демо-кейсами.
+- [x] Підготувати testing runbook з exact-командами і матрицею evidence.
+- [x] Оновити ТЗ-compliance matrix (актуальні статуси + roadmap до sign-off).
+- [x] Зафіксувати критерій go/no-go і мінімальний пакет артефактів перед захистом.
+
 ---
 
 ## 12) Журнал обговорень (оновлюємо після кожної сесії)
+
+### 2026-03-22 — сесія #8 (виконано)
+
+**Обговорили/додали:**
+- синхронізовано план із фінальними артефактами під передзахистний прогін (`docs/defense-dry-run-checklist.md`, `docs/testing-runbook.md`);
+- відображено ці артефакти в прогрес-трекері (секція 9) як окремий закритий блок;
+- додано окремий статус по ТЗ-compliance matrix (`docs/tz-compliance-checklist.md`) для прозорого sign-off narrative;
+- формалізовано «Сесію F» у покроковому плані (секція 11) як завершену.
+
+**Що залишилось:**
+- виконати фінальний live dry-run із фактичним заповненням evidence-таблиці (команда -> очікування -> факт -> артефакт);
+- зафіксувати результати `qa-stand-check`/`go-no-go-check` у `docs/artifacts/` на середовищі з повним стеком.
 
 ### 2026-03-22 — сесія #7 (виконано)
 
