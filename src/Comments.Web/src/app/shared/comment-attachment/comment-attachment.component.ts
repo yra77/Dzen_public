@@ -117,15 +117,16 @@ import { CommentAttachment } from '../../core/comments.models';
       .lightbox-image {
         display: block;
         border-radius: 12px;
-        box-shadow: 0 16px 36px rgba(2, 6, 23, 0.36);
+        border: 2px solid white;
+        box-shadow: 0 16px 36px rgba(196, 196, 196, 0.36);
         max-width: min(92vw, 980px);
         max-height: 84vh;
         width: auto;
         height: auto;
-        animation: lightboxZoomIn 600ms ease-in-out;
+        animation: pulse 1.4s ease-in-out;
       }
       .lightbox-image:hover {
-        transform: scale(1.5);
+        transform: scale(1.8);
       }
       .lightbox-close {
         position:relative;
@@ -133,17 +134,15 @@ import { CommentAttachment } from '../../core/comments.models';
         width: 36px;
         height: 36px;
         border-radius: 999px;
-        background: rgba(15, 23, 42, 0.82);
-        border: 1px solid #cbd5e1;
+        background: rgba(133, 2, 2, 0.82);
+        border: none;
         color: #fff;
-        font-size: 24px;
+        font-size: 34px;
         line-height: 1;
         padding: 0;
         cursor: pointer;
-        transition: transform 200ms ease, background-color 200ms ease;
       }
       .lightbox-close:hover {
-        transform: scale(1.06);
         background: rgba(30, 41, 59, 0.92);
       }
       .attachment-text {
@@ -152,7 +151,12 @@ import { CommentAttachment } from '../../core/comments.models';
         border: 1px solid #d9e0ec;
         border-radius: 8px;
         padding: 8px;
-      }
+      }       
+        @keyframes pulse {
+  0% { transform: scale(0.7); }
+  50% { transform: scale(1.8); }
+  100% { transform: scale(1); }
+}
       @keyframes lightboxZoomIn {
         from {
           transform: scale(0.96);
