@@ -13,7 +13,9 @@
 - Розділ **11**: покроковий план наступних сесій пояснення (щоб ми поступово закрили всі теми).
 - Розділ **12**: журнал наших обговорень (короткі записи, що саме вже проговорили).
 
-- Розділ **14**: карта файлів для детального технічного пояснення (новий deep-dive документ).
+- Розділ **13**: мапа реалізації Junior+ (Queue / Cache / Events / WebSocket) з конкретними класами.
+- Розділ **14**: пропозиція наступного документа.
+- Розділ **15**: карта файлів для детального технічного пояснення (новий deep-dive документ).
 
 ---
 
@@ -258,6 +260,69 @@
 **Що залишилось:**
 - заповнити file-by-file таблицю «клас -> відповідальність -> залежності -> що питати на захисті»;
 - пройтись по XML/JSDoc коментарях у коді фактичними комітами;
+
+---
+
+## 13) Junior+ блок: де саме реалізовано Queue / Cache / Events / WS
+
+### 13.1 Queue (черги)
+
+**Де в коді:**
+- `Comments.Api/Program.cs` — конфігурує MassTransit + RabbitMQ transport, receive-endpoints для черг `indexing` і `file-processing`, retry + outbox, та прив’язує consumer-и.
+- `Comments.Infrastructure/Messaging/RabbitMqOptions.cs` — централізовані назви exchange/queue/DLQ.
+- `Comments.Infrastructure/Messaging/Consumers/IndexCommentCreatedConsumer.cs` — читає подію створення коментаря з queue і оновлює пошуковий індекс.
+- `Comments.Infrastructure/Messaging/Consumers/FileProcessingCommentCreatedConsumer.cs` — окремий consumer під file-processing сценарій.
+- `Comments.Infrastructure/Persistence/EfProcessedMessageRepository.cs` + `Comments.Domain/Entities/ProcessedMessage.cs` — idempotency журнал, щоб повторне доставлення message не ламало консистентність.
+
+**Для чого:**
+- асинхронно винести важкі/інтеграційні side-effects із HTTP/GraphQL request path;
+- ізолювати пікові навантаження (черга «вирівнює» burst);
+- гарантувати retry/DLQ-обробку та операційну керованість.
+
+### 13.2 Events (події)
+
+**Де в коді:**
+- `Comments.Application/Abstractions/ICommentCreatedChannel.cs` — контракт «каналу події».
+- `Comments.Infrastructure/Messaging/CompositeCommentCreatedPublisher.cs` — fan-out: шле одну подію в кілька каналів.
+- `Comments.Infrastructure/Messaging/MassTransitCommentCreatedPublisher.cs` — публікація `CommentCreatedMessage` у шину.
+- `Comments.Infrastructure/Realtime/SignalRCommentCreatedChannel.cs` — подія в realtime-клієнтів.
+- `Comments.Infrastructure/Search/ElasticsearchCommentCreatedChannel.cs` — подія в індексатор Elasticsearch.
+- `Comments.Application/Features/Comments/Commands/CreateComment/CreateCommentCommandHandler.cs` — місце, де після успішного save запускається publish події.
+
+**Для чого:**
+- розв’язати coupling між «створили коментар» і downstream-процесами;
+- додавати нові реакції на подію без переписування core use-case;
+- тримати write-path швидким, а інтеграції — асинхронними.
+
+### 13.3 WebSocket (WS) / SignalR
+
+**Де в коді:**
+- `Comments.Infrastructure/Realtime/CommentsHub.cs` — SignalR hub.
+- `Comments.Api/Program.cs` — `AddSignalR()` та `MapHub<CommentsHub>("/hubs/comments")`.
+- `Comments.Infrastructure/Realtime/SignalRCommentCreatedChannel.cs` — серверний publisher події `commentCreated`.
+- `Comments.Web/src/app/pages/root-list/root-list-page.component.ts` — клієнтська SignalR-підписка і merge нових коментарів у root-list.
+- `Comments.Web/src/app/pages/thread/thread-page.component.ts` — клієнтська SignalR-підписка для thread view.
+
+**Для чого:**
+- push-оновлення без polling;
+- менша затримка появи нових коментарів в UI;
+- кращий UX при одночасній роботі кількох користувачів/вкладок.
+
+### 13.4 Cache (кеш)
+
+**Що вже є:**
+- `Comments.Api/Program.cs` — підключено `AddMemoryCache()`.
+- `Comments.Infrastructure/Captcha/BasicCaptchaChallengeStore.cs` — `IMemoryCache` для короткоживучих captcha challenge (TTL + one-time verify).
+- `Comments.Infrastructure/Captcha/CaptchaChallengeService.cs` — створює challenge і опирається на cache-backed store.
+
+**Для чого:**
+- швидка тимчасова перевірка captcha без постійного походу в БД;
+- зменшення latency та простий анти-бот механізм.
+
+**Що варто підсилити, щоб формально «закрити» Junior+ cache-шар:**
+- винести cache в окремий application-level контракт (напр. `ICommentReadCache`);
+- додати distributed backend (`IDistributedCache`/Redis) для read-heavy сценаріїв (root list, thread snapshot, anti-spam lookup);
+- описати cache policy (TTL, invalidation on create/reply, fallback при cache miss).
 - зафіксувати розбіжності між ТЗ і реалізацією у форматі «вимога -> статус -> аргументація».
 
 ---
@@ -279,13 +344,13 @@
 
 ---
 
-## 13) Пропозиція наступного документа
+## 14) Пропозиція наступного документа
 
 Після цього плану логічний наступний артефакт:  
 `docs/code-walkthrough-create-comment.md` — «по кроках» розбір одного E2E сценарію (від фронту до persistence/realtime/indexing), який можна буквально переказати на захисті.
 
 
-## 14) Новий документ для детального пояснення коду
+## 15) Новий документ для детального пояснення коду
 
 - Додано: `docs/project-code-explainer-deep-dive.md`.
 - Призначення: «опорний конспект» для усної презентації коду (архітектура, патерни, бібліотеки, dependency rule, DB, SOLID, список питань від рев’юера, backlog на коментарі в коді).
