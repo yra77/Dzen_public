@@ -202,9 +202,9 @@
 | Структура БД | ✅ Готово | Пояснити дерево коментарів і каскадне відображення в UI. |
 | Clean Architecture | ✅ Готово | Проговорити аргументи «чому це зручно тестувати/масштабувати». |
 | SOLID з прикладами | ✅ Готово | Дати по 1–2 конкретних класи на кожен принцип. |
-| Backend стек | ✅ Готово | Доробити sequence-flow для create/search/realtime. |
+| Backend стек | ✅ Готово | Sequence-flow для create/search/realtime винесено в `code-walkthrough-create-comment.md`. |
 | Frontend стек | ✅ Готово | Показати data-flow `component -> facade -> api -> stream`. |
-| Коментарі в усіх класах/методах | 🔄 В роботі | Поетапний sweep по шарах (див. чеклист 2.3). |
+| Коментарі в усіх класах/методах | 🔄 В роботі | Domain/Application sweep закрито, залишились Infrastructure/Api/Web (див. чеклист 2.3). |
 | Нефункціональні вимоги | ⏳ Заплановано | Описати reliability/performance/security trade-offs. |
 | Test strategy + evidence | ⏳ Заплановано | Зібрати «які тести що доводять» для захисту. |
 
@@ -226,10 +226,11 @@
 ## 11) Наступні кроки (план сесій пояснення)
 
 ### Сесія A — повний walkthrough create comment (UI -> API -> DB -> MQ -> SignalR)
-- [ ] Розібрати `comment-form` стан у frontend.
-- [ ] Показати GraphQL mutation і маппінг помилок.
-- [ ] Пройти `CreateCommentCommandHandler` + validator.
-- [ ] Показати EF save + publish канали + realtime update.
+- [x] Розібрати `comment-form` стан у frontend.
+- [x] Показати GraphQL mutation і маппінг помилок.
+- [x] Пройти `CreateCommentCommandHandler` + validator.
+- [x] Показати EF save + publish канали + realtime update.
+- [x] Підготувати окремий сценарний документ `docs/code-walkthrough-create-comment.md`.
 
 ### Сесія B — search flow + resilience
 - [ ] Пояснити `SearchCommentsQueryHandler`.
@@ -249,6 +250,21 @@
 ---
 
 ## 12) Журнал обговорень (оновлюємо після кожної сесії)
+
+### 2026-03-22 — сесія #3 (виконано)
+
+**Обговорили/додали:**
+- підготовлено окремий сценарний документ `docs/code-walkthrough-create-comment.md` з E2E flow (frontend -> GraphQL -> MediatR -> EF -> event fan-out -> MQ/SignalR/ES);
+- закрили сесію A із секції 11 (усі 4 пункти + артефакт для презентації);
+- уточнили, як пояснювати transaction boundary: commit у БД синхронно, side-effects через канали подій та черги асинхронно;
+- додали блок «типові питання комісії + короткі відповіді» у walkthrough-документ.
+
+**Що залишилось:**
+- сесія B: деталізувати resilience для search (happy path + degraded mode);
+- сесія C: підготувати короткий блок про eventual consistency і idempotency з прикладами race-condition;
+- сесія D: звести «SOLID -> конкретний клас -> користь» у готовий виступ на 3–5 хв.
+
+---
 
 ### 2026-03-22 — сесія #2 (виконано)
 
@@ -347,7 +363,7 @@
 ## 14) Пропозиція наступного документа
 
 Після цього плану логічний наступний артефакт:  
-`docs/code-walkthrough-create-comment.md` — «по кроках» розбір одного E2E сценарію (від фронту до persistence/realtime/indexing), який можна буквально переказати на захисті.
+`docs/code-walkthrough-create-comment.md` — «по кроках» розбір одного E2E сценарію (від фронту до persistence/realtime/indexing), який можна буквально переказати на захисті. ✅ Підготовлено.
 
 
 ## 15) Новий документ для детального пояснення коду
