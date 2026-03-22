@@ -16,6 +16,7 @@
 - Розділ **13**: мапа реалізації Junior+ (Queue / Cache / Events / WebSocket) з конкретними класами.
 - Розділ **14**: пропозиція наступного документа.
 - Розділ **15**: карта файлів для детального технічного пояснення (новий deep-dive документ).
+- Розділ **16**: окремий walkthrough по data consistency / idempotency / eventual consistency.
 
 ---
 
@@ -205,7 +206,7 @@
 | Backend стек | ✅ Готово | Sequence-flow для create/search/realtime винесено в `code-walkthrough-create-comment.md` + `code-walkthrough-search-resilience.md`. |
 | Frontend стек | ✅ Готово | Показати data-flow `component -> facade -> api -> stream`. |
 | Коментарі в усіх класах/методах | 🔄 В роботі | Domain/Application sweep закрито, залишились Infrastructure/Api/Web (див. чеклист 2.3). |
-| Нефункціональні вимоги | ⏳ Заплановано | Описати reliability/performance/security trade-offs. |
+| Нефункціональні вимоги | 🔄 В роботі | Reliability розкрито через search fallback + DB consistency; доповнити performance/security доказами. |
 | Test strategy + evidence | ⏳ Заплановано | Зібрати «які тести що доводять» для захисту. |
 
 ---
@@ -239,9 +240,10 @@
 - [x] Підготувати окремий сценарний документ `docs/code-walkthrough-search-resilience.md`.
 
 ### Сесія C — DB + data consistency
-- [ ] Розібрати EF migration і зв’язки.
-- [ ] Розібрати idempotency (`ProcessedMessages`).
-- [ ] Пояснити eventual consistency (DB vs Search index).
+- [x] Розібрати EF migration і зв’язки.
+- [x] Розібрати idempotency (`ProcessedMessages`).
+- [x] Пояснити eventual consistency (DB vs Search index).
+- [x] Підготувати окремий сценарний документ `docs/code-walkthrough-db-consistency.md`.
 
 ### Сесія D — clean architecture + SOLID захист
 - [ ] Підготувати «коротку промову на 3–5 хв».
@@ -263,6 +265,20 @@
 **Що залишилось:**
 - сесія C: підготувати короткий блок про eventual consistency і idempotency з прикладами race-condition;
 - сесія D: звести «SOLID -> конкретний клас -> користь» у готовий виступ на 3–5 хв.
+
+---
+
+### 2026-03-22 — сесія #5 (виконано)
+
+**Обговорили/додали:**
+- підготовлено окремий сценарний документ `docs/code-walkthrough-db-consistency.md` по темах EF schema, idempotency і eventual consistency;
+- закрили сесію C із секції 11 (усі пункти + артефакт для презентації);
+- додали покрокову розповідь «що відбувається при create comment» з фокусом на межу транзакції та асинхронні side-effects;
+- зафіксували типові race-condition сценарії (duplicate delivery, індексація із затримкою, reorder подій) і як система їх пом’якшує.
+
+**Що залишилось:**
+- сесія D: звести «SOLID -> конкретний клас -> користь» у готовий виступ на 3–5 хв;
+- підготувати test-evidence блок (integration/e2e/ops checks) для фінального захисту.
 
 ---
 
@@ -383,6 +399,9 @@
 Додатково для search-resilience підготовлено:  
 `docs/code-walkthrough-search-resilience.md` — «по кроках» розбір пошуку з fallback-механікою при недоступному Elasticsearch. ✅ Підготовлено.
 
+Додатково для data-consistency підготовлено:
+`docs/code-walkthrough-db-consistency.md` — «по кроках» розбір транзакційної межі, idempotency і eventual consistency. ✅ Підготовлено.
+
 
 ## 15) Новий документ для детального пояснення коду
 
@@ -392,3 +411,15 @@
   1. цей файл (`project-code-explainer-plan.md`) — трекер прогресу;
   2. deep-dive файл — змістовна база для пояснення;
   3. після кожної сесії оновлюємо секцію 12 + чеклисти в секції 9/11.
+
+---
+
+## 16) Walkthrough по DB consistency / idempotency / eventual consistency
+
+- Додано: `docs/code-walkthrough-db-consistency.md`.
+- Навіщо: закрити «складні» питання комісії про цілісність даних і поведінку системи при збої інтеграцій.
+- Ключові тези документа:
+  1. первинна консистентність гарантується в межах БД-запису;
+  2. асинхронні інтеграції працюють за моделлю eventual consistency;
+  3. повторні доставки message не ламають систему завдяки `ProcessedMessages`;
+  4. degraded режим пошуку/індексації не зупиняє базову функцію створення коментарів.
