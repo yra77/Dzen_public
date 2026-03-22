@@ -1,4 +1,3 @@
-// File overview: REST API controller that issues CAPTCHA image challenges to clients.
 using Comments.Infrastructure.Captcha;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,6 +5,7 @@ namespace Comments.Api.Controllers;
 
 /// <summary>
 /// REST endpoints для генерації captcha-челенджу у форматі SVG.
+/// Контролер REST API, який надсилає клієнтам запити на зображення CAPTCHA.
 /// </summary>
 [ApiController]
 [Route("api/captcha")]
