@@ -112,7 +112,7 @@ import { CommentAttachment } from '../../core/comments.models';
       .lightbox::backdrop {
         background: rgba(2, 6, 23, 0.78);
         backdrop-filter: blur(2px);
-        animation: lightboxBackdropFadeIn 280ms ease-out;
+        animation: lightboxBackdropFadeIn 600ms ease-out;
       }
       .lightbox-image {
         display: block;
@@ -122,9 +122,14 @@ import { CommentAttachment } from '../../core/comments.models';
         max-height: 84vh;
         width: auto;
         height: auto;
-        animation: lightboxZoomIn 320ms ease-out;
+        animation: lightboxZoomIn 600ms ease-in-out;
+      }
+      .lightbox-image:hover {
+        transform: scale(1.5);
       }
       .lightbox-close {
+        position:relative;
+        left:30px;
         width: 36px;
         height: 36px;
         border-radius: 999px;
