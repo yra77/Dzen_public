@@ -134,7 +134,7 @@ import { CommentAttachment } from '../../core/comments.models';
         width: 36px;
         height: 36px;
         border-radius: 999px;
-        background: rgba(133, 2, 2, 0.82);
+        background: transparent;
         border: none;
         color: #fff;
         font-size: 34px;
@@ -143,7 +143,8 @@ import { CommentAttachment } from '../../core/comments.models';
         cursor: pointer;
       }
       .lightbox-close:hover {
-        background: rgba(30, 41, 59, 0.92);
+        background: transparent;
+        color: red;
       }
       .attachment-text {
         white-space: pre-wrap;
