@@ -183,7 +183,6 @@ builder.Services.AddCors(options =>
             .AllowCredentials();
     });
 });
-builder.Services.AddControllers();
 builder.Services.AddSignalR();
 builder.Services
     .AddGraphQLServer()
@@ -191,8 +190,6 @@ builder.Services
     .AddMutationType<CommentMutations>()
     .AddErrorFilter<ValidationExceptionErrorFilter>()
     .AddErrorFilter<BusinessRuleExceptionErrorFilter>();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
@@ -222,12 +219,6 @@ using (var scope = app.Services.CreateScope())
 
 app.UseMiddleware<ValidationExceptionHandlingMiddleware>();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
@@ -242,7 +233,7 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/uploads"
 });
 
-app.MapControllers();
+// Основний API-контракт застосунку: тільки GraphQL endpoint на HotChocolate.
 app.MapGraphQL("/graphql");
 app.MapHub<CommentsHub>("/hubs/comments");
 // Provides a lightweight readiness endpoint for local QA stand checks.
