@@ -1,3 +1,4 @@
+// File overview: REST API controller for creating, listing, threading, previewing, and searching comments.
 using Comments.Application.DTOs;
 using Comments.Application.Features.Comments.Commands.CreateComment;
 using Comments.Application.Features.Comments.Queries.GetCommentsPage;

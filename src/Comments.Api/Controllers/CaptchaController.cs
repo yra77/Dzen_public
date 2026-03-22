@@ -1,3 +1,4 @@
+// File overview: REST API controller that issues CAPTCHA image challenges to clients.
 using Comments.Infrastructure.Captcha;
 using Microsoft.AspNetCore.Mvc;
 
