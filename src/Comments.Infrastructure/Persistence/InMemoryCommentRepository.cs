@@ -1,19 +1,23 @@
-// File overview: in-memory repository implementation used for tests and lightweight local scenarios.
+
+
 using Comments.Application.Abstractions;
 using Comments.Application.DTOs;
 using Comments.Domain.Entities;
 
-namespace Comments.Infrastructure.Persistence;
 
+namespace Comments.Infrastructure.Persistence;
 /// <summary>
-/// In-memory repository implementation used by tests/local runs.
+/// Реалізація репозиторію в пам'яті, що використовується для тестів та легких локальних сценаріїв.
 /// </summary>
 public sealed class InMemoryCommentRepository : ICommentRepository
 {
+
+
     private readonly List<Comment> _items = new();
 
+
     /// <summary>
-    /// Finds a comment by identifier.
+    /// Знаходить коментар за ідентифікатором.
     /// </summary>
     /// <param name="id">Comment identifier.</param>
     /// <param name="cancellationToken">Cancellation token (not used in in-memory implementation).</param>
@@ -23,18 +27,19 @@ public sealed class InMemoryCommentRepository : ICommentRepository
         return Task.FromResult(_items.FirstOrDefault(c => c.Id == id));
     }
 
+
     /// <summary>
-    /// Returns all comments currently stored in memory.
+    /// Повертає всі коментарі, що наразі зберігаються в пам'яті.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token (not used in in-memory implementation).</param>
-    /// <returns>Readonly snapshot of all stored comments.</returns>
+    /// <returns>Readonly snapshot всіх збережених коментарів.</returns>
     public Task<IReadOnlyCollection<Comment>> GetAllAsync(CancellationToken cancellationToken)
     {
         return Task.FromResult<IReadOnlyCollection<Comment>>(_items.ToArray());
     }
 
     /// <summary>
-    /// Returns paged root comments with optional filter and sorting.
+    /// Повертає коментарі кореневого типу з розбитими сторінками та додатковим фільтром та сортуванням.
     /// </summary>
     /// <param name="page">1-based page index.</param>
     /// <param name="pageSize">Page size.</param>
@@ -42,7 +47,7 @@ public sealed class InMemoryCommentRepository : ICommentRepository
     /// <param name="sortDirection">Sort direction.</param>
     /// <param name="filter">Optional search filter by author/email/text.</param>
     /// <param name="cancellationToken">Cancellation token (not used in in-memory implementation).</param>
-    /// <returns>Tuple with page items and total root comments count for the current filter.</returns>
+    /// <returns>Tuple (кортеж) з елементами сторінки та загальною кількістю кореневих коментарів для поточного фільтра.</returns>
     public Task<(IReadOnlyCollection<Comment> Items, int TotalCount)> GetRootCommentsAsync(
         int page,
         int pageSize,
@@ -74,7 +79,7 @@ public sealed class InMemoryCommentRepository : ICommentRepository
     }
 
     /// <summary>
-    /// Adds a comment to in-memory storage.
+    /// Додає коментар до сховища в оперативній пам'яті.
     /// </summary>
     /// <param name="comment">Comment to store.</param>
     /// <param name="cancellationToken">Cancellation token (not used in in-memory implementation).</param>
