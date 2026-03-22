@@ -1,34 +1,41 @@
-// File overview: reCAPTCHA validator that verifies user tokens through the configured verification endpoint.
+
+
 using System.Text.Json;
+
 using Comments.Application.Abstractions;
 
-namespace Comments.Infrastructure.Captcha;
 
+namespace Comments.Infrastructure.Captcha;
 /// <summary>
-/// Validates CAPTCHA tokens against Google reCAPTCHA verification API.
+/// Валідатор reCAPTCHA, який перевіряє токени користувачів через налаштовану кінцеву точку перевірки.
+/// Перевіряє токени CAPTCHA за допомогою API перевірки reCAPTCHA від Google.
 /// </summary>
 public sealed class RecaptchaCaptchaValidator : ICaptchaValidator
 {
+
+
     private readonly CaptchaOptions _options;
     private readonly HttpClient _httpClient;
 
+
     /// <summary>
-    /// Creates a new <see cref="RecaptchaCaptchaValidator"/> instance.
+    /// Створює новий екземпляр <see cref="RecaptchaCaptchaValidator"/>.
     /// </summary>
-    /// <param name="options">CAPTCHA settings with enabled flag, secret key and verify endpoint.</param>
-    /// <param name="httpClient">HTTP client used for verification requests.</param>
+    /// <param name="options">CAPTCHA налаштування з увімкненим прапорцем, секретним ключем та перевіркою кінцевої точки.</param>
+    /// <param name="httpClient">HTTP клієнт, який використовується для запитів на перевірку.</param>
     public RecaptchaCaptchaValidator(CaptchaOptions options, HttpClient httpClient)
     {
         _options = options;
         _httpClient = httpClient;
     }
 
+
     /// <summary>
-    /// Validates a client reCAPTCHA token and returns whether verification succeeded.
+    /// Перевіряє токен reCAPTCHA клієнта та повертає інформацію про успішність перевірки.
     /// </summary>
-    /// <param name="token">User-provided CAPTCHA token.</param>
+    /// <param name="token">Токен CAPTCHA, наданий користувачем</param>
     /// <param name="cancellationToken">Cancellation token for the HTTP request.</param>
-    /// <returns><c>true</c> when CAPTCHA is disabled or token verification succeeds; otherwise <c>false</c>.</returns>
+    /// <returns><c>true</c> коли CAPTCHA вимкнено або перевірка токена пройшла успішно; в іншому випадку <c>false</c>.</returns>
     public async Task<bool> ValidateAsync(string? token, CancellationToken cancellationToken)
     {
         if (!_options.Enabled)
