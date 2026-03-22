@@ -5,6 +5,16 @@
 
 ---
 
+## 0) Навігація по walkthrough-документах
+
+- `docs/code-walkthrough-create-comment.md` — наскрізний flow створення коментаря.
+- `docs/code-walkthrough-search-resilience.md` — пошук + degraded mode/fallback при збоях Elasticsearch.
+- `docs/code-walkthrough-db-consistency.md` — транзакційна межа, idempotency, eventual consistency.
+
+> Рекомендація для виступу: брати цей deep-dive як «основу», а walkthrough-файли — як сценарні вставки під конкретні питання комісії.
+
+---
+
 ## 1) Архітектурна мапа: як коротко пояснити весь проєкт
 
 Проєкт побудований за **Clean Architecture** з шаровим поділом:
