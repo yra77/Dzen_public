@@ -206,7 +206,7 @@
 | Backend стек | ✅ Готово | Sequence-flow для create/search/realtime винесено в `code-walkthrough-create-comment.md` + `code-walkthrough-search-resilience.md`. |
 | Frontend стек | ✅ Готово | Показати data-flow `component -> facade -> api -> stream`. |
 | Коментарі в усіх класах/методах | 🔄 В роботі | Domain/Application sweep закрито, залишились Infrastructure/Api/Web (див. чеклист 2.3). |
-| Нефункціональні вимоги | 🔄 В роботі | Reliability розкрито через search fallback + DB consistency; доповнити performance/security доказами. |
+| Нефункціональні вимоги | ✅ Готово | Reliability + security + performance + ops-readiness зведено в `docs/code-walkthrough-performance-security-ops.md`. |
 | Test strategy + evidence | ✅ Готово | Підготовлено `docs/code-walkthrough-test-evidence.md` з матрицею перевірок і коротким захисним скриптом. |
 
 ---
@@ -252,9 +252,27 @@
 - [x] Підготувати окремий сценарний документ `docs/code-walkthrough-clean-solid-defense.md`.
 - [x] Підготувати test-evidence документ `docs/code-walkthrough-test-evidence.md`.
 
+### Сесія E — performance / security / operations readiness
+- [x] Звести security-контури в єдиний сценарний документ (captcha + sanitizer + attachment policy + unified error contract).
+- [x] Пояснити performance-стратегії (CQRS read/write split, async side-effects, pagination defaults, search fallback).
+- [x] Пояснити operations-readiness (health/check scripts, go-no-go/readiness narrative).
+- [x] Підготувати окремий сценарний документ `docs/code-walkthrough-performance-security-ops.md`.
+
 ---
 
 ## 12) Журнал обговорень (оновлюємо після кожної сесії)
+
+### 2026-03-22 — сесія #7 (виконано)
+
+**Обговорили/додали:**
+- підготовлено окремий сценарний документ `docs/code-walkthrough-performance-security-ops.md` для закриття нефункціональних вимог на захисті;
+- закрили сесію E із секції 11 (security + performance + operations readiness);
+- оновили статус «Нефункціональні вимоги» у секції 9 до «✅ Готово»;
+- додали готовий 60-секундний захисний скрипт по NFR (надійність, безпека, продуктивність, операційна готовність).
+
+**Що залишилось:**
+- фінальний dry-run виступу 5–7 хв з двома демо-кейсами: degraded search mode і валідаційна помилка з коректним UX-повідомленням;
+- за потреби сформувати окремий `TESTING.md` з exact командами для локального запуску та CI.
 
 ### 2026-03-22 — сесія #4 (виконано)
 
@@ -423,6 +441,9 @@
 
 Додатково для test evidence підготовлено:
 `docs/code-walkthrough-test-evidence.md` — матриця перевірок, артефактів і короткий захисний скрипт. ✅ Підготовлено.
+
+Додатково для нефункціональних вимог підготовлено:
+`docs/code-walkthrough-performance-security-ops.md` — готовий сценарій захисту performance/security/operations readiness. ✅ Підготовлено.
 
 
 ## 15) Новий документ для детального пояснення коду
