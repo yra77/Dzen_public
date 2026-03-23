@@ -1,6 +1,6 @@
 # Dzen_public — детальний план пояснення коду (живий документ)
 
-> Оновлено: 2026-03-22  
+> Оновлено: 2026-03-23  
 > Мета: підготувати «шпаргалку» для пояснення проєкту на захисті + фіксувати, що вже розібрали і що ще треба закрити.
 
 ---
@@ -176,6 +176,85 @@
 5. **SignalR**
    - Realtime доставка нових коментарів у SPA.
    - `Comments.Infrastructure/Realtime/*`, endpoint `/hubs/comments` у `Program.cs`.
+
+### 7.1 Чому використовуємо саме HotChocolate, а не «чистий GraphQL»
+
+Коротко: **GraphQL — це специфікація**, а **HotChocolate — production-ready .NET реалізація цієї специфікації**.
+
+Що це дає в нашому коді:
+
+1. **Швидке підключення серверу GraphQL у .NET**
+   - У `src/Comments.Api/Program.cs` ми реєструємо сервер через
+     `AddGraphQLServer().AddQueryType<CommentQueries>().AddMutationType<CommentMutations>()`,
+     а endpoint — через `MapGraphQL("/graphql")`.
+   - Тобто HotChocolate закриває runtime, schema execution, serialization, middleware-конвеєр.
+
+2. **Типобезпечні resolvers і зрозумілий composition root**
+   - Query/Mutation винесені в окремі класи:
+     `src/Comments.Api/GraphQL/CommentQueries.cs` та `CommentMutations.cs`.
+   - Бізнес-логіка не змішується з transport: resolver лише делегує в MediatR/Application.
+
+3. **Єдиний контракт помилок для UI**
+   - Через `ValidationExceptionErrorFilter` і `BusinessRuleExceptionErrorFilter`
+     ми мапимо помилки в стабільний GraphQL error-shape (`BAD_USER_INPUT` тощо),
+     що простіше для Angular-клієнта.
+
+4. **Менше «інфраструктурного коду вручну»**
+   - Без HotChocolate довелося б самостійно будувати багато частин GraphQL runtime.
+   - З HotChocolate фокус зсувається на use-case логіку (CQRS/handlers), а не на низькорівневий plumbing.
+
+### 7.2 Elasticsearch: де конфіг, де «файл БД/індексу», і які класи за що відповідають
+
+#### Де лежать налаштування
+
+- Основний конфіг: `src/Comments.Api/appsettings.json` -> секція `Elasticsearch`
+  (`Enabled`, `Uri`, `IndexName`, `BackfillOnStartup`).
+- Тип налаштувань: `src/Comments.Infrastructure/Search/ElasticsearchOptions.cs`.
+- Binding + DI wiring: `src/Comments.Api/Program.cs`.
+
+#### Де «файл БД» і де «файл індексу»
+
+- **База даних коментарів** у нас SQLite-файл:
+  `ConnectionStrings:CommentsDb = Data Source=data/comments.db` у `appsettings.json`.
+  Фактичний шлях нормалізується в `EnsureSqliteDatabasePath(...)` у `Program.cs`.
+- **Elasticsearch-індекс НЕ є локальним файлом у репозиторії.**
+  Це індекс у зовнішньому ES-кластері за `Elasticsearch:Uri`, з ім’ям `Elasticsearch:IndexName` (дефолт: `comments`).
+
+#### Повна карта класів Elasticsearch (що і як використовується)
+
+1. **Модель документа індексу**
+   - `src/Comments.Infrastructure/Search/CommentSearchDocument.cs`
+   - Описує поля документа (`Id`, `ParentId`, `UserName`, `Email`, `HomePage`, `Text`, `CreatedAtUtc`).
+
+2. **Індексація створеного коментаря**
+   - `src/Comments.Infrastructure/Search/ElasticsearchCommentCreatedChannel.cs`
+   - Реалізує `ICommentCreatedChannel`, перетворює `CommentDto` -> `CommentSearchDocument`
+     і виконує `_client.IndexAsync(...).Index(_options.IndexName).Id(comment.Id)`.
+
+3. **Пошук по індексу**
+   - `src/Comments.Infrastructure/Search/ElasticsearchCommentSearchService.cs`
+   - Реалізує `ICommentSearchService`, робить `SearchAsync` з `MultiMatch`
+     по полях `text`, `userName`, `email`, сортує за `CreatedAtUtc desc`.
+
+4. **Resilience/fallback при падінні ES**
+   - `src/Comments.Infrastructure/Search/ResilientCommentSearchService.cs`
+   - Primary: `ElasticsearchCommentSearchService`, fallback: `RepositoryCommentSearchService`.
+   - Якщо ES помиляється/таймаутиться — повертаємо результати з БД, не «падаємо» для користувача.
+
+5. **Створення індексу на старті**
+   - `src/Comments.Infrastructure/Search/ElasticsearchIndexInitializerHostedService.cs`
+   - На старті перевіряє `Indices.ExistsAsync`; якщо індексу нема — створює `Indices.CreateAsync`.
+
+6. **Backfill індексу існуючими даними**
+   - `src/Comments.Infrastructure/Search/ElasticsearchBackfillHostedService.cs`
+   - Якщо `BackfillOnStartup = true`, читає всі коментарі з репозиторію і проганяє через
+     `ElasticsearchCommentCreatedChannel.PublishAsync(...)`.
+
+7. **DI-підключення клієнта і сервісів**
+   - `src/Comments.Api/Program.cs`
+   - Реєструється `ElasticsearchClient` з `DefaultIndex(elasticsearchOptions.IndexName)`,
+     підключаються `ElasticsearchCommentSearchService`, `ResilientCommentSearchService`,
+     `ElasticsearchIndexInitializerHostedService`, `ElasticsearchBackfillHostedService`.
 
 ---
 
