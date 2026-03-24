@@ -21,6 +21,15 @@ using Elastic.Clients.Elasticsearch;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Дає можливість явно вказати URL-и прослуховування (0.0.0.0:5000) для доступу ззовні через port-forwarding.
+var configuredListenUrls = builder.Configuration["ASPNETCORE_URLS"] ?? builder.Configuration["Networking:ApiListenUrls"];
+if (!string.IsNullOrWhiteSpace(configuredListenUrls))
+{
+    var urls = configuredListenUrls
+        .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    builder.WebHost.UseUrls(urls);
+}
+
 // Визначає провайдер persistence; за замовчуванням працюємо з SQLite як з локальною файловою БД.
 var provider = builder.Configuration["Persistence:Provider"] ?? "Sqlite";
 var rabbitMqOptions = builder.Configuration.GetSection("RabbitMq").Get<RabbitMqOptions>() ?? new RabbitMqOptions();
