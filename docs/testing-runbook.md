@@ -28,7 +28,7 @@
 
 3. Локальний health-check:
    - запустити API;
-   - `curl -f http://localhost:5000/health` (порт/URL під ваш env).
+   - `curl -f http://192.168.0.106:5000/health` (порт/URL під ваш env).
 
 ### 2.2 Frontend quality gate
 

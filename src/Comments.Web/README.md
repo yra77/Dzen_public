@@ -15,7 +15,7 @@ npm install
 npm start
 ```
 
-За замовчуванням API очікується на `http://localhost:5000` (див. `src/environments/environment.ts`).
+За замовчуванням API очікується на `http://46.119.236.29:5000` (див. `src/environments/environment.ts`).
 
 
 ### Швидкий bootstrap для internal npm mirror

@@ -56,7 +56,7 @@ dotnet restore Comments.sln
 dotnet run --project src/Comments.Api/Comments.Api.csproj
 ```
 
-3. Відкрити Swagger: `http://localhost:5000/swagger` (або порт, який покаже `dotnet run`).
+3. Відкрити Swagger: `http://192.168.0.106:5000/swagger` (або порт, який покаже `dotnet run`).
 
 ## QA handoff: перевірка стенду і Go/No-Go
 
