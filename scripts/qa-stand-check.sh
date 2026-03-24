@@ -9,13 +9,13 @@ run_qa_stand_check() {
   docker compose up -d sqlserver rabbitmq elasticsearch comments-api
 
   echo "[2/4] Waiting for API health endpoint..."
-  wait_for_endpoint "http://localhost:5000/health" "Comments API health"
+  wait_for_endpoint "http://192.168.0.106:5000/health" "Comments API health"
 
   echo "[3/4] Waiting for RabbitMQ management endpoint..."
-  wait_for_endpoint "http://localhost:15672" "RabbitMQ management"
+  wait_for_endpoint "http://192.168.0.106:15672" "RabbitMQ management"
 
   echo "[4/4] Waiting for Elasticsearch cluster health endpoint..."
-  wait_for_endpoint "http://localhost:9200/_cluster/health" "Elasticsearch cluster health"
+  wait_for_endpoint "http://192.168.0.106:9200/_cluster/health" "Elasticsearch cluster health"
 
   echo "Local QA stand is ready for manual testing."
 

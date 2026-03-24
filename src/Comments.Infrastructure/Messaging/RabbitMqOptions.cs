@@ -18,7 +18,7 @@ public sealed class RabbitMqOptions
     /// <summary>
     /// DNS-ім'я або IP брокера RabbitMQ.
     /// </summary>
-    public string HostName { get; init; } = "localhost";
+    public string HostName { get; init; } = "192.168.0.106";
 
     /// <summary>
     /// TCP-порт AMQP брокера.

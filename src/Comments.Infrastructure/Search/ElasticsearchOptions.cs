@@ -13,7 +13,7 @@ public sealed class ElasticsearchOptions
     /// <summary>
     /// Базова URI-адреса Elasticsearch-кластера.
     /// </summary>
-    public string Uri { get; init; } = "http://localhost:9200";
+    public string Uri { get; init; } = "http://192.168.0.106:9200";
 
     /// <summary>
     /// Ім'я індексу для документів коментарів.

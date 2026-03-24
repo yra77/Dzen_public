@@ -1,18 +1,19 @@
 # Перевірка відповідності ТЗ SPA «Коментарі»
 
-Останнє оновлення: 2026-03-22.
+Останнє оновлення: 2026-03-24.
 
-> Документ очищено від неактуальних пунктів про REST-контролери: поточний публічний контракт бекенду — GraphQL (HotChocolate).
+> Документ очищено від застарілих пунктів і синхронізовано з поточним станом GraphQL-first бекенду та публічним доступом через зовнішню IP-адресу.
 
 ## 1) Що перевірено в цій ітерації
 
-- `src/Comments.Api/Controllers`:
-  - видалено REST-контролери (`CommentsController`, `CaptchaController`), щоб не підтримувати дубльований REST-контракт.
 - `src/Comments.Api/GraphQL`:
-  - підтверджено, що всі ключові сценарії SPA покриті через Query/Mutation (list/thread/search/preview/create/captcha/attachment text preview).
+  - підтверджено, що ключові сценарії SPA покриті через Query/Mutation (list/thread/search/preview/create/captcha/attachment text preview).
 - `src/Comments.Api/Program.cs`:
-  - вимкнено реєстрацію REST-стеку (`AddControllers`, Swagger, `MapControllers`).
-  - залишено тільки GraphQL endpoint `/graphql` як єдину точку доступу до presentation layer API.
+  - CORS-політика оновлена для клієнтів `http://192.168.0.106:4200` і `http://46.119.236.29:4200`.
+- `src/Comments.Web/src/environments/environment.ts`:
+  - API base URL перемкнено на `http://46.119.236.29:5000` для доступу SPA поза localhost.
+- `src/Comments.Web/package.json`:
+  - dev-server запускається з `--host 0.0.0.0 --port 4200`, щоб сторінка була доступна ззовні.
 
 ## 2) Актуальна матриця відповідності ТЗ
 
@@ -50,16 +51,16 @@
 
 ## 4) Що вже зроблено в проєкті (актуально)
 
-- Бекенд працює через GraphQL-first presentation layer (HotChocolate) без REST-контролерів.
+- Бекенд працює через GraphQL-first presentation layer (HotChocolate) без публічного REST-контракту.
 - Реалізовано SPA-сценарії: root list, thread, reply, preview, quick-tags, realtime merge.
 - Налаштовано контейнеризацію для локального запуску через `docker-compose`.
-- Підготовлено docs/scripts для pre-demo і go/no-go перевірок.
+- Додано базову конфігурацію для зовнішнього доступу до SPA/API через `46.119.236.29`.
 
 ## 5) Що змінено в цьому оновленні документа
 
-1. Видалено неактуальні пункти, що описували REST як активний зовнішній контракт.
-2. Зафіксовано перехід на єдиний контракт Presentation GraphQL Server (HotChocolate).
-3. Оновлено пріоритети наступних кроків під GraphQL-first ітерацію.
+1. Видалено застарілі формулювання, що дублювали проміжні стани старих ітерацій.
+2. Зафіксовано актуальні мережеві налаштування для доступу без `localhost`.
+3. Оновлено список пріоритетів під поточний GraphQL-first + external-access сценарій.
 
 ## 6) Що ще потрібно зробити в проєкті
 
@@ -73,7 +74,11 @@
 4. **P1 — QA evidence в артефакти**
    - Прогнати `scripts/qa-stand-check.sh` і `scripts/go-no-go-check.sh` у повному стеку.
    - Зберегти результати в `docs/artifacts/`.
-5. **P2 — Фінальний handoff**
+5. **P1 — Network hardening для публічного доступу**
+   - Закріпити статичну LAN IP (`192.168.0.106`) на сервері/роутері.
+   - Налаштувати port-forwarding для `4200` (SPA) і `5000` (API), за потреби `80/443` через reverse proxy.
+   - Додати TLS (Nginx/Caddy + Let's Encrypt), щоб перейти з `http` на `https`.
+6. **P2 — Фінальний handoff**
    - Підготувати короткий release-checklist з посиланнями на демо-артефакти та ризики.
 
 ## 7) Примітка щодо тестів
