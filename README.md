@@ -1,245 +1,72 @@
-# Dzen_public — стартовий каркас SPA «Коментарі»
+# Dzen_public — SPA «Коментарі» (актуальний стан)
 
-У репозиторії підготовлено **базовий backend-каркас на .NET 8** для ТЗ по SPA-коментарях з фокусом на OOP/SOLID і розділення відповідальностей.
+Репозиторій містить **поточну реалізацію SPA-застосунку коментарів** на базі:
+- backend на **.NET 8 + GraphQL (HotChocolate)**;
+- frontend на **Angular (standalone SPA)**;
+- realtime-оновлення через **SignalR**;
+- збереження даних через **EF Core + SQLite**.
 
-## Що вже реалізовано
+> Важливо: у поточному контракті застосунку **немає Swagger, REST API та k6 load-testing сценаріїв**.
 
-- `Comments.Domain`:
-  - доменна сутність `Comment` з підтримкою вкладених відповідей.
-- `Comments.Application`:
-  - контракти (`ICommentRepository`, `ITextSanitizer`),
-  - DTO,
-  - `CommentService` (валідація, санітизація, бізнес-логіка створення/вибірки).
-- `Comments.Api`:
-  - REST API `POST /api/comments`, `GET /api/comments` (пагінація + сортування),
-  - REST API пошуку `GET /api/comments/search?q=...` через Elasticsearch,
-  - GraphQL endpoint `POST /graphql` (query comments + mutation createComment),
-  - EF Core репозиторій (SQLite за замовчуванням для персистентного збереження + підтримка `InMemory` через конфіг),
-  - базовий HTML sanitizer,
-  - Swagger в development-режимі.
-
-## База даних (актуальний handoff-стан)
-
-- Runtime persistence: **SQLite** (`UseSqlite(...)`), рядок підключення — `ConnectionStrings:CommentsDb`.
-- Доменна схема в коді підтримується EF Core міграцією `src/Comments.Api/Migrations/202603180001_InitialMySqlSchema.cs` (назва історична, але міграція описує поточну структуру таблиць для runtime-БД).
-- Handoff-артефакт: `db-schema.mwb` містить SQL DDL-знімок поточної структури (`Comments` + `ProcessedMessages`) і синхронізується з EF-міграцією при оновленнях.
-- У smoke/handoff схема перевіряється fail-fast скриптом `scripts/check-db-schema-artifact.sh`, який запускається першим кроком у `scripts/go-no-go-check.sh`.
-
-> Якщо README і checklist розходяться, пріоритет має `docs/tz-compliance-checklist.md`.
-
-## Структура
+## Поточна архітектура
 
 ```text
-comments-spa/
+Dzen_public/
 ├── src/
-│   ├── Comments.Api/            # ASP.NET Core + GraphQL + SignalR
-│   ├── Comments.Application/    # CQRS/service layer, contracts, DTO
-│   ├── Comments.Domain/         # Entities + domain logic
-│   ├── Comments.Infrastructure/ # Виділений шар під EF/RabbitMQ/Elasticsearch (scaffold)
-│   └── Comments.Web/            # Місце під Angular SPA (scaffold)
-├── docker-compose.yml
-├── README.md
-├── load-test/
+│   ├── Comments.Api/            # ASP.NET Core host + GraphQL endpoint + SignalR hub + static hosting SPA
+│   ├── Comments.Application/    # Бізнес-логіка, CQRS, валідація
+│   ├── Comments.Domain/         # Доменні сутності
+│   ├── Comments.Infrastructure/ # Persistence/search/messaging/realtime/captcha/storage
+│   └── Comments.Web/            # Angular SPA
+├── docs/                        # Чеклісти, runbook, handoff-документація
+├── scripts/                     # Перевірки стенду та smoke/go-no-go
 └── Comments.sln
 ```
 
-> Наразі частина інфраструктурної реалізації ще фізично знаходиться в `Comments.Api` і буде поступово винесена в `Comments.Infrastructure` на наступних ітераціях.
+## Що реалізовано
 
-## Запуск локально
+- **Єдиний API-контракт: GraphQL** (`/graphql`) для читання/створення коментарів.
+- **Realtime-повідомлення** про нові коментарі через `SignalR` (`/hubs/comments`).
+- **SQLite persistence** з автозастосуванням EF Core міграцій під час запуску.
+- **Fallback-ready search pipeline** та інфраструктурні розширення в `Comments.Infrastructure`.
+- **Angular SPA** з деревом коментарів, формами, preview вкладень і адаптивним UI.
 
-1. Встановити .NET 8 SDK
-2. Переконатися, що шлях до SQLite у `src/Comments.Api/appsettings.json` валідний (`ConnectionStrings:CommentsDb`).
-3. Виконати:
+## Локальний запуск
+
+1. Встановити .NET 8 SDK та Node.js LTS.
+2. Відновити залежності:
 
 ```bash
 dotnet restore Comments.sln
+cd src/Comments.Web && npm ci && cd ../..
+```
+
+3. Запустити застосунок:
+
+```bash
 dotnet run --project src/Comments.Api/Comments.Api.csproj
 ```
 
-3. Відкрити Swagger: `http://192.168.0.106:5000/swagger` (або порт, який покаже `dotnet run`).
+4. Відкрити SPA у браузері за URL, який виведе `dotnet run`.
 
-## QA handoff: перевірка стенду і Go/No-Go
+## QA / smoke перевірки
 
-Перед передачею збірки у ручне тестування виконайте дві команди в корені репозиторію:
+Перед handoff у QA використовуйте:
 
 ```bash
-# 1) Підняти інфраструктуру й перевірити readiness критичних сервісів
 ./scripts/qa-stand-check.sh --report-file docs/artifacts/qa-stand-check.json
-
-# 2) Прогнати smoke-набір (backend tests + frontend unit + Playwright e2e)
 ./scripts/go-no-go-check.sh --report-file docs/artifacts/go-no-go-check.json
 ```
 
-Рекомендовано зафіксувати commit/tag після успішного smoke-прогону, і саме цей артефакт передавати в QA.
+## Актуальний план продовження робіт
 
-Обидва скрипти підтримують опційний прапорець `--report-file <path>` для збереження машинно-читаного JSON-звіту (статус + UTC timestamp), який можна долучати до QA handoff.
+- **P0:** GraphQL contract hardening (schema snapshots + compatibility checks).
+- **P0:** E2E критичних SPA user-flow (list/thread/reply/search/realtime/captcha).
+- **P1:** Accessibility та mobile regression (keyboard/navigation + viewport matrix).
+- **P1:** Security evidence (XSS/attachment/captcha abuse негативні сценарії).
+- **P2:** Release handoff і фінальний пакет артефактів у `docs/artifacts`.
 
-## Load testing (k6)
+## Джерело істини
 
-У репозиторії є два k6-сценарії:
-
-- `load-test/comments-smoke.js` — коротка smoke-перевірка доступності `GET /api/comments`.
-- `load-test/comments-middle.js` — розширений змішаний профіль (list/create/search + GraphQL) із threshold-метриками для p95/p99 та помилок.
-
-Приклади запуску:
-
-```bash
-# smoke
-k6 run load-test/comments-smoke.js
-
-# розширений профіль у mixed-режимі
-k6 run load-test/comments-middle.js
-
-# тільки GraphQL (за потреби передайте валідний CAPTCHA token)
-API_MODE=graphql CAPTCHA_TOKEN=test k6 run load-test/comments-middle.js
-
-# mixed-профіль + збереження машинно-читаного звіту
-k6 run --summary-export=docs/artifacts/k6-middle-summary.json load-test/comments-middle.js
-```
-
-Після прогона зафіксуйте короткий висновок (p95/p99/error-rate) у PR/релізних нотатках
-та додайте посилання на актуальний `summary`-артефакт.
-
-## Demo
-
-- Запис ключових сценаріїв (3–5 хв): **pending**.
-- Лінк на відео для тестування/приймання: `TODO: add demo video URL`.
-
-## Пріоритети продовження робіт
-
-- **P0:** закрити відкриті пункти з `docs/tz-compliance-checklist.md`.
-- **P1:** завершити production-hardening RabbitMQ/Elasticsearch + фінальний middle-load-test з артефактом `docs/artifacts/k6-middle-summary.json`.
-- **P2:** додати demo-відео ключових сценаріїв (3–5 хв) для QA/приймання.
-
-> Джерело істини для backlog і пріоритетів: `docs/tz-compliance-checklist.md`.
-
-## GraphQL validation contract (`validationErrors`)
-
-Для помилок валідації GraphQL повертає `errors[0].extensions` з уніфікованою формою:
-
-```json
-{
-  "errors": [
-    {
-      "message": "Validation failed",
-      "extensions": {
-        "code": "BAD_USER_INPUT",
-        "validationErrors": {
-          "Filter": [
-            "'Filter' must be 200 characters or fewer."
-          ]
-        }
-      }
-    }
-  ]
-}
-```
-
-Приклад для REST того ж кейсу (`GET /api/comments?...&filter=<201 chars>`) повертає `400` із `ValidationProblemDetails`:
-
-```json
-{
-  "status": 400,
-  "errors": {
-    "Filter": [
-      "'Filter' must be 200 characters or fewer."
-    ]
-  }
-}
-```
-
-Таким чином, для UI можна уніфікувати відображення повідомлень через мапу `field -> messages[]` як для REST (`errors`), так і для GraphQL (`extensions.validationErrors`).
-
-
-
-## Boundary-приклади валідації (REST/GraphQL)
-
-### REST: невалідні `page/pageSize`
-
-Запит:
-
-```http
-GET /api/comments?page=0&pageSize=0
-```
-
-Відповідь (`400 Bad Request`):
-
-```json
-{
-  "status": 400,
-  "errors": {
-    "Page": ["'Page' must be greater than '0'."],
-    "PageSize": ["'Page Size' must be between 1 and 100. You entered 0."]
-  }
-}
-```
-
-### REST: невалідний `captchaToken` у create
-
-Запит:
-
-```http
-POST /api/comments
-Content-Type: application/json
-```
-
-```json
-{
-  "userName": "User123",
-  "email": "user@example.com",
-  "text": "Hello",
-  "captchaToken": "wrong-token"
-}
-```
-
-Відповідь (`400 Bad Request`):
-
-```json
-{
-  "status": 400,
-  "errors": {
-    "Request.CaptchaToken": ["Captcha validation failed."]
-  }
-}
-```
-
-### GraphQL: невалідне вкладення
-
-Запит:
-
-```graphql
-mutation {
-  addComment(input: {
-    userName: "User123",
-    email: "user@example.com",
-    text: "Hello",
-    captchaToken: "1234",
-    attachment: {
-      fileName: "note.pdf",
-      contentType: "application/pdf",
-      base64Content: "SGVsbG8="
-    }
-  }) {
-    id
-  }
-}
-```
-
-Відповідь (`errors[0].extensions`):
-
-```json
-{
-  "code": "BAD_USER_INPUT",
-  "validationErrors": {
-    "Request.Attachment.ContentType": [
-      "The specified condition was not met for 'Request.Attachment.ContentType'."
-    ]
-  }
-}
-```
-
-## Короткий статус по ТЗ
-
-- Реалізовано базові API-шари (REST/GraphQL), валідацію, CAPTCHA, вкладення, SignalR і опційні інтеграції (RabbitMQ/Elasticsearch).
-- Актуальний перелік виконаних/невиконаних пунктів ведеться в `docs/tz-compliance-checklist.md`.
-- Якщо дані в README та checklist розходяться — довіряйте checklist.
+Актуальний статус відповідності ТЗ, прогрес і backlog ведеться в:
+- `docs/tz-compliance-checklist.md`
