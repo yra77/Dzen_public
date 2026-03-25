@@ -75,10 +75,14 @@ import { CommentAttachment } from '../../core/comments.models';
         border: 0;
         background: transparent;
         padding: 0;
+        max-width: 100%;
       }
       .attachment-thumb {
-        max-width: 260px;
-        max-height: 180px;
+        display: block;
+        width: min(100%, 320px);
+        max-width: 100%;
+        max-height: min(42vh, 220px);
+        object-fit: cover;
         border: 1px solid #d0d7de;
         border-radius: 8px;
         box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
@@ -93,8 +97,9 @@ import { CommentAttachment } from '../../core/comments.models';
         border: 0;
         border-radius: 14px;
         padding: 0;
-        max-width: min(92vw, 980px);
-        max-height: 94vh;
+        width: min(96vw, 980px);
+        max-width: min(96vw, 980px);
+        max-height: 96vh;
         overflow: visible;
         background: transparent;
       }
@@ -119,45 +124,51 @@ import { CommentAttachment } from '../../core/comments.models';
         border-radius: 12px;
         border: 2px solid white;
         box-shadow: 0 16px 36px rgba(196, 196, 196, 0.36);
-        max-width: min(92vw, 980px);
-        max-height: 84vh;
+        max-width: min(96vw, 980px);
+        max-height: 86vh;
         width: auto;
         height: auto;
-        animation: pulse 1.4s ease-in-out;
-      }
-      .lightbox-image:hover {
-        transform: scale(1.8);
+        animation: pulse 600ms ease-out;
       }
       .lightbox-close {
-        position:relative;
-        left:30px;
-        width: 36px;
-        height: 36px;
+        width: 40px;
+        height: 40px;
         border-radius: 999px;
-        background: transparent;
+        background: rgba(15, 23, 42, 0.48);
         border: none;
         color: #fff;
-        font-size: 34px;
+        font-size: 32px;
         line-height: 1;
         padding: 0;
         cursor: pointer;
       }
       .lightbox-close:hover {
-        background: transparent;
-        color: red;
+        background: rgba(15, 23, 42, 0.66);
+        color: #fecaca;
       }
       .attachment-text {
         white-space: pre-wrap;
+        word-break: break-word;
+        overflow-x: auto;
         background: #f8fafc;
         border: 1px solid #d9e0ec;
         border-radius: 8px;
         padding: 8px;
-      }       
-        @keyframes pulse {
-  0% { transform: scale(0.7); }
-  50% { transform: scale(1.8); }
-  100% { transform: scale(1); }
-}
+      }
+      .attachment-meta { overflow-wrap: anywhere; }
+      @media (max-width: 768px) {
+        .attachment-thumb { width: min(100%, 280px); max-height: min(38vh, 180px); }
+        .lightbox { width: 98vw; max-width: 98vw; }
+        .lightbox-image { max-width: 98vw; max-height: 82vh; border-radius: 8px; }
+      }
+      @media (max-width: 480px) {
+        .lightbox-header { padding-right: 2px; }
+        .lightbox-close { width: 44px; height: 44px; font-size: 30px; }
+      }
+      @keyframes pulse {
+        0% { transform: scale(0.95); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+      }
       @keyframes lightboxZoomIn {
         from {
           transform: scale(0.96);

@@ -14,11 +14,11 @@ import { CommentAttachmentComponent } from '../comment-attachment/comment-attach
   template: `
     <article class="comment thread-node">
       <p class="comment-header">
-        <strong>{{ comment.userName }}</strong>
-        <span>{{ comment.email }}</span>
-        <span>{{ comment.createdAtUtc | date: 'dd.MM.yy &nbsp;&nbsp;HH:mm' }}</span>
+        <strong class="comment-author">{{ comment.userName }}</strong>
+        <span class="comment-email">{{ comment.email }}</span>
+        <span class="comment-date">{{ comment.createdAtUtc | date: 'dd.MM.yy &nbsp;&nbsp;HH:mm' }}</span>
       </p>
-      <p [innerHTML]="renderedTextHtml"></p>
+      <p class="comment-body" [innerHTML]="renderedTextHtml"></p>
       @if (comment.attachment) {
         <app-comment-attachment
           [attachment]="comment.attachment"
@@ -38,11 +38,16 @@ import { CommentAttachmentComponent } from '../comment-attachment/comment-attach
   styles: [
     `
       .comments-list { padding: 0; list-style: none; display: grid; gap: 10px; }
-      .comment { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; background: #fcfcfd; }
-      .comment-header { display: flex; gap: 10px; flex-wrap: wrap; background: #e5e7eb; padding: 6px 8px; border-radius: 8px; margin: 0 0 8px; }
+      .comment { border: 1px solid #e5e7eb; border-radius: 10px; padding: clamp(10px, 1.8vw, 14px); background: #fcfcfd; }
+      .comment-header { display: flex; gap: 8px 12px; flex-wrap: wrap; align-items: center; background: #e5e7eb; padding: 8px 10px; border-radius: 8px; margin: 0 0 8px; }
+      .comment-author { font-size: 15px; line-height: 1.2; }
+      .comment-email,
+      .comment-date { color: #334155; font-size: 13px; line-height: 1.3; word-break: break-word; }
+      .comment-date { margin-left: auto; white-space: nowrap; }
+      .comment-body { margin: 0; line-height: 1.45; overflow-wrap: anywhere; }
       .thread-node { margin-top: 10px; }
       .thread-actions { margin-top: 8px; display: flex; justify-content: flex-end; }
-      .btn-answer { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 6px; background: transparent; cursor: pointer; }
+      .btn-answer { display: inline-flex; align-items: center; justify-content: center; min-width: 38px; min-height: 38px; padding: 8px; border-radius: 999px; background: transparent; cursor: pointer; }
       .btn-answer:hover { border-radius: 15px; border: 1px solid #999999;}
       .btn-answer:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
       .btn-answer-icon { width: 18px; height: 18px; display: block; }
@@ -54,7 +59,17 @@ import { CommentAttachmentComponent } from '../comment-attachment/comment-attach
       .attachment-selection-block { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
       .attachment-remove { margin-top: 0; font-size: 12px; padding: 4px 8px; background: #b42318; color: #fff; border: 1px solid #912018; border-radius: 6px; cursor: pointer; }
       .attachment-remove:hover { background: #912018; }
-      @media (max-width: 900px) { .actions { flex-direction: column; } }
+      @media (max-width: 900px) {
+        .comment-header { gap: 6px 10px; }
+        .comment-date { margin-left: 0; width: 100%; }
+      }
+      @media (max-width: 640px) {
+        .comment { border-radius: 9px; }
+        .comment-header { padding: 7px 9px; }
+        .comment-author { width: 100%; }
+        .thread-actions { justify-content: stretch; }
+        .btn-answer { width: 100%; border-radius: 10px; border: 1px solid #d0d7de; }
+      }
     `
   ]
 })
