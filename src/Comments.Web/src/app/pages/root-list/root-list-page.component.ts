@@ -258,6 +258,28 @@ import { COMMENT_QUERY_RETRY_POLICY } from '../../core/query-retry-policy';
       .error-list { color: #b42318; margin: 6px 0 0; }
       .form-grid { gap:1.5em;}
       .form-error-top { border: 1px solid #fecdca; background: #fef3f2; border-radius: 8px; padding: 10px; }
+      /* Планшет/мобільний режим: контроли списку і пагінація стають вертикальними. */
+      @media (max-width: 768px) {
+        .list-controls {
+          flex-direction: column;
+          gap: 8px;
+        }
+        .list-controls label {
+          min-width: 100%;
+        }
+        .btn-search {
+          margin-left: 0;
+          margin-top: 0;
+          width: 100%;
+          border: 1px solid #d0d5dd;
+          border-radius: 8px;
+          padding: 8px 12px;
+        }
+        .pagination {
+          flex-direction: column;
+          align-items: stretch;
+        }
+      }
       .field-invalid { border-color: #d92d20; box-shadow: 0 0 0 1px #d92d20 inset; }
       .text-preview { border: 1px dashed #d0d5dd; border-radius: 8px; padding: 8px; background: #f8fafc; }
       .text-preview-title { color: #344054; font-size: 14px; margin-bottom: 6px; font-weight: 600; }
