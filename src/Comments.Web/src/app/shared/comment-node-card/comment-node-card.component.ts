@@ -39,22 +39,46 @@ import { CommentAttachmentComponent } from '../comment-attachment/comment-attach
     `
       .comments-list { padding: 0; list-style: none; display: grid; gap: 10px; }
       .comment { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; background: #fcfcfd; }
-      .comment-header { display: flex; gap: 10px; flex-wrap: wrap; background: #e5e7eb; padding: 6px 8px; border-radius: 8px; margin: 0 0 8px; }
+      .comment-header { display: grid; grid-template-columns: repeat(3, minmax(0, auto)); gap: 10px; align-items: center; background: #e5e7eb; padding: 6px 8px; border-radius: 8px; margin: 0 0 8px; }
       .thread-node { margin-top: 10px; }
       .thread-actions { margin-top: 8px; display: flex; justify-content: flex-end; }
-      .btn-answer { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 6px; background: transparent; cursor: pointer; }
+      .btn-answer { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; min-height: 36px; padding: 6px; background: transparent; cursor: pointer; }
       .btn-answer:hover { border-radius: 15px; border: 1px solid #999999;}
       .btn-answer:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
       .btn-answer-icon { width: 18px; height: 18px; display: block; }
       .tree { list-style: none; margin: 0; padding-left: 14px; }
       .attachment-inline { margin-top: 8px; }
-      .attachment-thumb { max-width: 260px; max-height: 180px; border: 1px solid #d0d7de; border-radius: 8px; }
-      .attachment-text { white-space: pre-wrap; background: #f8fafc; border: 1px solid #d9e0ec; border-radius: 8px; padding: 8px; }
+      .attachment-thumb { max-width: min(100%, 260px); max-height: 180px; border: 1px solid #d0d7de; border-radius: 8px; }
+      .attachment-text { white-space: pre-wrap; background: #f8fafc; border: 1px solid #d9e0ec; border-radius: 8px; padding: 8px; word-break: break-word; }
       .attachment-selection-preview { margin: 0; }
       .attachment-selection-block { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
       .attachment-remove { margin-top: 0; font-size: 12px; padding: 4px 8px; background: #b42318; color: #fff; border: 1px solid #912018; border-radius: 6px; cursor: pointer; }
       .attachment-remove:hover { background: #912018; }
-      @media (max-width: 900px) { .actions { flex-direction: column; } }
+      /* Планшети: метадані картки переходять у дві колонки без переповнення. */
+      @media (max-width: 900px) {
+        .comment-header {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          row-gap: 6px;
+        }
+      }
+      /* Телефони: хедер у одну колонку, кнопка відповіді на всю ширину для зручного tap. */
+      @media (max-width: 640px) {
+        .comment {
+          padding: 8px;
+        }
+        .comment-header {
+          grid-template-columns: 1fr;
+          gap: 4px;
+        }
+        .thread-actions {
+          justify-content: stretch;
+        }
+        .btn-answer {
+          width: 100%;
+          border: 1px solid #d0d7de;
+          border-radius: 8px;
+        }
+      }
     `
   ]
 })
