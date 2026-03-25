@@ -10,6 +10,7 @@ body {
   max-width: 1000px;
   margin: 0 auto;
   padding: 24px;
+  box-sizing: border-box;
 }
 .panel {
   background: white;
@@ -61,8 +62,9 @@ button:disabled {
   margin-top: 10px;
   display: flex;
   gap: 10px;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
 }
 .pagination button {
   width: auto;
@@ -154,6 +156,7 @@ button:disabled {
   color: #027a48;
 }
 @media (max-width: 900px) {
+  /* Адаптація форми та тулбару на планшетах і мобільних екранах. */
   .form-grid,
   .toolbar {
     grid-template-columns: 1fr;
@@ -165,6 +168,47 @@ button:disabled {
 
   .pagination button {
     width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Зменшуємо відступи та розмір панелей для телефонів. */
+  .container {
+    padding: 14px;
+  }
+
+  .panel {
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  .comments-table th,
+  .comments-table td {
+    padding: 8px;
+    font-size: 14px;
+  }
+
+  .replies {
+    margin-left: 10px;
+    padding-left: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Компактний режим для вузьких смартфонів. */
+  button {
+    width: 100%;
+  }
+
+  .comment-actions .reply-btn,
+  .quick-tag-btn,
+  .secondary-button {
+    width: 100%;
+  }
+
+  .attachment-preview-inline img {
+    max-width: 100%;
+    height: auto;
   }
 }
 

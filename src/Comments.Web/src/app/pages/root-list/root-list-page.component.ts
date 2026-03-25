@@ -244,6 +244,7 @@ import { COMMENT_QUERY_RETRY_POLICY } from '../../core/query-retry-policy';
       .error { color: #b42318; }
       .meta { color: #475467; }
       .list-controls { display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0; }
+      .list-controls label { flex: 1 1 220px; min-width: 180px; }
       .pagination { margin-top: 12px; display: flex; align-items: center; gap: 10px; }
       .pagination-summary { margin: 8px 0 0; color: #475467; }
       .comments-list { padding: 0; list-style: none; display: grid; gap: 10px; }
@@ -262,6 +263,18 @@ import { COMMENT_QUERY_RETRY_POLICY } from '../../core/query-retry-policy';
       .text-preview-title { color: #344054; font-size: 14px; margin-bottom: 6px; font-weight: 600; }
       .text-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
       .text-toolbar-label { color: #344054; font-size: 14px; }
+      /* Мобільний брейкпоінт: керування списком і пагінацією в один стовпець. */
+      @media (max-width: 640px) {
+        .list-controls label,
+        .list-controls button,
+        .pagination button {
+          width: 100%;
+        }
+        .pagination {
+          flex-direction: column;
+          align-items: stretch;
+        }
+      }
     `
   ]
 })
