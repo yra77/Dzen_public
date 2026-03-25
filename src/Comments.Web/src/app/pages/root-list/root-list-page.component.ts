@@ -184,9 +184,8 @@ import { COMMENT_QUERY_RETRY_POLICY } from '../../core/query-retry-policy';
           <button type="button" (click)="goToNextPage()" [disabled]="page >= totalPages || isLoading">Наступна →</button>
         </div>
         <p class="pagination-summary" data-testid="root-pagination-summary">
-          Всього: <strong>{{ totalCount }}</strong>.
-          На цій сторінці: <strong>{{ commentsOnCurrentPage }}</strong>.
-          Вже переглянуто: <strong>{{ viewedCommentsCount }}</strong>.
+          Коментарів <strong>{{ viewedCommentsCount }}</strong> з <strong>{{ totalCount }}</strong>.
+           На цій сторінці: <strong>{{ commentsOnCurrentPage }}</strong>.
         </p>
         @if (isReplyModalOpen) {
           <app-comment-modal-layout
@@ -244,9 +243,8 @@ import { COMMENT_QUERY_RETRY_POLICY } from '../../core/query-retry-policy';
       .error { color: #b42318; }
       .meta { color: #475467; }
       .list-controls { display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0; }
-      .list-controls label { flex: 1 1 220px; min-width: 180px; }
       .pagination { margin-top: 12px; display: flex; align-items: center; gap: 10px; }
-      .pagination-summary { margin: 8px 0 0; color: #475467; }
+      .pagination-summary { color: #475467; text-align:start; }
       .comments-list { padding: 0; list-style: none; display: grid; gap: 10px; }
       .comment { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; background: #fcfcfd; }
       .comment-header { display: flex; gap: 10px; flex-wrap: wrap; background: #e5e7eb; padding: 6px 8px; border-radius: 8px; margin: 0 0 8px; }
@@ -258,45 +256,11 @@ import { COMMENT_QUERY_RETRY_POLICY } from '../../core/query-retry-policy';
       .error-list { color: #b42318; margin: 6px 0 0; }
       .form-grid { gap:1.5em;}
       .form-error-top { border: 1px solid #fecdca; background: #fef3f2; border-radius: 8px; padding: 10px; }
-      /* Планшет/мобільний режим: контроли списку і пагінація стають вертикальними. */
-      @media (max-width: 768px) {
-        .list-controls {
-          flex-direction: column;
-          gap: 8px;
-        }
-        .list-controls label {
-          min-width: 100%;
-        }
-        .btn-search {
-          margin-left: 0;
-          margin-top: 0;
-          width: 100%;
-          border: 1px solid #d0d5dd;
-          border-radius: 8px;
-          padding: 8px 12px;
-        }
-        .pagination {
-          flex-direction: column;
-          align-items: stretch;
-        }
-      }
       .field-invalid { border-color: #d92d20; box-shadow: 0 0 0 1px #d92d20 inset; }
       .text-preview { border: 1px dashed #d0d5dd; border-radius: 8px; padding: 8px; background: #f8fafc; }
       .text-preview-title { color: #344054; font-size: 14px; margin-bottom: 6px; font-weight: 600; }
       .text-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
       .text-toolbar-label { color: #344054; font-size: 14px; }
-      /* Мобільний брейкпоінт: керування списком і пагінацією в один стовпець. */
-      @media (max-width: 640px) {
-        .list-controls label,
-        .list-controls button,
-        .pagination button {
-          width: 100%;
-        }
-        .pagination {
-          flex-direction: column;
-          align-items: stretch;
-        }
-      }
     `
   ]
 })
