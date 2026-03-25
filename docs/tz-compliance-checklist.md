@@ -2,63 +2,68 @@
 
 Останнє оновлення: 2026-03-25.
 
-> Документ очищено від проміжних/застарілих нотаток: залишено лише актуальний стан і робочий backlog.
+> Документ очищено від неактуальних пунктів. Поточний контракт: **GraphQL-only** (без Swagger/REST API), без load-testing сценаріїв k6 у складі проєкту.
 
-## 1) Актуально зроблено (поточний код)
+## 1) Внесені зміни в документацію (цього оновлення)
 
-- `src/Comments.Web/src/app/shared/comment-node-card/comment-node-card.component.ts`
-  - картка коментаря має адаптивний header (author/email/date) для desktop/tablet/mobile;
-  - довгі email/текст не ламають layout (переноси слів, без горизонтального скролу);
-  - кнопка «Відповісти» має touch-friendly tap-area і на мобільних розтягується на ширину контейнера.
-- `src/Comments.Web/src/app/shared/comment-attachment/comment-attachment.component.ts`
-  - прев’ю вкладень адаптивне (image/txt без переповнення по X);
-  - lightbox підлаштовано під вузькі екрани (mobile/tablet), без агресивного hover-scale;
-  - покращено розміри/контраст кнопки закриття для touch-пристроїв.
+- Оновлено `README.md` під фактичний стан проєкту.
+- Видалено згадки про Swagger, REST API та k6 load testing як про активні/наявні частини поточного scope.
+- Синхронізовано backlog із фактичним напрямом: GraphQL + SPA + realtime + QA evidence.
 
-## 2) Матриця відповідності ТЗ (актуальна)
+## 2) Актуально зроблено (поточний код)
 
 ### Backend
 
-| Вимога | Статус | Підтвердження | Що ще треба зробити |
-|---|---|---|---|
-| ASP.NET Core 8 | ✅ | API конфігурація в `Program.cs` | Підтримувати актуальні patch-оновлення runtime/SDK |
-| EF Core + MySQL/SQLite | ✅ | Є `CommentsDbContext`, міграції, репозиторії | Додати smoke-тест cold-start для чистої БД |
-| GraphQL (HotChocolate) | ✅ | Реалізовано Query/Mutation + error filters | Зафіксувати schema snapshots + contract checks |
-| CQRS + MediatR | ✅ | Команди/запити + `ValidationBehavior` | Розширити e2e покриття create/reply/search |
-| RabbitMQ + MassTransit | ✅ | Publisher/consumer + retry/idempotency | Додати CI smoke у test-stack з брокером |
-| Elasticsearch + fallback | ✅ | Ініціалізація індексу, backfill, resilient search | Додати CI-перевірку деградації та індексації |
-| SignalR realtime | ✅ | Hub + канал публікації нових коментарів | E2E reconnect/backoff сценарії |
+- **.NET 8 API host** для SPA та інфраструктури застосунку.
+- **GraphQL endpoint** (`/graphql`) як єдиний API-контракт.
+- **SignalR hub** (`/hubs/comments`) для realtime-оновлень.
+- **EF Core + SQLite** з автозастосуванням міграцій.
+- Підготовлені інфраструктурні модулі для search/messaging/captcha/storage.
 
 ### Frontend
 
-| Вимога | Статус | Підтвердження | Що ще треба зробити |
-|---|---|---|---|
-| Angular standalone SPA | ✅ | Standalone-компоненти + маршрути | E2E smoke для root/thread маршрутів |
-| Адаптивність mobile/tablet/desktop | ✅ | Адаптивні `comment-node-card` + `comment-attachment` | Додати e2e viewport-matrix (`320/375/768/1024/1440`) |
-| Пагінація (25 за замовч.) | ✅ | `pageSize=25`, summary в UI | E2E переходи між сторінками |
-| Сортування root-коментарів | ✅ | Поле + напрям сортування | E2E-матриця комбінацій sort |
-| Вкладені відповіді | ✅ | Рекурсивний рендер дерева + realtime merge | Stress-тести глибоких дерев |
-| Preview + quick-tags | ✅ | Toolbar + preview-flow у формах | Accessibility/keyboard сценарії |
-| Lightbox зображень | ✅ | Модальний перегляд image-вкладень | E2E на ESC/backdrop close |
+- **Angular standalone SPA** зі структурою коментарів і формами створення/відповіді.
+- Адаптивні UI-компоненти для картки коментаря та вкладень.
+- Підтримка preview вкладень і mobile/tablet/desktop UX-поведінки.
 
-## 3) Що ще потрібно зробити у проєкті (пріоритет)
+## 3) Матриця відповідності ТЗ (актуальна)
+
+| Напрям | Статус | Підтвердження | Що ще треба зробити |
+|---|---|---|---|
+| ASP.NET Core 8 | ✅ | `Comments.Api` запускається як основний host | Тримати runtime/SDK patch-level актуальним |
+| GraphQL (HotChocolate) | ✅ | Endpoint `/graphql`, query/mutation, error filters | Додати schema snapshots + compatibility checks |
+| CQRS + MediatR + Validation | ✅ | Команди/запити, pipeline validation | Розширити e2e покриття критичних сценаріїв |
+| EF Core + SQLite | ✅ | DbContext, migration flow, repository layer | Додати cold-start smoke для чистої БД |
+| SignalR realtime | ✅ | Hub + канали оновлень | E2E reconnect/backoff перевірки |
+| Angular SPA (standalone) | ✅ | SPA-структура та UI-компоненти | E2E smoke root/thread/reply/search |
+| Адаптивність UI | ✅ | Актуальні mobile/tablet/desktop правки | Viewport matrix regression (`320/375/768/1024/1440`) |
+
+## 4) Що ще треба робити у проєкті (пріоритет)
 
 1. **P0 — GraphQL contract hardening**
-   - Schema snapshots для стабілізації контрактів.
-   - Перевірки backward compatibility для ключових запитів/мутацій.
-2. **P0 — E2E критичних SPA user-flow**
-   - list/thread/search/preview/reply/captcha/realtime.
+   - зафіксувати schema snapshots;
+   - додати перевірки backward compatibility для ключових операцій.
+
+2. **P0 — E2E критичних user-flow SPA**
+   - list/thread/reply/search/preview/captcha/realtime;
+   - стабілізувати сценарії для QA handoff.
+
 3. **P1 — Accessibility + mobile UX hardening**
-   - keyboard-navigation (modal, toolbar, форма);
-   - viewport matrix regression (`320/375/768/1024/1440`).
+   - keyboard-navigation для форм/модалок/toolbar;
+   - viewport matrix regression.
+
 4. **P1 — Security evidence**
-   - негативні сценарії XSS, attachment abuse, CAPTCHA abuse.
-5. **P1 — QA evidence у docs/artifacts**
-   - прогони `scripts/qa-stand-check.sh` та `scripts/go-no-go-check.sh` у повному стеку;
-   - збереження артефактів перевірок у репозиторії.
-6. **P2 — Release handoff**
-   - release-checklist (ризики, known issues, rollback notes).
+   - негативні сценарії XSS/attachment abuse/captcha abuse;
+   - фіксація результатів у артефактах.
 
-## 4) Примітка по тестам
+5. **P1 — QA evidence у `docs/artifacts`**
+   - регулярні прогони `qa-stand-check` та `go-no-go-check`;
+   - збереження JSON-звітів як доказів готовності.
 
-Локальні самоперевірки (build/check) виконуються для контролю якості; тимчасові тестові файли в репозиторій не додаються.
+6. **P2 — Release handoff пакет**
+   - release-checklist, known issues, rollback notes;
+   - узгоджений пакет артефактів для приймання.
+
+## 5) Примітка по тестам
+
+Локальні самоперевірки (build/check) дозволені для контролю якості, але тимчасові тестові файли в репозиторій не додаються.
