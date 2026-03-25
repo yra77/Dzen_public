@@ -40,13 +40,7 @@ import { CommentNodeCardComponent } from '../comment-node-card/comment-node-card
   `,
   styles: [
     `
-      .tree { list-style: none; margin: 0; padding-left: clamp(8px, 2.2vw, 14px); }
-      /* Мобільні екрани: звужуємо відступ дерева, щоб картки не ламалися по ширині. */
-      @media (max-width: 640px) {
-        .tree {
-          padding-left: 8px;
-        }
-      }
+      .tree { list-style: none; margin: 0; padding-left: 14px; }
     `
   ]
 })
