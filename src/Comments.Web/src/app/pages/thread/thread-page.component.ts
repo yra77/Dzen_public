@@ -172,6 +172,15 @@ import { COMMENT_QUERY_RETRY_POLICY } from '../../core/query-retry-policy';
       .form-grid { gap:1.5em;}
       .form-error-top { border: 1px solid #fecdca; background: #fef3f2; border-radius: 8px; padding: 10px; }
       .field-invalid { border-color: #d92d20; box-shadow: 0 0 0 1px #d92d20 inset; }
+      /* Мобільний брейкпоінт: прибираємо надлишкові відступи в гілці. */
+      @media (max-width: 640px) {
+        .thread-node {
+          padding: 8px;
+        }
+        .tree {
+          padding-left: 8px;
+        }
+      }
     `
   ]
 })
