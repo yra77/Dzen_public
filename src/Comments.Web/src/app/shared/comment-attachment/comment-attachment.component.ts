@@ -129,11 +129,9 @@ import { CommentAttachment } from '../../core/comments.models';
         height: auto;
         animation: pulse 600ms ease-out;
       }
-        .lightbox-image:hover {
-        transform: scale(1.8);
-      }
+      
       .lightbox-close {
-      position:relative;
+        position:relative;
         left:30px;
         width: 40px;
         height: 40px;
@@ -160,27 +158,50 @@ import { CommentAttachment } from '../../core/comments.models';
         padding: 8px;
       }
 
+       @media (min-width: 769px) {
          @keyframes pulse {
   0% { transform: scale(0.7); }
   50% { transform: scale(1.8); }
   100% { transform: scale(1); }
 }
-
+    .lightbox-image:hover {
+        transform: scale(1.8);
+      }
+  }
+      
       .attachment-meta { overflow-wrap: anywhere; }
+
       @media (max-width: 768px) {
         .attachment-thumb { width: min(100%, 280px); max-height: min(38vh, 180px); }
         .lightbox { max-width: min(92vw, 980px);
         max-height: 94vh; }
         .lightbox-image { max-width: 98vw; max-height: 82vh; border-radius: 8px; }
+
+              @keyframes pulse {
+  0% { transform: scale(0.7); }
+  100% { transform: scale(1); }
+  }
+    .lightbox-image:hover {
+        transform: scale(1.2);
       }
+      }
+
       @media (max-width: 480px) {
         .lightbox-header { padding-right: 2px; }
         .lightbox-close { width: 44px; height: 44px; font-size: 30px; }
+
+               @keyframes pulse {
+  0% { transform: scale(0.7); }
+  100% { transform: scale(1); }
+  }
+
+    .lightbox-image:hover {
+        transform: scale(1.2);
       }
-      @keyframes pulse {
-        0% { transform: scale(0.95); opacity: 0; }
-        100% { transform: scale(1); opacity: 1; }
+
       }
+  
+      
       @keyframes lightboxZoomIn {
         from {
           transform: scale(0.96);
