@@ -48,7 +48,9 @@ builder.Services.AddDbContext<CommentsDbContext>(options =>
                                ?? throw new InvalidOperationException("Connection string 'CommentsDb' is required for Sqlite provider.");
         var normalizedConnectionString = EnsureSqliteDatabasePath(connectionString, builder.Environment.ContentRootPath);
 
-        options.UseSqlite(normalizedConnectionString);
+        options.UseSqlite(
+            normalizedConnectionString,
+            sqliteOptions => sqliteOptions.MigrationsAssembly(typeof(CommentQueries).Assembly.FullName));
         return;
     }
 
