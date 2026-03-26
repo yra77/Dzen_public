@@ -125,25 +125,8 @@ if (rabbitMqOptions.Enabled)
                 hostConfigurator.Password(rabbitMqOptions.Password);
             });
 
-            busConfigurator.Message<CommentIndexingRequested>(messageConfigurator =>
-            {
-                messageConfigurator.SetEntityName(rabbitMqOptions.IndexingQueueName);
-            });
-
-            busConfigurator.Message<CommentFileProcessingRequested>(messageConfigurator =>
-            {
-                messageConfigurator.SetEntityName(rabbitMqOptions.FileProcessingQueueName);
-            });
-
-            busConfigurator.Publish<CommentIndexingRequested>(publishConfigurator =>
-            {
-                publishConfigurator.ExchangeType = "direct";
-            });
-
-            busConfigurator.Publish<CommentFileProcessingRequested>(publishConfigurator =>
-            {
-                publishConfigurator.ExchangeType = "direct";
-            });
+            // Використовуємо стандартну топологію MassTransit для message exchange,
+            // щоб уникнути конфлікту налаштувань exchange з endpoint exchange (queue name).
 
             if (rabbitMqOptions.ConsumerEnabled)
             {
