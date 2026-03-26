@@ -31,22 +31,38 @@ public sealed class ElasticsearchIndexInitializerHostedService : IHostedService
     /// </summary>
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        var existsResponse = await _client.Indices.ExistsAsync(_options.IndexName, cancellationToken);
-        if (existsResponse.Exists)
+        try
         {
-            return;
+            var existsResponse = await _client.Indices.ExistsAsync(_options.IndexName, cancellationToken);
+            if (existsResponse.Exists)
+            {
+                return;
+            }
+
+            var createResponse = await _client.Indices.CreateAsync(_options.IndexName, descriptor => descriptor
+                .Settings(settings => settings.NumberOfShards(1).NumberOfReplicas(0)), cancellationToken);
+
+            if (!createResponse.IsValidResponse)
+            {
+                var errorMessage = createResponse.ElasticsearchServerError?.ToString()
+                                   ?? createResponse.DebugInformation
+                                   ?? "unknown error";
+
+                throw new InvalidOperationException(
+                    $"Failed to create Elasticsearch index '{_options.IndexName}': {errorMessage}");
+            }
+
+            _logger.LogInformation("Created Elasticsearch index {IndexName} with typed mapping.", _options.IndexName);
         }
-
-        var createResponse = await _client.Indices.CreateAsync(_options.IndexName, descriptor => descriptor
-            .Settings(settings => settings.NumberOfShards(1).NumberOfReplicas(0)), cancellationToken);
-
-        if (!createResponse.IsValidResponse)
+        catch (Exception ex) when (!_options.FailStartupOnIndexInitializationError)
         {
-            var errorMessage = createResponse.ElasticsearchServerError?.ToString() ?? "unknown error";
-            throw new InvalidOperationException($"Failed to create Elasticsearch index '{_options.IndexName}': {errorMessage}");
+            _logger.LogError(
+                ex,
+                "Elasticsearch index initialization failed for index {IndexName}. " +
+                "Application startup will continue because {OptionName}=false.",
+                _options.IndexName,
+                nameof(ElasticsearchOptions.FailStartupOnIndexInitializationError));
         }
-
-        _logger.LogInformation("Created Elasticsearch index {IndexName} with typed mapping.", _options.IndexName);
     }
 
     /// <summary>

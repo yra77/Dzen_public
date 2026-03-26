@@ -24,4 +24,9 @@ public sealed class ElasticsearchOptions
     /// Запуск backfill-індексації під час старту застосунку.
     /// </summary>
     public bool BackfillOnStartup { get; init; } = true;
+
+    /// <summary>
+    /// Визначає, чи має застосунок переривати старт, якщо не вдалося створити/перевірити індекс.
+    /// </summary>
+    public bool FailStartupOnIndexInitializationError { get; init; }
 }
