@@ -2,8 +2,6 @@
 
 Останнє оновлення: 2026-03-27.
 
-> Документ містить лише актуальні пункти для поточного стану проєкту (GraphQL-only контракт).
-
 ## 1) Актуальний стан по ТЗ
 
 | Напрям | Статус | Підтвердження | Що ще треба зробити |
@@ -12,7 +10,7 @@
 | GraphQL endpoint | ✅ | `/graphql` — основний API-контракт | Додати compatibility-check для ключових операцій |
 | SignalR realtime | ✅ | `/hubs/comments` для live-оновлень | Додати reconnect/backoff e2e-перевірки |
 | Angular SPA | ✅ | Standalone SPA з формами, тредами, вкладеннями | Закрити e2e smoke для root/thread/reply/search |
-| Конфігуровані URL | ✅ | API/CORS керуються через `environment.ts` + `appsettings.json` | За потреби додати окремі профілі dev/stage/prod |
+| Конфігуровані URL/Host | ✅ | `environment.ts` + `appsettings.json` містять ключові URI/host параметри | Винести значення у профілі dev/stage/prod |
 
 ## 2) Що ще робити у проєкті (пріоритет)
 
@@ -32,6 +30,15 @@
    - негативні сценарії XSS/attachment abuse/captcha abuse;
    - фіксація результатів у `docs/artifacts`.
 
-## 3) Нотатка по тестах
+## 3) Конфігураційна пам'ятка (URI/Host)
+
+- `src/Comments.Web/src/environments/environment.ts`: змінювати `API_BASE_URL` (**рядок 4**).
+- `src/Comments.Api/appsettings.json`: перевіряти/оновлювати:
+  - `RabbitMq.HostName` (**рядок 7**),
+  - `Networking.ApiListenUrls` (**рядок 34**),
+  - `Elasticsearch.Uri` (**рядок 62**),
+  - `Cors.AllowedOrigins` (**рядки 74–77**).
+
+## 4) Нотатка по тестах
 
 Локальні самоперевірки (build/check) можна виконувати для контролю якості, але тимчасові тестові файли не додаються у репозиторій.
