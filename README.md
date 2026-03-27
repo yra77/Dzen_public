@@ -76,6 +76,23 @@ npm start
 
 5. Відкрити SPA у браузері за URL, який покаже Angular dev server (зазвичай `http://localhost:4200`).
 
+
+## Де міняти URI/Host при зміні стенду
+
+Якщо переносиш застосунок на інший сервер/домен/порт, онови **обидва** файли:
+
+1. `src/Comments.Web/src/environments/environment.ts`
+   - **рядок 4**: `API_BASE_URL`
+   - Приклад: `const API_BASE_URL = 'http://YOUR_HOST:5000';`
+
+2. `src/Comments.Api/appsettings.json`
+   - **рядок 7**: `RabbitMq.HostName` (якщо RabbitMQ на іншому хості)
+   - **рядок 34**: `Networking.ApiListenUrls` (де слухає API)
+   - **рядок 62**: `Elasticsearch.Uri` (якщо змінено Elasticsearch host/port)
+   - **рядки 74–77**: `Cors.AllowedOrigins` (додай/онови origin фронтенду)
+
+Після зміни конфігурації рекомендовано перезапустити backend і frontend.
+
 ## QA / smoke перевірки
 
 Перед handoff у QA:
