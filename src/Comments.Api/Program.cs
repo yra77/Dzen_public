@@ -167,11 +167,17 @@ builder.Services.AddValidatorsFromAssemblyContaining<CommentService>();
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 builder.Services.AddCors(options =>
 {
-    // Дозволяє Angular-dev-server взаємодіяти з API та SignalR під час локальної розробки.
+    // Дозволяє керувати CORS-origin адресами через appsettings.json,
+    // щоб не змінювати код при переході між localhost/зовнішнім IP/іншим портом.
+    var configuredOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+    var allowedOrigins = configuredOrigins is { Length: > 0 }
+        ? configuredOrigins
+        : new[] { "http://localhost:4200" };
+
     options.AddPolicy("CommentsWebDevClient", policy =>
     {
         policy
-            .WithOrigins("http://192.168.0.106:4200", "http://46.119.236.29:4200")
+            .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
