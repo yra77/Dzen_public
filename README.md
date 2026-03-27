@@ -6,7 +6,7 @@
 - realtime-оновлення через **SignalR**;
 - збереження даних через **EF Core + SQLite**.
 
-> Важливо: у поточному контракті застосунку **немає Swagger, REST API та k6 load-testing сценаріїв**.
+> Важливо: у поточному контракті застосунку **немає Swagger і REST API** — використовується **GraphQL-only**.
 
 ## Поточна архітектура
 
@@ -23,62 +23,85 @@ Dzen_public/
 └── Comments.sln
 ```
 
-## Що реалізовано
+## Варіант 1: запуск через Docker (backend + web)
 
-- **Єдиний API-контракт: GraphQL** (`/graphql`) для читання/створення коментарів.
-- **Realtime-повідомлення** про нові коментарі через `SignalR` (`/hubs/comments`).
-- **SQLite persistence** з автозастосуванням EF Core міграцій під час запуску.
-- **Fallback-ready search pipeline** та інфраструктурні розширення в `Comments.Infrastructure`.
-- **Angular SPA** з деревом коментарів, формами, preview вкладень і адаптивним UI.
-
-## Локальний запуск
-
-1. Встановити .NET 8 SDK та Node.js LTS.
-2. Відновити залежності:
-
-```bash
-dotnet restore Comments.sln
-cd src/Comments.Web && npm ci && cd ../..
-```
-
-3. Запустити застосунок:
-
-```bash
-dotnet run --project src/Comments.Api/Comments.Api.csproj
-```
-
-4. Відкрити SPA у браузері за URL, який виведе `dotnet run`.
-
-## Docker: підняти backend + web разом
+1. Переконайтесь, що встановлено Docker + Docker Compose.
+2. У корені репозиторію виконайте:
 
 ```bash
 docker compose up --build
 ```
 
-Після старту:
+Після старту доступно:
 - Web (Angular через Nginx): `http://localhost:4200`
 - Backend (GraphQL API): `http://localhost:5000/graphql`
 - RabbitMQ management: `http://localhost:15672`
 - Elasticsearch: `http://localhost:9200`
 
-> Примітка: фронтенд використовує `http://localhost:5000` як API base URL, тому з браузера на хості він працює з контейнеризованим backend без додаткових змін.
+> Примітка: frontend налаштований на `http://localhost:5000` як API base URL, тому працює з backend у Docker без додаткових правок.
+
+## Варіант 2: локальний запуск (backend окремо + web через `npm start`)
+
+### Передумови
+- .NET 8 SDK
+- Node.js LTS (щоб запускати web через `npm start`)
+
+### Кроки
+1. Відновити NuGet-пакети:
+
+```bash
+dotnet restore Comments.sln
+```
+
+2. Встановити npm-залежності frontend:
+
+```bash
+cd src/Comments.Web
+npm ci
+cd ../..
+```
+
+3. Запустити backend:
+
+```bash
+dotnet run --project src/Comments.Api/Comments.Api.csproj
+```
+
+4. В окремому терміналі запустити web:
+
+```bash
+cd src/Comments.Web
+npm start
+```
+
+5. Відкрити SPA у браузері за URL, який покаже Angular dev server (зазвичай `http://localhost:4200`).
 
 ## QA / smoke перевірки
 
-Перед handoff у QA використовуйте:
+Перед handoff у QA:
 
 ```bash
 ./scripts/qa-stand-check.sh --report-file docs/artifacts/qa-stand-check.json
 ./scripts/go-no-go-check.sh --report-file docs/artifacts/go-no-go-check.json
 ```
 
-## Актуальний план продовження робіт
+## Що ще треба робити у проєкті
 
-- **P0:** GraphQL contract hardening (schema snapshots + compatibility checks).
-- **P0:** E2E критичних SPA user-flow (list/thread/reply/search/realtime/captcha).
-- **P1:** Accessibility та mobile regression (keyboard/navigation + viewport matrix).
-- **P1:** Security evidence (XSS/attachment/captcha abuse негативні сценарії).
-- **P2:** Release handoff і фінальний пакет артефактів у `docs/artifacts`.
+1. **P0 — GraphQL contract hardening**
+   - schema snapshots;
+   - backward compatibility checks для ключових операцій.
+
+2. **P0 — E2E критичних user-flow**
+   - list/thread/reply/search/preview/captcha/realtime;
+   - стабілізація smoke-набору для QA handoff.
+
+3. **P1 — Accessibility + mobile UX**
+   - keyboard navigation для форм/модалок;
+   - viewport regression (`320/375/768/1024/1440`).
+
+4. **P1 — Security evidence**
+   - негативні сценарії XSS/attachment abuse/captcha abuse;
+   - артефакти перевірок у `docs/artifacts`.
 
 ## Джерело істини
 
