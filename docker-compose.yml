@@ -24,6 +24,17 @@ services:
       # Зберігає SQLite-файл між перезапусками контейнера API.
       - comments_data:/app/data
 
+  comments-web:
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/amd64}
+    build:
+      context: .
+      dockerfile: src/Comments.Web/Dockerfile
+    depends_on:
+      comments-api:
+        condition: service_started
+    ports:
+      - '4200:80'
+
   rabbitmq:
     image: rabbitmq:3-management
     ports:

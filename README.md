@@ -49,6 +49,20 @@ dotnet run --project src/Comments.Api/Comments.Api.csproj
 
 4. Відкрити SPA у браузері за URL, який виведе `dotnet run`.
 
+## Docker: підняти backend + web разом
+
+```bash
+docker compose up --build
+```
+
+Після старту:
+- Web (Angular через Nginx): `http://localhost:4200`
+- Backend (GraphQL API): `http://localhost:5000/graphql`
+- RabbitMQ management: `http://localhost:15672`
+- Elasticsearch: `http://localhost:9200`
+
+> Примітка: фронтенд використовує `http://localhost:5000` як API base URL, тому з браузера на хості він працює з контейнеризованим backend без додаткових змін.
+
 ## QA / smoke перевірки
 
 Перед handoff у QA використовуйте:
