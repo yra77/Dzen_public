@@ -81,8 +81,8 @@ npm start
 Якщо переносиш застосунок на інший сервер/домен/порт, онови **обидва** файли:
 
 1. `src/Comments.Web/src/environments/environment.ts`
-   - **рядок 2**: `API_BASE_URL`
-   - Приклад: `const API_BASE_URL = 'http://YOUR_HOST:5000';`
+   - **рядок 2**: `apiBaseUrl`
+   - Приклад: `apiBaseUrl: 'http://localhost:5000';`
 
 2. `src/Comments.Api/appsettings.json`
    - **рядок 7**: `RabbitMq.HostName` (якщо RabbitMQ на іншому хості)
