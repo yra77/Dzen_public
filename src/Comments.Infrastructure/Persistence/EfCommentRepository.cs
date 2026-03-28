@@ -1,16 +1,22 @@
+
+
 using Comments.Application.Abstractions;
 using Comments.Application.DTOs;
 using Comments.Domain.Entities;
+
 using Microsoft.EntityFrameworkCore;
 
-namespace Comments.Infrastructure.Persistence;
 
+namespace Comments.Infrastructure.Persistence;
 /// <summary>
 /// EF Core repository implementation for comments and thread loading.
 /// </summary>
 public sealed class EfCommentRepository : ICommentRepository
 {
+
+
     private readonly CommentsDbContext _dbContext;
+
 
     /// <summary>
     /// Initializes repository with EF DbContext.
@@ -20,6 +26,7 @@ public sealed class EfCommentRepository : ICommentRepository
     {
         _dbContext = dbContext;
     }
+
 
     /// <summary>
     /// Returns comment by identifier or <see langword="null"/> when not found.

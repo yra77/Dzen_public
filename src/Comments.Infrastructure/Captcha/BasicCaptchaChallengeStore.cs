@@ -1,18 +1,23 @@
+
+
 using Microsoft.Extensions.Caching.Memory;
 
-namespace Comments.Infrastructure.Captcha;
 
+namespace Comments.Infrastructure.Captcha;
 /// <summary>
 /// In-memory store for short-lived captcha challenges used by the basic captcha flow.
 /// </summary>
 public sealed class BasicCaptchaChallengeStore
 {
+
+
     /// <summary>
     /// Standard TTL for generated captcha challenges.
     /// </summary>
     private static readonly TimeSpan ChallengeTtl = TimeSpan.FromMinutes(5);
 
     private readonly IMemoryCache _cache;
+
 
     /// <summary>
     /// Initializes challenge store with memory cache backend.
@@ -22,6 +27,7 @@ public sealed class BasicCaptchaChallengeStore
     {
         _cache = cache;
     }
+
 
     /// <summary>
     /// Creates a new captcha challenge and stores expected answer by generated challenge identifier.

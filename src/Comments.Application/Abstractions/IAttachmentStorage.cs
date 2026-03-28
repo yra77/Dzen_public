@@ -1,7 +1,9 @@
+
+
 using Comments.Application.DTOs;
 
-namespace Comments.Application.Abstractions;
 
+namespace Comments.Application.Abstractions;
 /// <summary>
 /// Контракт збереження вкладень коментаря у вибране сховище.
 /// </summary>
@@ -23,8 +25,4 @@ public interface IAttachmentStorage
 /// <param name="ContentType">MIME-тип файлу.</param>
 /// <param name="StoragePath">Внутрішній шлях до файлу у сховищі.</param>
 /// <param name="SizeBytes">Розмір файлу у байтах.</param>
-public sealed record StoredAttachment(
-    string FileName,
-    string ContentType,
-    string StoragePath,
-    long SizeBytes);
+public sealed record StoredAttachment(string FileName, string ContentType, string StoragePath, long SizeBytes);

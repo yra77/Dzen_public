@@ -1,15 +1,21 @@
+
+
 using Comments.Application.DTOs;
 using Comments.Application.Services;
+
 using MediatR;
 
-namespace Comments.Application.Features.Comments.Commands.CreateComment;
 
+namespace Comments.Application.Features.Comments.Commands.CreateComment;
 /// <summary>
 /// Обробник CQRS-команди створення коментаря через доменний сервіс.
 /// </summary>
 public sealed class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand, CommentDto>
 {
+
+
     private readonly CommentService _commentService;
+
 
     /// <summary>
     /// Ініціалізує новий екземпляр <see cref="CreateCommentCommandHandler"/>.
@@ -19,6 +25,7 @@ public sealed class CreateCommentCommandHandler : IRequestHandler<CreateCommentC
     {
         _commentService = commentService;
     }
+
 
     /// <summary>
     /// Обробляє команду створення коментаря.

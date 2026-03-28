@@ -1,32 +1,38 @@
-// File overview: MediatR handler that delegates root comment page retrieval to the domain service layer.
+
+
 using Comments.Application.DTOs;
 using Comments.Application.Services;
+
 using MediatR;
 
-namespace Comments.Application.Features.Comments.Queries.GetCommentsPage;
 
+namespace Comments.Application.Features.Comments.Queries.GetCommentsPage;
 /// <summary>
-/// Handles paged root comment queries.
+/// Обробник MediatR, який делегує отримання кореневої сторінки коментарів рівню доменного сервісу.
 /// </summary>
 public sealed class GetCommentsPageQueryHandler : IRequestHandler<GetCommentsPageQuery, PagedResult<CommentDto>>
 {
+
+
     private readonly CommentService _commentService;
 
+    
     /// <summary>
-    /// Creates query handler for root comment pages.
+    /// Створює обробник запитів для кореневих сторінок коментарів.
     /// </summary>
-    /// <param name="commentService">Service that encapsulates page retrieval logic.</param>
+    /// <param name="commentService">Сервіс, який інкапсулює логіку пошуку сторінок.</param>
     public GetCommentsPageQueryHandler(CommentService commentService)
     {
         _commentService = commentService;
     }
 
+
     /// <summary>
-    /// Handles query for root comments page with sorting and filter options.
+    /// Обробляє запит для кореневої сторінки коментарів з опціями сортування та фільтрації.
     /// </summary>
-    /// <param name="request">Query parameters from caller.</param>
+    /// <param name="request">Параметри запиту від абонента.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Paged comment result for requested page parameters.</returns>
+    /// <returns>Результат коментаря з розгортанням сторінки для запитуваних параметрів сторінки.</returns>
     public Task<PagedResult<CommentDto>> Handle(GetCommentsPageQuery request, CancellationToken cancellationToken)
     {
         return _commentService.GetPageAsync(

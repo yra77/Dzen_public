@@ -1,5 +1,6 @@
-namespace Comments.Infrastructure.Maintenance;
 
+
+namespace Comments.Infrastructure.Maintenance;
 /// <summary>
 /// Налаштування фонової очистки таблиці ідемпотентності ProcessedMessages.
 /// </summary>

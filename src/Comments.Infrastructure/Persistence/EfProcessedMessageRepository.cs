@@ -1,15 +1,21 @@
+
+
 using Comments.Application.Abstractions;
 using Comments.Domain.Entities;
+
 using Microsoft.EntityFrameworkCore;
 
-namespace Comments.Infrastructure.Persistence;
 
+namespace Comments.Infrastructure.Persistence;
 /// <summary>
 /// EF Core-реалізація сховища ідемпотентності оброблених повідомлень.
 /// </summary>
 public sealed class EfProcessedMessageRepository : IProcessedMessageRepository
 {
+
+
     private readonly CommentsDbContext _dbContext;
+
 
     /// <summary>
     /// Створює репозиторій на базі <see cref="CommentsDbContext"/>.
@@ -18,6 +24,7 @@ public sealed class EfProcessedMessageRepository : IProcessedMessageRepository
     {
         _dbContext = dbContext;
     }
+
 
     /// <summary>
     /// Позначає message id як оброблений, якщо він зустрівся вперше.

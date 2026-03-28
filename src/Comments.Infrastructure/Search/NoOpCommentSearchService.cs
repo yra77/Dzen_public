@@ -1,8 +1,10 @@
+
+
 using Comments.Application.Abstractions;
 using Comments.Application.DTOs;
 
-namespace Comments.Infrastructure.Search;
 
+namespace Comments.Infrastructure.Search;
 /// <summary>
 /// Порожня реалізація пошуку коментарів, що завжди повертає порожню сторінку.
 /// </summary>

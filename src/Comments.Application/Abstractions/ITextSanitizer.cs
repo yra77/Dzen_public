@@ -1,5 +1,6 @@
-namespace Comments.Application.Abstractions;
 
+
+namespace Comments.Application.Abstractions;
 /// <summary>
 /// Контракт санітизації тексту коментаря перед відображенням.
 /// </summary>

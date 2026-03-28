@@ -1,3 +1,5 @@
+
+
 using Comments.Application.DTOs;
 using Comments.Application.Features.Comments.Queries.GetCommentsPage;
 using Comments.Application.Features.Comments.Queries.GetCommentThread;
@@ -6,16 +8,20 @@ using Comments.Application.Features.Comments.Queries.SearchComments;
 using Comments.Infrastructure.Persistence;
 using Comments.Infrastructure.Storage;
 using Comments.Infrastructure.Captcha;
+
 using MediatR;
+
 using System.Text;
 
-namespace Comments.Api.GraphQL;
 
+namespace Comments.Api.GraphQL;
 /// <summary>
 /// GraphQL query resolvers for listing, threading, searching and previewing comments.
 /// </summary>
 public sealed class CommentQueries
 {
+
+
     /// <summary>
     /// Повертає сторінку root-коментарів із сортуванням та опціональним фільтром.
     /// </summary>
@@ -30,6 +36,7 @@ public sealed class CommentQueries
     {
         return mediator.Send(new GetCommentsPageQuery(page, pageSize, sortBy, sortDirection, filter), cancellationToken);
     }
+
 
     /// <summary>
     /// Backward-compatible alias для <see cref="CommentsPage"/>.
@@ -134,9 +141,9 @@ public sealed class CommentQueries
             throw new ArgumentException("Only .txt attachments are supported.", nameof(storagePath));
         }
 
-        var attachmentsRoot = Path.GetFullPath(attachmentOptions.RootPath);
+        var attachmentsRoot = System.IO.Path.GetFullPath(attachmentOptions.RootPath);
         var relativePath = normalizedStoragePath["uploads/".Length..];
-        var targetPath = Path.GetFullPath(Path.Combine(attachmentsRoot, relativePath));
+        var targetPath = System.IO.Path.GetFullPath(System.IO.Path.Combine(attachmentsRoot, relativePath));
 
         if (!targetPath.StartsWith(attachmentsRoot, StringComparison.OrdinalIgnoreCase) || !File.Exists(targetPath))
         {

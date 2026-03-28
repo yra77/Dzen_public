@@ -1,14 +1,19 @@
+
+
 using System.Globalization;
 using System.Text;
 
-namespace Comments.Infrastructure.Captcha;
 
+namespace Comments.Infrastructure.Captcha;
 /// <summary>
 /// Генерує captcha-челендж і SVG-зображення для REST/GraphQL transport-шарів.
 /// </summary>
 public sealed class CaptchaChallengeService
 {
+
+
     private readonly BasicCaptchaChallengeStore _challengeStore;
+
 
     /// <summary>
     /// Ініціалізує сервіс генерації captcha.
@@ -18,6 +23,7 @@ public sealed class CaptchaChallengeService
     {
         _challengeStore = challengeStore;
     }
+
 
     /// <summary>
     /// Створює новий challenge та повертає зображення captcha у base64.

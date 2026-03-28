@@ -9,7 +9,7 @@ import { Component, Input } from '@angular/core';
   selector: 'app-comment-form-actions',
   standalone: true,
   template: `
-    <div class="actions">
+    <div class="actions wide">
       <button
         [type]="submitButtonType"
         [disabled]="submitDisabled"

@@ -1,14 +1,19 @@
+
+
 using Comments.Application.Abstractions;
 using Comments.Application.DTOs;
 
-namespace Comments.Infrastructure.Messaging;
 
+namespace Comments.Infrastructure.Messaging;
 /// <summary>
 /// Паблішер, що делегує доставку події створення коментаря у всі зареєстровані канали.
 /// </summary>
 public sealed class CompositeCommentCreatedPublisher : ICommentCreatedPublisher
 {
+
+
     private readonly IReadOnlyCollection<ICommentCreatedChannel> _channels;
+
 
     /// <summary>
     /// Ініціалізує composite-паблішер із набором цільових каналів доставлення.
@@ -18,6 +23,7 @@ public sealed class CompositeCommentCreatedPublisher : ICommentCreatedPublisher
     {
         _channels = channels.ToArray();
     }
+
 
     /// <summary>
     /// Публікує подію у всі підключені канали послідовно.

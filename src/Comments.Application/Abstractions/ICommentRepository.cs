@@ -1,8 +1,10 @@
+
+
 using Comments.Application.DTOs;
 using Comments.Domain.Entities;
 
-namespace Comments.Application.Abstractions;
 
+namespace Comments.Application.Abstractions;
 /// <summary>
 /// Contract for working with comment persistence and tree-oriented retrieval operations.
 /// </summary>

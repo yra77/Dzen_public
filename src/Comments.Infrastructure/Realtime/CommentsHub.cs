@@ -1,10 +1,10 @@
+
+
 using Microsoft.AspNetCore.SignalR;
 
-namespace Comments.Infrastructure.Realtime;
 
+namespace Comments.Infrastructure.Realtime;
 /// <summary>
-/// SignalR hub used by clients to subscribe to realtime comment creation events.
+/// SignalR Hub, який використовується клієнтами для підписки на події створення коментарів у режимі реального часу.
 /// </summary>
-public sealed class CommentsHub : Hub
-{
-}
+public sealed class CommentsHub : Hub{}

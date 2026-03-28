@@ -1,13 +1,17 @@
+
+
 using Comments.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace Comments.Infrastructure.Persistence;
 
+namespace Comments.Infrastructure.Persistence;
 /// <summary>
 /// EF Core DbContext for comments data and processed message idempotency records.
 /// </summary>
 public sealed class CommentsDbContext : DbContext
 {
+
+
     /// <summary>
     /// Initializes DbContext with configured EF options.
     /// </summary>
@@ -15,6 +19,7 @@ public sealed class CommentsDbContext : DbContext
     public CommentsDbContext(DbContextOptions<CommentsDbContext> options) : base(options)
     {
     }
+
 
     /// <summary>
     /// Comment entities table set.

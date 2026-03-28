@@ -1,5 +1,6 @@
-namespace Comments.Application.Abstractions;
 
+
+namespace Comments.Application.Abstractions;
 /// <summary>
 /// Контракт ідемпотентності обробки вхідних повідомлень інтеграції.
 /// </summary>

@@ -1,15 +1,21 @@
+
+
 using Comments.Application.DTOs;
 using Comments.Application.Abstractions;
+
 using MediatR;
 
-namespace Comments.Application.Features.Comments.Queries.SearchComments;
 
+namespace Comments.Application.Features.Comments.Queries.SearchComments;
 /// <summary>
 /// Handles full-text comment search queries via configured search provider.
 /// </summary>
 public sealed class SearchCommentsQueryHandler : IRequestHandler<SearchCommentsQuery, PagedResult<CommentDto>>
 {
+
+
     private readonly ICommentSearchService _commentSearchService;
+
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SearchCommentsQueryHandler"/> class.
@@ -19,6 +25,7 @@ public sealed class SearchCommentsQueryHandler : IRequestHandler<SearchCommentsQ
     {
         _commentSearchService = commentSearchService;
     }
+
 
     /// <summary>
     /// Executes a paged search query.

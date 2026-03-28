@@ -1,18 +1,23 @@
+
+
 using Comments.Application.Abstractions;
 using Comments.Application.DTOs;
 using Comments.Domain.Entities;
 
-namespace Comments.Application.Services;
 
+namespace Comments.Application.Services;
 /// <summary>
 /// Application service that encapsulates comment business workflows and mapping.
 /// </summary>
 public sealed class CommentService
 {
+
+
     private readonly ICommentRepository _repository;
     private readonly ITextSanitizer _textSanitizer;
     private readonly ICommentCreatedPublisher _commentCreatedPublisher;
     private readonly IAttachmentStorage _attachmentStorage;
+
 
     /// <summary>
     /// Ініціалізує сервіс коментарів і його залежності інфраструктурного рівня.
@@ -32,6 +37,7 @@ public sealed class CommentService
         _commentCreatedPublisher = commentCreatedPublisher;
         _attachmentStorage = attachmentStorage;
     }
+
 
     /// <summary>
     /// Creates a new root or reply comment after validation and sanitization.

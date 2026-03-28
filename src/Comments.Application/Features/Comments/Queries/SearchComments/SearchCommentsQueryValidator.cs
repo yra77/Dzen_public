@@ -1,7 +1,9 @@
+
+
 using FluentValidation;
 
-namespace Comments.Application.Features.Comments.Queries.SearchComments;
 
+namespace Comments.Application.Features.Comments.Queries.SearchComments;
 /// <summary>
 /// Валідатор параметрів пошуку коментарів у read-моделі.
 /// </summary>

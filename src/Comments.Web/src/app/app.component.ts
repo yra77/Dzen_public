@@ -7,10 +7,10 @@ import { RouterModule, RouterOutlet } from '@angular/router';
   template: `
     <main class="container">
       <section class="panel">
-        <h1>SPA «Коментарі»</h1>
-        <nav class="app-nav">
+        <h1 class="text-center">SPA Коментарі</h1>
+       <!--<nav class="app-nav">
           <a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">Головна</a>
-        </nav>
+        </nav>-->
       </section>
 
       <router-outlet></router-outlet>

@@ -2,7 +2,6 @@ using Comments.Application.Abstractions;
 using Comments.Application.DTOs;
 
 using Elastic.Clients.Elasticsearch;
-using Elastic.Clients.Elasticsearch.Core.Indexing;
 
 namespace Comments.Infrastructure.Search;
 

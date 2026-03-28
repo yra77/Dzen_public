@@ -1,7 +1,9 @@
+
+
 using Comments.Application.DTOs;
 
-namespace Comments.Application.Abstractions;
 
+namespace Comments.Application.Abstractions;
 /// <summary>
 /// Контракт повнотекстового пошуку коментарів.
 /// </summary>

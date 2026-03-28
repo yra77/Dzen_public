@@ -10,14 +10,13 @@ namespace Comments.Application.DTOs;
 /// <param name="ParentId">ID батьківського коментаря для reply-сценарію.</param>
 /// <param name="CaptchaToken">Токен captcha для валідації запиту.</param>
 /// <param name="Attachment">Опціональне вкладення.</param>
-public sealed record CreateCommentRequest(
-    string UserName,
-    string Email,
-    string? HomePage,
-    string Text,
-    Guid? ParentId,
-    string? CaptchaToken,
-    AttachmentUploadRequest? Attachment);
+public sealed record CreateCommentRequest(string UserName,
+                                          string Email,
+                                          string? HomePage,
+                                          string Text,
+                                          Guid? ParentId,
+                                          string? CaptchaToken,
+                                          AttachmentUploadRequest? Attachment);
 
 /// <summary>
 /// DTO для завантаження вкладення в коментар.
@@ -25,7 +24,6 @@ public sealed record CreateCommentRequest(
 /// <param name="FileName">Назва файлу.</param>
 /// <param name="ContentType">MIME-тип файлу.</param>
 /// <param name="Base64Content">Файл у форматі base64.</param>
-public sealed record AttachmentUploadRequest(
-    string FileName,
-    string ContentType,
-    string Base64Content);
+public sealed record AttachmentUploadRequest(string FileName,
+                                             string ContentType,
+                                             string Base64Content);

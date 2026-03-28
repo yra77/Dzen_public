@@ -1,16 +1,21 @@
-using Comments.Api.Realtime;
+
+
 using Comments.Application.DTOs;
-using Microsoft.AspNetCore.SignalR;
 using Comments.Application.Abstractions;
 
-namespace Comments.Infrastructure.Realtime;
+using Microsoft.AspNetCore.SignalR;
 
+
+namespace Comments.Infrastructure.Realtime;
 /// <summary>
 /// Канал публікації створених коментарів у SignalR Hub для realtime-оновлень клієнтів.
 /// </summary>
 public sealed class SignalRCommentCreatedChannel : ICommentCreatedChannel
 {
+
+
     private readonly IHubContext<CommentsHub> _hubContext;
+
 
     /// <summary>
     /// Ініціалізує канал із контекстом SignalR Hub.
@@ -20,6 +25,7 @@ public sealed class SignalRCommentCreatedChannel : ICommentCreatedChannel
     {
         _hubContext = hubContext;
     }
+
 
     /// <summary>
     /// Публікує подію <c>commentCreated</c> для всіх підключених SignalR-клієнтів.

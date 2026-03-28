@@ -1,14 +1,19 @@
+
+
 using Comments.Application.Abstractions;
 
-namespace Comments.Infrastructure.Captcha;
 
+namespace Comments.Infrastructure.Captcha;
 /// <summary>
 /// Validates captcha token using either static expected token or dynamic challenge-response mode.
 /// </summary>
 public sealed class BasicCaptchaValidator : ICaptchaValidator
 {
+
+
     private readonly CaptchaOptions _options;
     private readonly BasicCaptchaChallengeStore _challengeStore;
+
 
     /// <summary>
     /// Initializes validator with captcha configuration and challenge store.
@@ -20,6 +25,7 @@ public sealed class BasicCaptchaValidator : ICaptchaValidator
         _options = options;
         _challengeStore = challengeStore;
     }
+
 
     /// <summary>
     /// Validates incoming token according to active captcha mode.

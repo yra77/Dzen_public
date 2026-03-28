@@ -1,17 +1,24 @@
+
+
 using Comments.Application.Abstractions;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
 
 namespace Comments.Infrastructure.Maintenance;
-
 /// <summary>
 /// Періодично очищає застарілі записи ідемпотентності з persistent-сховища.
 /// </summary>
 public sealed class ProcessedMessageCleanupHostedService : BackgroundService
 {
+
+
     private readonly ILogger<ProcessedMessageCleanupHostedService> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ProcessedMessageCleanupOptions _options;
+
 
     /// <summary>
     /// Створює сервіс періодичної очистки ProcessedMessages.
@@ -25,6 +32,7 @@ public sealed class ProcessedMessageCleanupHostedService : BackgroundService
         _scopeFactory = scopeFactory;
         _options = options;
     }
+
 
     /// <summary>
     /// Виконує cleanup-цикл із заданим інтервалом.

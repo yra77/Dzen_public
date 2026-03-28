@@ -1,16 +1,21 @@
+
+
 using Comments.Application.Abstractions;
 using Comments.Application.DTOs;
+
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Processing;
 
-namespace Comments.Infrastructure.Storage;
 
+namespace Comments.Infrastructure.Storage;
 /// <summary>
 /// Локальне файлове сховище вкладень з валідацією mime-типу та базовою нормалізацією контенту.
 /// </summary>
 public sealed class LocalAttachmentStorage : IAttachmentStorage
 {
+
+
     private static readonly HashSet<string> AllowedContentTypes = new(StringComparer.OrdinalIgnoreCase)
     {
         "text/plain",
@@ -21,6 +26,7 @@ public sealed class LocalAttachmentStorage : IAttachmentStorage
 
     private readonly LocalAttachmentStorageOptions _options;
 
+
     /// <summary>
     /// Ініціалізує сховище вкладень з параметрами обмеження розміру і шляху.
     /// </summary>
@@ -28,6 +34,7 @@ public sealed class LocalAttachmentStorage : IAttachmentStorage
     {
         _options = options;
     }
+
 
     /// <summary>
     /// Зберігає вкладення у локальну файлову систему та повертає метадані збереженого файлу.

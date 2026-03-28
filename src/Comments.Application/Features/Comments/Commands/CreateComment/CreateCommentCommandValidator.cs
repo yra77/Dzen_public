@@ -1,16 +1,23 @@
-using FluentValidation;
-using System.Text.RegularExpressions;
+
+
 using Comments.Application.Abstractions;
-using System.Xml;
+using Comments.Application.DTOs;
+
+using FluentValidation;
+
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using System.Xml;
+
 
 namespace Comments.Application.Features.Comments.Commands.CreateComment;
-
 /// <summary>
 /// Валідатор команди створення коментаря відповідно до контракту ТЗ.
 /// </summary>
 public sealed class CreateCommentCommandValidator : AbstractValidator<CreateCommentCommand>
 {
+
+
     private const int MaxAttachmentSizeBytes = 1_000_000;
     private static readonly Regex UserNameRegex = new("^[a-zA-Z0-9]+$", RegexOptions.Compiled);
     private static readonly HashSet<string> AllowedAttachmentContentTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -20,6 +27,7 @@ public sealed class CreateCommentCommandValidator : AbstractValidator<CreateComm
         "image/jpeg",
         "image/gif"
     };
+
 
     /// <summary>
     /// Ініціалізує валідатор і реєструє набір правил для створення коментаря.
@@ -64,6 +72,7 @@ public sealed class CreateCommentCommandValidator : AbstractValidator<CreateComm
             .When(x => x.Request.Attachment is not null)
             .WithMessage($"Attachment exceeds max size {MaxAttachmentSizeBytes} bytes.");
     }
+    
 
     /// <summary>
     /// Перевіряє, що homepage є абсолютним HTTP/HTTPS URL.

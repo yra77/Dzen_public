@@ -1,5 +1,6 @@
-namespace Comments.Application.Abstractions;
 
+
+namespace Comments.Application.Abstractions;
 /// <summary>
 /// Контракт перевірки captcha-токена перед створенням коментаря.
 /// </summary>

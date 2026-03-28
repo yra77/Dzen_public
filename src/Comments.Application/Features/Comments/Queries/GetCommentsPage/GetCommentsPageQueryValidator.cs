@@ -1,4 +1,3 @@
-// File overview: FluentValidation validator for root comment page query constraints.
 using FluentValidation;
 
 namespace Comments.Application.Features.Comments.Queries.GetCommentsPage;
@@ -8,9 +7,6 @@ namespace Comments.Application.Features.Comments.Queries.GetCommentsPage;
 /// </summary>
 public sealed class GetCommentsPageQueryValidator : AbstractValidator<GetCommentsPageQuery>
 {
-    /// <summary>
-    /// Configures validation rules for page number, page size and optional filter value.
-    /// </summary>
     public GetCommentsPageQueryValidator()
     {
         RuleFor(x => x.Page).GreaterThan(0);

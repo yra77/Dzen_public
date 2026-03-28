@@ -1,14 +1,21 @@
+
+
 using FluentValidation;
+
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
+
 
 namespace Comments.Infrastructure.Http;
-
 /// <summary>
 /// Перетворює <see cref="ValidationException"/> у стандартизований HTTP 400 response.
 /// </summary>
 public sealed class ValidationExceptionHandlingMiddleware
 {
+
+
     private readonly RequestDelegate _next;
+
 
     /// <summary>
     /// Ініціалізує middleware з наступним компонентом HTTP-конвеєра.
@@ -17,6 +24,7 @@ public sealed class ValidationExceptionHandlingMiddleware
     {
         _next = next;
     }
+
 
     /// <summary>
     /// Обробляє HTTP-запит і повертає JSON-помилку при FluentValidation винятках.
