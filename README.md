@@ -18,8 +18,6 @@ Dzen_public/
 │   ├── Comments.Domain/         # Доменні сутності
 │   ├── Comments.Infrastructure/ # Persistence/search/messaging/realtime/captcha/storage
 │   └── Comments.Web/            # Angular SPA
-├── docs/                        # Чеклісти, runbook, handoff-документація
-├── scripts/                     # Перевірки стенду та smoke/go-no-go
 └── Comments.sln
 ```
 
@@ -92,35 +90,3 @@ npm start
    - **рядки 74–77**: `Cors.AllowedOrigins` (додай/онови origin фронтенду)
 
 Після зміни конфігурації рекомендовано перезапустити backend і frontend.
-
-## QA / smoke перевірки
-
-Перед handoff у QA:
-
-```bash
-./scripts/qa-stand-check.sh --report-file docs/artifacts/qa-stand-check.json
-./scripts/go-no-go-check.sh --report-file docs/artifacts/go-no-go-check.json
-```
-
-## Що ще треба робити у проєкті
-
-1. **P0 — GraphQL contract hardening**
-   - schema snapshots;
-   - backward compatibility checks для ключових операцій.
-
-2. **P0 — E2E критичних user-flow**
-   - list/thread/reply/search/preview/captcha/realtime;
-   - стабілізація smoke-набору для QA handoff.
-
-3. **P1 — Accessibility + mobile UX**
-   - keyboard navigation для форм/модалок;
-   - viewport regression (`320/375/768/1024/1440`).
-
-4. **P1 — Security evidence**
-   - негативні сценарії XSS/attachment abuse/captcha abuse;
-   - артефакти перевірок у `docs/artifacts`.
-
-## Джерело істини
-
-Актуальний статус відповідності ТЗ, прогрес і backlog ведеться в:
-- `docs/tz-compliance-checklist.md`
