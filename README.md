@@ -81,7 +81,7 @@ npm start
 Якщо переносиш застосунок на інший сервер/домен/порт, онови **обидва** файли:
 
 1. `src/Comments.Web/src/environments/environment.ts`
-   - **рядок 4**: `API_BASE_URL`
+   - **рядок 2**: `API_BASE_URL`
    - Приклад: `const API_BASE_URL = 'http://YOUR_HOST:5000';`
 
 2. `src/Comments.Api/appsettings.json`
