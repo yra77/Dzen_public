@@ -1,9 +1,10 @@
-# Dzen_public — SPA «Коментарі» (актуальний стан)
+# Dzen — SPA Коментарі
 
 Репозиторій містить **поточну реалізацію SPA-застосунку коментарів** на базі:
-- backend на **.NET 8 + GraphQL (HotChocolate)**;
+- backend на **.NET 10 + GraphQL (HotChocolate)**;
 - frontend на **Angular (standalone SPA)**;
 - realtime-оновлення через **SignalR**;
+- пошук - **Elasticsearch**;
 - збереження даних через **EF Core + SQLite**.
 
 > Важливо: у поточному контракті застосунку **немає Swagger і REST API** — використовується **GraphQL-only**.
@@ -41,7 +42,7 @@ docker compose up --build
 ## Варіант 2: локальний запуск (backend окремо + web через `npm start`)
 
 ### Передумови
-- .NET 8 SDK
+- .NET 10 SDK
 - Node.js LTS (щоб запускати web через `npm start`)
 
 ### Кроки
